@@ -1,0 +1,745 @@
+{
+  "economy": {
+    "startingResources": {
+      "coins": 1200,
+      "wood": 800,
+      "stone": 500,
+      "iron": 400
+    },
+    "basePopulationCap": 60,
+    "treeMaxWood": 250,
+    "treeRegrowTicks": 900,
+    "passiveIncomeIntervalTicks": 20,
+    "citadelCoinsPerInterval": 10,
+    "houseCoinsPerInterval": 3
+  },
+  "sharedBuildingWatchtower": {
+    "rangeMeters": 28,
+    "damage": 10,
+    "reloadMinTicks": 44,
+    "reloadMaxTicks": 58,
+    "volleyCount": 1,
+    "elevationRangeBonusMeters": 6
+  },
+  "buildings": {
+    "citadel": {
+      "id": "citadel",
+      "name": "Citadel (HQ)",
+      "buildableByWorker": true,
+      "isResourceDropoff": true,
+      "cost": {
+        "coins": 1000,
+        "wood": 400,
+        "stone": 300,
+        "iron": 0
+      },
+      "description": "Town Hall stronghold. Spawns with 6 defensive bastion slots, recruits Builders, and stores resources.",
+      "footprintRadiusMeters": 8,
+      "buildTimeTicks": 5400,
+      "maxHp": 5000,
+      "passiveCoinsPerSec": 10,
+      "popCapBonus": 40,
+      "canAutoLevel": false,
+      "maxLevel": 3,
+      "hasWatchtowerSupport": true,
+      "watchtowerLevel": 1,
+      "trainSpeedBonusPctPerLevel": 15,
+      "hpPerLevelBonus": 400,
+      "hasBuiltInTurret": true,
+      "turretOffset": [0, 11, 0],
+      "turretRangeMeters": 38,
+      "turretDamage": 34,
+      "turretReloadMinTicks": 12,
+      "turretReloadMaxTicks": 18,
+      "turretVolleyCount": 3,
+      "damageStages": [70, 35],
+      "options": [
+        {
+          "id": "worker",
+          "name": "Royal Builders",
+          "kind": "unit",
+          "unitType": "worker",
+          "unlockLevel": 1,
+          "cost": {
+            "coins": 100,
+            "wood": 0,
+            "stone": 0,
+            "iron": 0
+          },
+          "trainTicks": 80,
+          "xpReward": 0
+        },
+        {
+          "id": "heroes_menu",
+          "name": "Heroes",
+          "kind": "heroes_menu",
+          "unlockLevel": 1,
+          "cost": {
+            "coins": 0,
+            "wood": 0,
+            "stone": 0,
+            "iron": 0
+          },
+          "trainTicks": 0,
+          "xpReward": 0
+        },
+        {
+          "id": "royal_taxation",
+          "name": "Royal Charter",
+          "kind": "research",
+          "unlockLevel": 1,
+          "cost": {
+            "coins": 250,
+            "wood": 0,
+            "stone": 0,
+            "iron": 100
+          },
+          "trainTicks": 120,
+          "xpReward": 0
+        }
+      ],
+      "arrowProtectionPermille": 700,
+      "meleeProtectionPermille": 350
+    },
+    "citadel_slot": {
+      "id": "citadel_slot",
+      "name": "Citadel Bastion Slot",
+      "buildableByWorker": false,
+      "isResourceDropoff": false,
+      "cost": {
+        "coins": 0,
+        "wood": 0,
+        "stone": 0,
+        "iron": 0
+      },
+      "description": "Defensive foundation slot around the Citadel. Has no HP until a tower is built.",
+      "footprintRadiusMeters": 2.4,
+      "buildTimeTicks": 900,
+      "maxHp": 0,
+      "passiveCoinsPerSec": 0,
+      "popCapBonus": 0,
+      "canAutoLevel": false,
+      "maxLevel": 1,
+      "hasWatchtowerSupport": false,
+      "watchtowerLevel": 0,
+      "trainSpeedBonusPctPerLevel": 0,
+      "turretOffset": [0, 0, 0],
+      "options": [
+        {
+          "id": "watchtower",
+          "name": "Watchtower",
+          "kind": "slot_upgrade",
+          "targetBuildingType": "watchtower",
+          "unlockLevel": 1,
+          "cost": {
+            "coins": 150,
+            "wood": 0,
+            "stone": 150,
+            "iron": 0
+          },
+          "trainTicks": 900,
+          "xpReward": 0
+        },
+        {
+          "id": "ballista_tower",
+          "name": "Ballista Tower",
+          "kind": "slot_upgrade",
+          "targetBuildingType": "ballista_tower",
+          "unlockLevel": 1,
+          "cost": {
+            "coins": 250,
+            "wood": 0,
+            "stone": 150,
+            "iron": 100
+          },
+          "trainTicks": 1100,
+          "xpReward": 0
+        }
+      ]
+    },
+    "gathering_camp": {
+      "id": "gathering_camp",
+      "name": "Gathering Camp",
+      "buildableByWorker": true,
+      "isResourceDropoff": true,
+      "cost": {
+        "coins": 150,
+        "wood": 100,
+        "stone": 0,
+        "iron": 0
+      },
+      "description": "Recruits Gatherers and serves as a drop-off storage site for all harvested resources.",
+      "footprintRadiusMeters": 5,
+      "buildTimeTicks": 900,
+      "maxHp": 900,
+      "passiveCoinsPerSec": 0,
+      "popCapBonus": 0,
+      "canAutoLevel": true,
+      "maxLevel": 3,
+      "hasWatchtowerSupport": true,
+      "watchtowerLevel": 3,
+      "trainSpeedBonusPctPerLevel": 15,
+      "hpPerLevelBonus": 250,
+      "baseUpgradeCostCoins": 260,
+      "xpPerLevel": 600,
+      "turretOffset": [0.8, 7.5, -0.6],
+      "damageStages": [70, 35],
+      "options": [
+        {
+          "id": "gatherer",
+          "name": "Resource Gatherer",
+          "kind": "unit",
+          "unitType": "worker",
+          "unlockLevel": 1,
+          "cost": {
+            "coins": 80,
+            "wood": 0,
+            "stone": 0,
+            "iron": 0
+          },
+          "trainTicks": 75,
+          "xpReward": 35
+        },
+        {
+          "id": "forestry_tools",
+          "name": "Steel Axes & Picks",
+          "kind": "research",
+          "unlockLevel": 2,
+          "cost": {
+            "coins": 120,
+            "wood": 0,
+            "stone": 0,
+            "iron": 40
+          },
+          "trainTicks": 120,
+          "xpReward": 60
+        }
+      ],
+      "arrowProtectionPermille": 700,
+      "meleeProtectionPermille": 350
+    },
+    "house": {
+      "id": "house",
+      "name": "House",
+      "buildableByWorker": true,
+      "isResourceDropoff": false,
+      "cost": {
+        "coins": 100,
+        "wood": 60,
+        "stone": 0,
+        "iron": 0
+      },
+      "description": "Provides +20 Population Cap and passive coin income.",
+      "footprintRadiusMeters": 4,
+      "buildTimeTicks": 900,
+      "maxHp": 650,
+      "passiveCoinsPerSec": 3,
+      "popCapBonus": 20,
+      "canAutoLevel": false,
+      "maxLevel": 3,
+      "hasWatchtowerSupport": false,
+      "watchtowerLevel": 0,
+      "trainSpeedBonusPctPerLevel": 0,
+      "hpPerLevelBonus": 200,
+      "turretOffset": [0, 6.5, 0],
+      "damageStages": [70, 35],
+      "options": [],
+      "arrowProtectionPermille": 700,
+      "meleeProtectionPermille": 350
+    },
+    "barracks": {
+      "id": "barracks",
+      "name": "Barracks",
+      "buildableByWorker": true,
+      "isResourceDropoff": false,
+      "cost": {
+        "coins": 300,
+        "wood": 200,
+        "stone": 0,
+        "iron": 0
+      },
+      "description": "Recruits Swordsmen and Spearmen.",
+      "footprintRadiusMeters": 6,
+      "buildTimeTicks": 1100,
+      "maxHp": 1400,
+      "passiveCoinsPerSec": 0,
+      "popCapBonus": 0,
+      "canAutoLevel": true,
+      "maxLevel": 3,
+      "hasWatchtowerSupport": true,
+      "watchtowerLevel": 3,
+      "trainSpeedBonusPctPerLevel": 15,
+      "hpPerLevelBonus": 250,
+      "baseUpgradeCostCoins": 380,
+      "xpPerLevel": 700,
+      "turretOffset": [0.9, 8.0, -0.8],
+      "damageStages": [70, 35],
+      "options": [
+        {
+          "id": "swordsman",
+          "name": "Citadel Swordsmen",
+          "kind": "unit",
+          "unitType": "swordsman",
+          "unlockLevel": 1,
+          "cost": {
+            "coins": 160,
+            "wood": 0,
+            "stone": 0,
+            "iron": 40
+          },
+          "trainTicks": 120,
+          "xpReward": 40
+        },
+        {
+          "id": "spearman",
+          "name": "Tower Spearmen",
+          "kind": "unit",
+          "unitType": "spearman",
+          "unlockLevel": 1,
+          "cost": {
+            "coins": 140,
+            "wood": 0,
+            "stone": 0,
+            "iron": 30
+          },
+          "trainTicks": 110,
+          "xpReward": 35
+        }
+      ],
+      "arrowProtectionPermille": 700,
+      "meleeProtectionPermille": 350
+    },
+    "archery_range": {
+      "id": "archery_range",
+      "name": "Archery Range",
+      "buildableByWorker": true,
+      "isResourceDropoff": false,
+      "cost": {
+        "coins": 250,
+        "wood": 250,
+        "stone": 0,
+        "iron": 0
+      },
+      "description": "Recruits Archers and Crossbowmen.",
+      "footprintRadiusMeters": 6,
+      "buildTimeTicks": 1100,
+      "maxHp": 1250,
+      "passiveCoinsPerSec": 0,
+      "popCapBonus": 0,
+      "canAutoLevel": true,
+      "maxLevel": 3,
+      "hasWatchtowerSupport": true,
+      "watchtowerLevel": 3,
+      "trainSpeedBonusPctPerLevel": 15,
+      "hpPerLevelBonus": 250,
+      "baseUpgradeCostCoins": 350,
+      "xpPerLevel": 700,
+      "turretOffset": [0.9, 8.0, -0.8],
+      "damageStages": [70, 35],
+      "options": [
+        {
+          "id": "archer",
+          "name": "Ithilien Longbowmen",
+          "kind": "unit",
+          "unitType": "archer",
+          "unlockLevel": 1,
+          "cost": {
+            "coins": 140,
+            "wood": 80,
+            "stone": 0,
+            "iron": 0
+          },
+          "trainTicks": 110,
+          "xpReward": 35
+        },
+        {
+          "id": "crossbowman",
+          "name": "Heavy Crossbowmen",
+          "kind": "unit",
+          "unitType": "archer",
+          "unlockLevel": 2,
+          "cost": {
+            "coins": 170,
+            "wood": 90,
+            "stone": 0,
+            "iron": 40
+          },
+          "trainTicks": 130,
+          "xpReward": 45
+        }
+      ],
+      "arrowProtectionPermille": 700,
+      "meleeProtectionPermille": 350
+    },
+    "stables": {
+      "id": "stables",
+      "name": "Stables",
+      "buildableByWorker": true,
+      "isResourceDropoff": false,
+      "cost": {
+        "coins": 400,
+        "wood": 250,
+        "stone": 0,
+        "iron": 100
+      },
+      "description": "Grand Cavalry Complex. Recruits Light and Heavy Cavalry.",
+      "footprintRadiusMeters": 8,
+      "buildTimeTicks": 1300,
+      "maxHp": 1650,
+      "passiveCoinsPerSec": 0,
+      "popCapBonus": 0,
+      "canAutoLevel": true,
+      "maxLevel": 3,
+      "hasWatchtowerSupport": true,
+      "watchtowerLevel": 3,
+      "trainSpeedBonusPctPerLevel": 15,
+      "hpPerLevelBonus": 250,
+      "baseUpgradeCostCoins": 450,
+      "xpPerLevel": 750,
+      "turretOffset": [1.1, 8.2, -1.0],
+      "damageStages": [70, 35],
+      "options": [
+        {
+          "id": "light_cavalry",
+          "name": "Outrider Lancers",
+          "kind": "unit",
+          "unitType": "cavalry",
+          "unlockLevel": 1,
+          "cost": {
+            "coins": 240,
+            "wood": 0,
+            "stone": 0,
+            "iron": 60
+          },
+          "trainTicks": 140,
+          "xpReward": 45
+        },
+        {
+          "id": "heavy_cavalry",
+          "name": "Swan Knights Cavalry",
+          "kind": "unit",
+          "unitType": "cavalry",
+          "unlockLevel": 2,
+          "cost": {
+            "coins": 320,
+            "wood": 0,
+            "stone": 0,
+            "iron": 110
+          },
+          "trainTicks": 170,
+          "xpReward": 55
+        }
+      ],
+      "arrowProtectionPermille": 700,
+      "meleeProtectionPermille": 350
+    },
+    "siege_works": {
+      "id": "siege_works",
+      "name": "Siege Works",
+      "buildableByWorker": true,
+      "isResourceDropoff": false,
+      "cost": {
+        "coins": 500,
+        "wood": 400,
+        "stone": 0,
+        "iron": 200
+      },
+      "description": "Recruits Ballistas, Battering Rams, and Catapults.",
+      "footprintRadiusMeters": 7,
+      "buildTimeTicks": 1500,
+      "maxHp": 1650,
+      "passiveCoinsPerSec": 0,
+      "popCapBonus": 0,
+      "canAutoLevel": true,
+      "maxLevel": 3,
+      "hasWatchtowerSupport": true,
+      "watchtowerLevel": 3,
+      "trainSpeedBonusPctPerLevel": 15,
+      "hpPerLevelBonus": 250,
+      "baseUpgradeCostCoins": 520,
+      "xpPerLevel": 800,
+      "turretOffset": [1.0, 8.2, -0.9],
+      "damageStages": [70, 35],
+      "options": [
+        {
+          "id": "ballista",
+          "name": "Field Ballista",
+          "kind": "unit",
+          "unitType": "ballista",
+          "unlockLevel": 1,
+          "cost": {
+            "coins": 280,
+            "wood": 140,
+            "stone": 0,
+            "iron": 120
+          },
+          "trainTicks": 160,
+          "xpReward": 55
+        },
+        {
+          "id": "battering_ram",
+          "name": "Iron Battering Ram",
+          "kind": "unit",
+          "unitType": "swordsman",
+          "unlockLevel": 2,
+          "cost": {
+            "coins": 300,
+            "wood": 0,
+            "stone": 0,
+            "iron": 140
+          },
+          "trainTicks": 170,
+          "xpReward": 55
+        },
+        {
+          "id": "catapult",
+          "name": "Siege Catapult",
+          "kind": "unit",
+          "unitType": "archer",
+          "unlockLevel": 3,
+          "cost": {
+            "coins": 380,
+            "wood": 0,
+            "stone": 120,
+            "iron": 160
+          },
+          "trainTicks": 200,
+          "xpReward": 65
+        }
+      ],
+      "arrowProtectionPermille": 700,
+      "meleeProtectionPermille": 350
+    },
+    "blacksmith": {
+      "id": "blacksmith",
+      "name": "Blacksmith",
+      "buildableByWorker": true,
+      "isResourceDropoff": false,
+      "cost": {
+        "coins": 300,
+        "wood": 150,
+        "stone": 0,
+        "iron": 150
+      },
+      "description": "Researches global weapon and armor upgrades.",
+      "footprintRadiusMeters": 5,
+      "buildTimeTicks": 1000,
+      "maxHp": 1200,
+      "passiveCoinsPerSec": 0,
+      "popCapBonus": 0,
+      "canAutoLevel": true,
+      "maxLevel": 3,
+      "hasWatchtowerSupport": true,
+      "watchtowerLevel": 3,
+      "trainSpeedBonusPctPerLevel": 15,
+      "hpPerLevelBonus": 250,
+      "baseUpgradeCostCoins": 340,
+      "xpPerLevel": 650,
+      "turretOffset": [0.8, 7.6, -0.7],
+      "damageStages": [70, 35],
+      "options": [
+        {
+          "id": "forged_blades",
+          "name": "Forged Steel Blades",
+          "kind": "research",
+          "unlockLevel": 1,
+          "cost": {
+            "coins": 200,
+            "wood": 0,
+            "stone": 0,
+            "iron": 120
+          },
+          "trainTicks": 140,
+          "xpReward": 60
+        },
+        {
+          "id": "heavy_plate",
+          "name": "Mithril-Laced Armor",
+          "kind": "research",
+          "unlockLevel": 1,
+          "cost": {
+            "coins": 220,
+            "wood": 0,
+            "stone": 0,
+            "iron": 140
+          },
+          "trainTicks": 150,
+          "xpReward": 60
+        },
+        {
+          "id": "bodkin_arrows",
+          "name": "Bodkin Warheads",
+          "kind": "research",
+          "unlockLevel": 2,
+          "cost": {
+            "coins": 180,
+            "wood": 0,
+            "stone": 0,
+            "iron": 100
+          },
+          "trainTicks": 130,
+          "xpReward": 50
+        },
+        {
+          "id": "barding",
+          "name": "Cavalry Barding",
+          "kind": "research",
+          "unlockLevel": 2,
+          "cost": {
+            "coins": 240,
+            "wood": 0,
+            "stone": 0,
+            "iron": 150
+          },
+          "trainTicks": 160,
+          "xpReward": 65
+        }
+      ],
+      "arrowProtectionPermille": 700,
+      "meleeProtectionPermille": 350
+    },
+    "watchtower": {
+      "id": "watchtower",
+      "name": "Watchtower",
+      "buildableByWorker": true,
+      "isResourceDropoff": false,
+      "cost": {
+        "coins": 150,
+        "wood": 0,
+        "stone": 150,
+        "iron": 0
+      },
+      "description": "Defensive arrow tower. Can garrison up to 2 companies (Archers add extra arrows & DPS).",
+      "footprintRadiusMeters": 3,
+      "buildTimeTicks": 950,
+      "maxHp": 1100,
+      "passiveCoinsPerSec": 0,
+      "popCapBonus": 0,
+      "canAutoLevel": false,
+      "maxLevel": 1,
+      "hasWatchtowerSupport": true,
+      "watchtowerLevel": 1,
+      "trainSpeedBonusPctPerLevel": 0,
+      "hasBuiltInTurret": true,
+      "turretOffset": [0, 8.2, 0.3],
+      "turretRangeMeters": 28,
+      "turretDamage": 8,
+      "turretReloadMinTicks": 40,
+      "turretReloadMaxTicks": 54,
+      "turretVolleyCount": 1,
+      "maxGarrison": 2,
+      "garrisonElevationRangeBonusMeters": 6,
+      "damageStages": [70, 35],
+      "options": [],
+      "arrowProtectionPermille": 700,
+      "meleeProtectionPermille": 350
+    },
+    "ballista_tower": {
+      "id": "ballista_tower",
+      "name": "Ballista Tower",
+      "buildableByWorker": true,
+      "isResourceDropoff": false,
+      "cost": {
+        "coins": 250,
+        "wood": 0,
+        "stone": 150,
+        "iron": 100
+      },
+      "description": "Heavy siege defense tower with long-range anti-armor bolts.",
+      "footprintRadiusMeters": 4,
+      "buildTimeTicks": 1150,
+      "maxHp": 1450,
+      "passiveCoinsPerSec": 0,
+      "popCapBonus": 0,
+      "canAutoLevel": false,
+      "maxLevel": 1,
+      "hasWatchtowerSupport": true,
+      "watchtowerLevel": 1,
+      "trainSpeedBonusPctPerLevel": 0,
+      "hasBuiltInTurret": true,
+      "mountedBallistaUnitId": "ballista",
+      "turretOffset": [0, 8.5, 0.65],
+      "turretRangeMeters": 36,
+      "turretDamage": 18,
+      "turretReloadMinTicks": 48,
+      "turretReloadMaxTicks": 64,
+      "turretVolleyCount": 1,
+      "maxGarrison": 0,
+      "garrisonElevationRangeBonusMeters": 6,
+      "damageStages": [70, 35],
+      "options": [],
+      "arrowProtectionPermille": 700,
+      "meleeProtectionPermille": 350
+    },
+    "infirmary": {
+      "id": "infirmary",
+      "name": "Healing Well",
+      "buildableByWorker": true,
+      "isResourceDropoff": false,
+      "cost": {
+        "coins": 250,
+        "wood": 200,
+        "stone": 0,
+        "iron": 0
+      },
+      "description": "Heals nearby out-of-combat units and reinforces fallen squad members at 50% unit cost.",
+      "footprintRadiusMeters": 4,
+      "buildTimeTicks": 900,
+      "maxHp": 1050,
+      "passiveCoinsPerSec": 0,
+      "popCapBonus": 0,
+      "canAutoLevel": false,
+      "maxLevel": 1,
+      "hasWatchtowerSupport": false,
+      "watchtowerLevel": 0,
+      "trainSpeedBonusPctPerLevel": 0,
+      "turretOffset": [0, 6.5, 0],
+      "isPassiveAoE": true,
+      "xpPerLevel": 500,
+      "auraRadiusMeters": 22,
+      "healPerTick": 3,
+      "healPulseIntervalTicks": 10,
+      "outOfCombatDelaySec": 3.0,
+      "reinforceIntervalTicks": 70,
+      "reinforceCostPermille": 500,
+      "damageStages": [70, 35],
+      "options": [],
+      "arrowProtectionPermille": 700,
+      "meleeProtectionPermille": 350
+    },
+    "banner_house": {
+      "id": "banner_house",
+      "name": "Arcane Sanctum Pillar",
+      "buildableByWorker": true,
+      "isResourceDropoff": false,
+      "cost": {
+        "coins": 300,
+        "wood": 250,
+        "stone": 0,
+        "iron": 0
+      },
+      "description": "Boosts nearby friendly unit damage & defense by 20% and accelerates morale recovery.",
+      "footprintRadiusMeters": 4,
+      "buildTimeTicks": 900,
+      "maxHp": 1150,
+      "passiveCoinsPerSec": 0,
+      "popCapBonus": 0,
+      "canAutoLevel": false,
+      "maxLevel": 1,
+      "hasWatchtowerSupport": false,
+      "watchtowerLevel": 0,
+      "trainSpeedBonusPctPerLevel": 0,
+      "turretOffset": [0, 6.5, 0],
+      "isPassiveAoE": true,
+      "xpPerLevel": 500,
+      "auraRadiusMeters": 26,
+      "damageBonusPermille": 200,
+      "defenseBonusPermille": 200,
+      "moraleRegenBonusPermille": 250,
+      "damageStages": [70, 35],
+      "options": [],
+      "arrowProtectionPermille": 700,
+      "meleeProtectionPermille": 350
+    }
+  }
+}

@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kings Lands</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  <style>
+    * { box-sizing: border-box; user-select: none; -webkit-user-select: none; }
+    html, body {
+      width: 100%; height: 100%; margin: 0; padding: 0;
+      overflow: hidden; background: #0b1120; color: #f8fafc;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    }
+    .mono { font-family: 'JetBrains Mono', monospace; }
+    #app { position: fixed; inset: 0; width: 100vw; height: 100vh; overflow: hidden; cursor: grab; z-index: 1; }
+    #app.dragging { cursor: grabbing; }
+    #app canvas { display: block; width: 100% !important; height: 100% !important; }
+    .edge-zone {
+      position: fixed; pointer-events: none; z-index: 10;
+      transition: opacity 0.15s ease; opacity: 0;
+    }
+    .edge-zone.active { opacity: 1; }
+  </style>
+</head>
+<body class="relative w-full h-full overflow-hidden bg-slate-950 text-slate-100">
+  <!-- Viewport -->
+  <div id="app" aria-label="Kings Lands 3D RTS Viewport"></div>
+
+  <!-- Edge-Panning Indicators -->
+  <div id="edge-top" class="edge-zone top-0 left-0 right-0 h-3 bg-gradient-to-b from-amber-400/40 to-transparent"></div>
+  <div id="edge-bottom" class="edge-zone bottom-0 left-0 right-0 h-3 bg-gradient-to-t from-amber-400/40 to-transparent"></div>
+  <div id="edge-left" class="edge-zone top-0 bottom-0 left-0 w-3 bg-gradient-to-r from-amber-400/40 to-transparent"></div>
+  <div id="edge-right" class="edge-zone top-0 bottom-0 right-0 w-3 bg-gradient-to-l from-amber-400/40 to-transparent"></div>
+
+  <!-- Hidden elements for telemetry & legacy hooks (top-left box removed for 100% clean gameplay screen; Labs are in ESC menu) -->
+  <div class="hidden">
+    <span id="hud-fps"></span>
+    <span id="hud-tps"></span>
+    <span id="hud-tick"></span>
+    <span id="hud-anim-event"></span>
+    <span id="hud-cam"></span>
+    <span id="badge-worker-mode"></span>
+    <button id="btn-open-studio"></button>
+    <button id="btn-open-heroes"></button>
+    <button id="btn-open-units-lab"></button>
+    <button id="btn-space-focus"></button>
+    <button id="btn-trigger-event"></button>
+    <button id="btn-toggle-worker"></button>
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
