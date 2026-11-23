@@ -16,6 +16,7 @@ import defaultUnitsJson from '../../data/visuals/units.json';
 import { ModelFactory } from '../../render/modelFactory.js';
 import { createPortraitStudio } from '../studio/portraitRenderer.js';
 import { getEquipmentCombatBase } from '../studio/clipResolver.js';
+import { pruneDraftForRuntime } from '../studio/baseUnitsMigration.js';
 
 export const HEROES_STORAGE_KEY = 'kings_lands_heroes_data_v10';
 const SAVE_DELAY_MS = 350;
@@ -299,13 +300,15 @@ export function loadActiveUnitsVisualsData(baseUnitsData = defaultUnitsJson) {
     const draft = parsed?.data;
     if (!draft || typeof draft !== 'object' || !draft.units) return base;
 
+    // a draft saved before the base characters were renamed / replaced must not shadow the shipped ones (see baseUnitsMigration.js)
+    const live = pruneDraftForRuntime(draft, base, parsed.managedHashes || null);
     const merged = {
       ...base,
       ...draft,
       factions: { ...(base.factions || {}), ...(draft.factions || {}) },
       teamPalettes: { ...(base.teamPalettes || {}), ...(draft.teamPalettes || {}) },
-      prefabs: { ...(base.prefabs || {}), ...(draft.prefabs || {}) },
-      units: { ...(base.units || {}), ...(draft.units || {}) },
+      prefabs: { ...(base.prefabs || {}), ...live.prefabs },
+      units: { ...(base.units || {}), ...live.units },
       animations: {
         keyframes: { ...(base.animations?.keyframes || {}), ...(draft.animations?.keyframes || {}) },
         procedural: { ...(base.animations?.procedural || {}), ...(draft.animations?.procedural || {}) }

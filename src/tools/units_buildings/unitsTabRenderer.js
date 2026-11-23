@@ -9,15 +9,16 @@ import { computeCapabilitiesForLoadout } from '../../sim/combatCapabilitiesRegis
  * (src/tools/units_buildings/unitsTabRenderer.js)
  *
  * 100% English, concise labels (1-2 words per field) covering all 11 user fixes + deletion & copy UX:
- * - Fix 1 & Bottom Rule: Left panel has NO weapon or base-model selectors in the creation area —
- *   only `+ New Unit` (creates a clean base character `human_base`) and `⧉ Copy Unit` (duplicates the currently selected unit).
+ * - Fix 1 & Bottom Rule: Left panel has NO weapon selectors in the creation area —
+ *   `+ New Unit` (creates a clean unit on the chosen Base Character: `human_base_1`, `human_base_2`, ...) and `⧉ Copy Unit` (duplicates the currently selected unit).
+ * - Base Character: the new-unit bar has a base selector, and the Identity panel lets you move an existing unit onto another base of its race.
  * - Delete Combat Unit: Every combat unit (`!uStat.isWorker`) has a clear `Delete Unit` button.
  * - Fix 2: Formation toggle buttons (`Square ↔ Shield Wall`, `Square ↔ Wedge`, etc.) as single clean toggle buttons.
  * - Fix 3: `Vision Range (m)` (`visionRangeMeters`) per unit.
  * - Fix 4: Weapon Sets (`Set 1` / `Set 2`) ONLY hold Hand Weapons (`Right Hand`, `Left Hand`);
  *   Helmets, Chest Armor, Shoulders, Boots & Capes live in a separate **Visual Appearance** section.
  * - Fix 5: Mount Selection Dropdown (`None`, `Warhorse`, `Dire Wolf`, `War Chameleon`) that attaches/removes the 3D mount.
- * - Fix 6: No Base Model selector & no Hebrew name field.
+ * - Fix 6: No Hebrew name field (the Base Character selector replaces the old "no base model" rule).
  * - Fix 10: 100% English UI.
  * - Fix 11: Unit only defines `Squad Size`, `Pop Space`, and `Costs` (`Coins`, `Wood`, `Stone`, `Iron`).
  */
@@ -25,8 +26,10 @@ import { computeCapabilitiesForLoadout } from '../../sim/combatCapabilitiesRegis
 import { MAIN_LOADOUT, loadoutsOf } from '../studio/weaponRules.js';
 import {
   MOUNT_TYPES,
+  BASE_CHARACTER_TEMPLATES,
   computeEligibleFormationsForUnit
 } from './unitsBuildingsStateManager.js';
+import { DEFAULT_BASE_CHAR_ID } from '../studio/baseUnitsMigration.js';
 
 export const ALL_HAND_EQUIPMENT_OPTIONS = Object.freeze([
   { id: 'none', label: 'None (Empty)' },
@@ -204,11 +207,17 @@ export function renderUnitsLeftListHtml(stateManager, selectedUnitId) {
 
     <!-- Clean Unit Creation / Copy / Delete Bar -->
     <div class="rounded-xl border border-slate-800 bg-slate-950/90 p-2 flex flex-col gap-1.5 mt-2">
+      <label class="flex items-center gap-1.5 text-[10px] font-semibold text-slate-400">
+        <span class="shrink-0">Base</span>
+        <select id="ub-new-unit-base" class="flex-1 min-w-0 rounded bg-slate-900 border border-slate-700 px-1.5 py-1 text-[11px] font-bold text-amber-200" title="The base character the NEW unit is built on">
+          ${BASE_CHARACTER_TEMPLATES.map((b) => `<option value="${b.id}" ${b.id === (stateManager.newUnitBaseId || DEFAULT_BASE_CHAR_ID) ? 'selected' : ''}>${b.label}</option>`).join('')}
+        </select>
+      </label>
       <button
         type="button"
         id="ub-btn-create-unit"
         class="w-full rounded-lg border border-dashed border-amber-400/80 bg-amber-500/15 hover:bg-amber-500/25 py-1.5 px-2 text-xs font-extrabold text-amber-300 transition cursor-pointer"
-        title="Create a new unit starting from a clean base character"
+        title="Create a new unit starting from the base character chosen above"
       >
         + New Unit
       </button>
@@ -260,6 +269,8 @@ export function renderUnitRightInspectorHtml(stateManager, unitId, activeLoadout
   const curMountArmor = baseEq.mount_torso?.prefab || 'none';
 
   const curMountType = uStat.mountType || (uStat.isMounted ? 'human_horse' : 'none');
+  const baseChoices = stateManager.listBasesForUnit(unitId);
+  const curBaseId = stateManager.getUnitBaseId(unitId);
 
   const activeLdCaps = computeCapabilitiesForLoadout(
     uStat,
@@ -310,6 +321,16 @@ export function renderUnitRightInspectorHtml(stateManager, unitId, activeLoadout
             <span class="text-[10px] font-semibold text-slate-400">Mount</span>
             <select id="ub-unit-mount-select" class="rounded bg-slate-900 border border-slate-700 px-2 py-1 text-xs font-bold text-amber-200">
               ${MOUNT_TYPES.map((m) => `<option value="${m.id}" ${m.id === curMountType ? 'selected' : ''}>${m.label}</option>`).join('')}
+            </select>
+          </label>
+          <label class="flex flex-col gap-0.5 col-span-2">
+            <span class="text-[10px] font-semibold text-slate-400">Base Character</span>
+            <select id="ub-unit-base-select" ${baseChoices.length > 1 ? '' : 'disabled'} class="rounded bg-slate-900 border border-slate-700 px-2 py-1 text-xs font-bold text-amber-200 ${baseChoices.length > 1 ? '' : 'opacity-60'}" title="The body this unit is built on. Switching replaces the body only — gear, weapons, stats, mount and animations are kept.">
+              ${
+                baseChoices.length
+                  ? baseChoices.map((b) => `<option value="${b.id}" ${b.current ? 'selected' : ''}>${b.label}</option>`).join('')
+                  : `<option value="">${curBaseId} (fixed)</option>`
+              }
             </select>
           </label>
         </div>

@@ -6,10 +6,12 @@
  *  - The draft remembers which units.json it was based on. If units.json changed on disk the user is asked
  *    whether to keep the draft (missing units/prefabs/clips from the new file are merged in) or drop it.
  *  - Old drafts (key `kings_lands_studio_draft`) are migrated; stale clips are sanitized on load.
+ *  - Base characters (human_base_1 / human_base_2) are shipped data: see baseUnitsMigration.js (rename, retired units, refresh when units.json changes).
  */
 
 import defaultUnitsJson from '../../data/visuals/units.json';
 import { sanitizeUnitsData, resetClip as resetClipData } from './clipEditing.js';
+import { migrateDraftData, computeManagedHashes } from './baseUnitsMigration.js';
 
 const STORAGE_KEY = 'kings_lands_studio_draft_v3';
 const LEGACY_KEY = 'kings_lands_studio_draft';
@@ -136,9 +138,12 @@ export class StudioStateManager {
         if (pack && pack.v === 2 && pack.data && pack.data.units && pack.data.animations) {
           const data = pack.data;
           let needsSave = false;
+          // human_base -> human_base_1, retired units, base characters refreshed when the shipped ones changed
+          const migrated = migrateDraftData(data, defaultUnitsJson, pack.managedHashes || null);
+          if (migrated.length) { needsSave = true; this.notice = `Base characters updated (${migrated.join(', ')})`; }
           if (pack.baseHash !== this.defaultHash) {
             const added = this._mergeMissingDefaults(data);
-            this.notice = added.length ? `Draft updated with ${added.length} new item(s)` : 'Draft loaded';
+            this.notice = `${this.notice ? this.notice + ' · ' : ''}${added.length ? `Draft updated with ${added.length} new item(s)` : 'Draft loaded'}`;
             needsSave = true;
           }
           // Always: fields / carry points / items added to the tool after the draft was saved (only fills what is missing)
@@ -163,6 +168,7 @@ export class StudioStateManager {
       if (legacyRaw) {
         const data = JSON.parse(legacyRaw);
         if (data && data.units && data.animations) {
+          migrateDraftData(data, defaultUnitsJson, null);
           const added = this._mergeMissingDefaults(data);
           const report = sanitizeUnitsData(data);
           localStorage.removeItem(LEGACY_KEY);
@@ -206,6 +212,7 @@ export class StudioStateManager {
         v: 2,
         baseHash: this.defaultHash,
         baseVersion: defaultUnitsJson.version ?? null,
+        managedHashes: computeManagedHashes(defaultUnitsJson),
         savedAt: Date.now(),
         data: this.data
       };

@@ -31,8 +31,10 @@ import { MAIN_LOADOUT, asLoadout, equipmentOf, restow, grantedActions, weaponTyp
 import { ACTION_CLIPS, getCombatBase, getLocomotionBase, resolveClip } from '../studio/clipResolver.js';
 import {
   UnitsBuildingsStateManager,
+  BASE_CHARACTER_TEMPLATES,
   computeEligibleFormationsForUnit
 } from './unitsBuildingsStateManager.js';
+import { DEFAULT_BASE_CHAR_ID } from '../studio/baseUnitsMigration.js';
 import {
   renderUnitsLeftListHtml,
   renderUnitRightInspectorHtml
@@ -991,12 +993,17 @@ export class UnitsBuildingsLabApp {
       });
     });
 
-    // Fix 1 (Part A): Create New Unit starting from a clean Base Character (`human_base`, unarmed)
+    // Base chosen for the NEXT new unit (kept on the state manager so it survives re-rendering the left bar)
+    leftEl?.querySelector('#ub-new-unit-base')?.addEventListener('change', (e) => {
+      this.stateManager.newUnitBaseId = e.target.value;
+    });
+
+    // Fix 1 (Part A): Create New Unit starting from a clean Base Character (chosen in the selector above the button, unarmed)
     leftEl?.querySelector('#ub-btn-create-unit')?.addEventListener('click', () => {
       const count = Object.keys(this.stateManager.unitStatsData.units || {}).length + 1;
       const newId = this.stateManager.createNewUnit({
         name: `New Unit #${count}`,
-        baseCharId: 'human_base',
+        baseCharId: leftEl.querySelector('#ub-new-unit-base')?.value || this.stateManager.newUnitBaseId || DEFAULT_BASE_CHAR_ID,
         mountType: 'none',
         weaponR: 'none',
         weaponL: 'none'
@@ -1204,6 +1211,32 @@ export class UnitsBuildingsLabApp {
         }
       };
       reader.readAsDataURL(file);
+    });
+
+    // Base Character: move the selected unit onto another base of its race (body replaced; gear, weapons, stats, mount, animations kept)
+    rightEl?.querySelector('#ub-unit-base-select')?.addEventListener('change', (e) => {
+      const wanted = e.target.value;
+      const cur = this.stateManager.getUnitBaseId(this.selectedUnitId);
+      const label = (id) => BASE_CHARACTER_TEMPLATES.find((b) => b.id === id)?.label || id;
+      if (!wanted || wanted === cur) return;
+      const ok = globalThis.confirm?.(
+        `Switch "${this.selectedUnitId}" from ${label(cur)} to ${label(wanted)}?\n\n` +
+        'The body (bones and meshes) is replaced by the new base.\n' +
+        'Kept: stats, weapons, armour/clothing, loadouts, mount, animations. Worn gear is re-fitted to the new skeleton, ' +
+        'but may need touching up because the bodies are shaped differently. A bare base gets basic clothing in empty clothing slots.\n\n' +
+        'Any hand-edits made to this unit\'s own body or skeleton are lost.'
+      );
+      if (ok === false) {
+        e.target.value = cur;
+        return;
+      }
+      const res = this.stateManager.rebaseUnit(this.selectedUnitId, wanted);
+      this._renderWorkspace();
+      this._toast(
+        res.ok
+          ? `"${this.selectedUnitId}" now uses ${label(wanted)}${res.dressed?.some((x) => !x.startsWith('-')) ? ' (basic clothing added)' : ''}`
+          : `Could not switch base: ${res.reason}`
+      );
     });
 
     // Fix 5: Mount dropdown (`None`, `Warhorse`, `Dire Wolf`, `War Chameleon`)

@@ -17,6 +17,7 @@ import defaultBuildingVisuals from '../../data/buildingVisuals.json';
 import { StudioStateManager } from '../studio/studioStateManager.js';
 import { MAIN_LOADOUT, heldItems, loadoutsOf, asLoadout, restow, weaponTypeOf } from '../studio/weaponRules.js';
 import { downloadBytes } from '../studio/portraitRenderer.js';
+import { DEFAULT_BASE_CHAR_ID, resolveBaseCharId, pruneDraftForRuntime } from '../studio/baseUnitsMigration.js';
 
 export const UNIT_STATS_STORAGE_KEY = 'kings_lands_unit_stats_v2';
 export const BUILDINGS_DATA_STORAGE_KEY = 'kings_lands_buildings_data_v2';
@@ -24,7 +25,8 @@ export const BUILDING_VISUALS_STORAGE_KEY = 'kings_lands_building_visuals_v2';
 export const UNITS_VISUALS_STORAGE_KEY = 'kings_lands_studio_draft_v3';
 
 export const BASE_CHARACTER_TEMPLATES = Object.freeze([
-  { id: 'human_base', race: 'human', label: 'Human Base Character' },
+  { id: 'human_base_1', race: 'human', label: 'Human Base 1 (classic)' },
+  { id: 'human_base_2', race: 'human', label: 'Human Base 2 (detailed)', bare: true }, // bare: a pure body, no clothing baked into its meshes
   { id: 'katiler_base', race: 'katiler', label: 'Katiler Base Character' },
   { id: 'mirukenkay_base', race: 'mirukenkay', label: 'Mirukenkay Base Character' },
   { id: 'almasir_base', race: 'almasir', label: 'Almasir Base Character' },
@@ -41,6 +43,84 @@ export const MOUNT_TYPES = Object.freeze([
 
 function deepClone(obj) {
   return JSON.parse(JSON.stringify(obj));
+}
+
+/**
+ * Worn-gear prefabs (tunics, armour, helmets ...) are authored in bone-local coordinates of the REFERENCE skeleton of their race.
+ * Another base of the same race has other bone pivots / proportions, so when a unit uses it the gear gets a `gripOffset` that makes it fit:
+ *   - limbs, hands, head: the gear follows its bone (the pivot sits at the same joint on every base) -> no shift;
+ *   - torso / pelvis: the belt line keeps its place and the collar is moved half-way onto the new neck base (see gearShift);
+ *   - feet: only the height is kept, so the soles stay on the ground.
+ */
+const GEAR_REFERENCE_BASE = Object.freeze({ human: 'human_base_1' });
+/** sockets that follow the base's own geometry (hands, stow points, cape / quiver anchors): never shifted */
+const NON_BODY_SOCKET_RE = /^(weapon_socket|stow_|cape_|quiver_|arrow_|bowstring)/;
+
+/** rest position of bone `name` in unit space (sum of the bones' local `pos` down the tree; rest rotations of body bones are zero) */
+function restWorldPos(tree, name, acc = [0, 0, 0]) {
+  for (const [k, n] of Object.entries(tree || {})) {
+    const p = Array.isArray(n?.pos) ? n.pos : [0, 0, 0];
+    const here = [acc[0] + (p[0] || 0), acc[1] + (p[1] || 0), acc[2] + (p[2] || 0)];
+    if (k === name) return here;
+    const r = restWorldPos(n?.children, name, here);
+    if (r) return r;
+  }
+  return null;
+}
+
+function collectNodeNames(tree, out = new Set()) {
+  for (const [k, n] of Object.entries(tree || {})) {
+    out.add(k);
+    collectNodeNames(n?.children, out);
+  }
+  return out;
+}
+
+function findHierarchyNode(tree, name) {
+  for (const [k, n] of Object.entries(tree || {})) {
+    if (k === name) return n;
+    const r = findHierarchyNode(n?.children, name);
+    if (r) return r;
+  }
+  return null;
+}
+
+/** shift [x,y,z] to add to the gripOffset of the gear on `slot` when it moves from skeleton `fromHier` to `toHier` (null = nothing to do) */
+function gearShift(fromHier, toHier, slot) {
+  const a = restWorldPos(fromHier, slot);
+  const b = restWorldPos(toHier, slot);
+  if (!a || !b) return null;
+  const sub = (p, q) => [p[0] - q[0], p[1] - q[1], p[2] - q[2]];
+  if (slot === 'torso' || slot === 'pelvis') {
+    const d = sub(a, b); // belt / hem keep their place in space
+    const ha = restWorldPos(fromHier, 'head');
+    const hb = restWorldPos(toHier, 'head');
+    if (slot === 'torso' && ha && hb) {
+      const neckAligned = (hb[1] - b[1]) - (ha[1] - a[1]); // shift that puts the collar on the new neck base
+      d[1] = (d[1] + neckAligned) / 2;
+    }
+    return d;
+  }
+  if (/^foot_/.test(slot)) return [0, a[1] - b[1], 0]; // soles stay on the ground
+  return [0, 0, 0];
+}
+
+/** fit worn gear (main equipment and every loadout) to another skeleton of the same race */
+function realignWornGear(unitVis, fromHier, toHier) {
+  if (!unitVis || !fromHier || !toHier) return 0;
+  const maps = [unitVis.equipment, ...Object.values(unitVis.loadouts || {}).map((l) => l?.equipment)];
+  let moved = 0;
+  for (const eq of maps) {
+    for (const [sock, cfg] of Object.entries(eq || {})) {
+      if (!cfg || cfg.auto || NON_BODY_SOCKET_RE.test(sock)) continue;
+      const d = gearShift(fromHier, toHier, sock);
+      if (!d || Math.hypot(d[0], d[1], d[2]) < 1e-6) continue;
+      const g = Array.isArray(cfg.gripOffset) ? cfg.gripOffset : [0, 0, 0];
+      cfg.gripOffset = [0, 1, 2].map((i) => +((g[i] || 0) + d[i]).toFixed(4));
+      moved++;
+    }
+  }
+  return moved;
 }
 
 const INITIAL_UNIT_STATS_SNAPSHOT = deepClone(defaultUnitStats);
@@ -220,7 +300,9 @@ export function loadUnitsBuildingsConfigFromStorage() {
       const parsedV = JSON.parse(rawV);
       const draftData = parsedV?.data || parsedV;
       if (draftData && typeof draftData.units === 'object') {
-        for (const [uid, uVis] of Object.entries(draftData.units)) {
+        // skip what an old draft still carries of the replaced base characters (human_base, retired units, outdated human_base_1/2)
+        const live = pruneDraftForRuntime(draftData, defaultUnitsVisuals, parsedV?.managedHashes || null);
+        for (const [uid, uVis] of Object.entries(live.units)) {
           vBase.units[uid] = { ...(vBase.units[uid] || {}), ...uVis };
         }
       }
@@ -402,10 +484,12 @@ export class UnitsBuildingsStateManager {
           if (sk && typeof sk === 'object') delete sk.locomotionAnim;
         }
       }
-      // Restore standing pelvis height and standing legs
+      // Restore standing pelvis height and standing legs (of the unit's own human base; other races keep using the classic human skeleton as before)
+      const standId = this._standSkeletonId(unitId);
       const standPelvis =
-        INITIAL_UNITS_VISUALS_SNAPSHOT.units?.human_base?.hierarchy?.pelvis ||
-        defaultUnitsVisuals.units?.human_base?.hierarchy?.pelvis;
+        INITIAL_UNITS_VISUALS_SNAPSHOT.units?.[standId]?.hierarchy?.pelvis ||
+        defaultUnitsVisuals.units?.[standId]?.hierarchy?.pelvis ||
+        INITIAL_UNITS_VISUALS_SNAPSHOT.units?.[DEFAULT_BASE_CHAR_ID]?.hierarchy?.pelvis;
       if (uVis.hierarchy?.pelvis) {
         uVis.hierarchy.pelvis.pos = standPelvis?.pos ? deepClone(standPelvis.pos) : [0, 0.92, 0];
       }
@@ -462,9 +546,21 @@ export class UnitsBuildingsStateManager {
       const cavPelvis =
         INITIAL_UNITS_VISUALS_SNAPSHOT.units?.cavalry?.hierarchy?.pelvis ||
         defaultUnitsVisuals.units?.cavalry?.hierarchy?.pelvis;
+      // The riding stance was authored on the classic skeleton: on another human base keep its OFFSET from the classic standing legs
+      const standId = this._standSkeletonId(unitId);
+      const refStand = INITIAL_UNITS_VISUALS_SNAPSHOT.units?.[DEFAULT_BASE_CHAR_ID]?.hierarchy?.pelvis;
+      const ownStand = standId === DEFAULT_BASE_CHAR_ID ? null : INITIAL_UNITS_VISUALS_SNAPSHOT.units?.[standId]?.hierarchy?.pelvis;
+      const ridePos = (side) => {
+        const ride = cavPelvis?.children?.[`leg_${side}`]?.pos;
+        const own = ownStand?.children?.[`leg_${side}`]?.pos;
+        const ref = refStand?.children?.[`leg_${side}`]?.pos;
+        if (!ride) return null;
+        if (!own || !ref) return deepClone(ride);
+        return ride.map((v, i) => +(v - ref[i] + own[i]).toFixed(4));
+      };
       if (cavPelvis?.children && uVis.hierarchy?.pelvis?.children) {
         if (cavPelvis.children.leg_L && uVis.hierarchy.pelvis.children.leg_L) {
-          uVis.hierarchy.pelvis.children.leg_L.pos = deepClone(cavPelvis.children.leg_L.pos);
+          uVis.hierarchy.pelvis.children.leg_L.pos = ridePos('L');
           uVis.hierarchy.pelvis.children.leg_L.rot = deepClone(cavPelvis.children.leg_L.rot || [-0.65, 0.32, -0.35]);
           if (uVis.hierarchy.pelvis.children.leg_L.children?.shin_L && cavPelvis.children.leg_L.children?.shin_L) {
             uVis.hierarchy.pelvis.children.leg_L.children.shin_L.rot = deepClone(
@@ -473,7 +569,7 @@ export class UnitsBuildingsStateManager {
           }
         }
         if (cavPelvis.children.leg_R && uVis.hierarchy.pelvis.children.leg_R) {
-          uVis.hierarchy.pelvis.children.leg_R.pos = deepClone(cavPelvis.children.leg_R.pos);
+          uVis.hierarchy.pelvis.children.leg_R.pos = ridePos('R');
           uVis.hierarchy.pelvis.children.leg_R.rot = deepClone(cavPelvis.children.leg_R.rot || [-0.65, -0.32, 0.35]);
           if (uVis.hierarchy.pelvis.children.leg_R.children?.shin_R && cavPelvis.children.leg_R.children?.shin_R) {
             uVis.hierarchy.pelvis.children.leg_R.children.shin_R.rot = deepClone(
@@ -524,12 +620,13 @@ export class UnitsBuildingsStateManager {
         };
       }
 
+      if (uStat.baseCharId) uStat.baseCharId = resolveBaseCharId(uStat.baseCharId); // `human_base` was renamed to `human_base_1`
       if (!this.unitsVisualsData.units[uid]) {
-        const baseCharId = uStat.baseCharId || uStat.baseModel || 'human_base';
+        const baseCharId = resolveBaseCharId(uStat.baseCharId || uStat.baseModel);
         const templateVis =
           this.unitsVisualsData.units[baseCharId] ||
           defaultUnitsVisuals.units[baseCharId] ||
-          this.unitsVisualsData.units.human_base ||
+          this.unitsVisualsData.units[DEFAULT_BASE_CHAR_ID] ||
           this.unitsVisualsData.units.swordsman;
         if (templateVis) {
           this.unitsVisualsData.units[uid] = deepClone(templateVis);
@@ -593,14 +690,132 @@ export class UnitsBuildingsStateManager {
     }
   }
 
+  // ------------------------------------------------------------------ base characters
+
+  /** the base character a unit was built on (`human_base_1`, `human_base_2`, `katiler_base` ...); old ids are mapped to the current ones */
+  getUnitBaseId(unitId) {
+    const uStat = this.unitStatsData.units?.[unitId];
+    const uVis = this.unitsVisualsData.units?.[unitId];
+    const raw = uStat?.baseCharId || uStat?.baseModel;
+    if (raw) return resolveBaseCharId(raw);
+    const race = uVis?.race || uStat?.race || 'human';
+    return BASE_CHARACTER_TEMPLATES.find((b) => b.race === race)?.id || DEFAULT_BASE_CHAR_ID;
+  }
+
+  /** skeleton used to restore the standing pose: the unit's own human base, the classic human skeleton for every other race (as before) */
+  _standSkeletonId(unitId) {
+    const id = this.getUnitBaseId(unitId);
+    return BASE_CHARACTER_TEMPLATES.find((b) => b.id === id)?.race === 'human' ? id : DEFAULT_BASE_CHAR_ID;
+  }
+
+  _baseVisual(baseId) {
+    return (
+      this.unitsVisualsData.units?.[baseId] ||
+      INITIAL_UNITS_VISUALS_SNAPSHOT.units?.[baseId] ||
+      defaultUnitsVisuals.units?.[baseId] ||
+      null
+    );
+  }
+
+  /** base characters the unit can be switched to (same race, so its race-specific gear prefabs keep fitting) */
+  listBasesForUnit(unitId) {
+    const cur = this.getUnitBaseId(unitId);
+    const race = BASE_CHARACTER_TEMPLATES.find((b) => b.id === cur)?.race;
+    if (!race) return []; // siege machines and other units that are not built on a base character
+    return BASE_CHARACTER_TEMPLATES.filter((b) => b.race === race && this._baseVisual(b.id)?.hierarchy).map((b) => ({
+      ...b,
+      current: b.id === cur
+    }));
+  }
+
   /**
-   * Fix 1 (Part A): Creates a brand-new Warrior unit starting from a clean Base Character (`human_base`, `katiler_base`, etc.)
+   * Moves an existing unit onto another base character of its race (e.g. human_base_1 -> human_base_2).
+   * Replaced: the body (bones + meshes + limits), `scale` (keeps the unit's size relative to its base).
+   * Kept: stats, equipment / weapons / loadouts (worn gear is re-fitted to the new skeleton), mount, animations, skins, extra bones the author added.
+   * Moving from a clothed base to a bare one (human_base_2) adds basic clothing to the empty clothing slots.
+   */
+  rebaseUnit(unitId, newBaseId) {
+    const uStat = this.unitStatsData.units?.[unitId];
+    const uVis = this.unitsVisualsData.units?.[unitId];
+    const target = BASE_CHARACTER_TEMPLATES.find((b) => b.id === resolveBaseCharId(newBaseId, ''));
+    if (!uStat || !uVis || !target) return { ok: false, reason: 'unknown unit or base character' };
+    const oldId = this.getUnitBaseId(unitId);
+    if (oldId === target.id) return { ok: true, unchanged: true, from: oldId, to: oldId };
+    const oldMeta = BASE_CHARACTER_TEMPLATES.find((b) => b.id === oldId);
+    if (!oldMeta) return { ok: false, reason: 'this unit is not built on a base character' };
+    if (oldMeta.race !== target.race) return { ok: false, reason: 'a unit can only switch between base characters of its own race' };
+    const oldBase = this._baseVisual(oldId);
+    const newBase = this._baseVisual(target.id);
+    if (!oldBase?.hierarchy || !newBase?.hierarchy) return { ok: false, reason: 'base character data is missing' };
+
+    const newHier = deepClone(newBase.hierarchy);
+    const baseNames = collectNodeNames(oldBase.hierarchy);
+    const shiftOf = (bone) => {
+      const a = restWorldPos(oldBase.hierarchy, bone);
+      const b = restWorldPos(newBase.hierarchy, bone);
+      return a && b ? [a[0] - b[0], a[1] - b[1], a[2] - b[2]] : [0, 0, 0];
+    };
+
+    // bones / sockets the author added on top of the old base keep their place in space
+    const carried = [];
+    const visit = (tree, parentName) => {
+      for (const [k, n] of Object.entries(tree || {})) {
+        if (baseNames.has(k)) { visit(n?.children, k); continue; }
+        const host = parentName ? findHierarchyNode(newHier, parentName) : null;
+        if (!host || findHierarchyNode(newHier, k)) continue;
+        const node = deepClone(n);
+        const d = shiftOf(parentName);
+        const p = Array.isArray(node.pos) ? node.pos : [0, 0, 0];
+        node.pos = [0, 1, 2].map((i) => +((p[i] || 0) + d[i]).toFixed(4));
+        (host.children = host.children || {})[k] = node;
+        carried.push(k);
+      }
+    };
+    visit(uVis.hierarchy, null);
+
+    // a bare base (human_base_2) has no clothing baked into its body: a unit that relied on the classic base's built-in clothes gets basic
+    // worn clothing in its EMPTY slots (flagged `baseDress`, removed again when the unit returns to a clothed base)
+    const dressed = [];
+    uVis.equipment = uVis.equipment || {};
+    if (target.bare && !oldMeta.bare) {
+      for (const [slot, id] of [['torso', 'worn_tunic'], ['leg_R', 'worn_trousers_R'], ['leg_L', 'worn_trousers_L'], ['foot_R', 'worn_shoes_R'], ['foot_L', 'worn_shoes_L']]) {
+        const prefab = `${target.race}_${id}`;
+        if (!uVis.equipment[slot] && this.unitsVisualsData.prefabs?.[prefab]) {
+          uVis.equipment[slot] = { prefab, gripOffset: [0, 0, 0], gripRotation: [0, 0, 0], baseDress: true };
+          dressed.push(slot);
+        }
+      }
+    } else if (!target.bare && oldMeta.bare) {
+      for (const [slot, cfg] of Object.entries(uVis.equipment)) {
+        if (cfg?.baseDress) { delete uVis.equipment[slot]; dressed.push(`-${slot}`); }
+      }
+    }
+    const movedGear = realignWornGear(uVis, oldBase.hierarchy, newBase.hierarchy);
+    const keepMount = uVis.mountHierarchy;
+    const sOld = Number(oldBase.scale) || 1;
+    const sNew = Number(newBase.scale) || 1;
+    uVis.hierarchy = newHier;
+    uVis.scale = +((Number(uVis.scale) || sOld) * (sNew / sOld)).toFixed(4);
+    uStat.baseCharId = target.id;
+    uVis._gearConfiguredInLab = true;
+
+    if (uStat.mountType && uStat.mountType !== 'none') {
+      this.setUnitMount(unitId, uStat.mountType); // standing pelvis / riding legs of the new skeleton
+      if (keepMount) uVis.mountHierarchy = keepMount;
+    }
+    restow(this.unitsVisualsData, uVis);
+    this.saveAll();
+    return { ok: true, from: oldId, to: target.id, carried, movedGear, dressed };
+  }
+
+  /**
+   * Fix 1 (Part A): Creates a brand-new Warrior unit starting from a clean Base Character (`human_base_1`, `human_base_2`, `katiler_base`, etc.)
    * with empty hands and basic clothing so the user builds it up from a base character.
    */
   createNewUnit({
     id,
     name,
-    baseCharId = 'human_base',
+    baseCharId = DEFAULT_BASE_CHAR_ID,
     mountType = 'none',
     weaponR = 'none',
     weaponL = 'none'
@@ -611,12 +826,13 @@ export class UnitsBuildingsStateManager {
         .toLowerCase()
         .replace(/[^a-z0-9_]/g, '_') || `unit_${Date.now()}`;
 
+    const wantedBaseId = resolveBaseCharId(baseCharId);
     const baseTemplateMeta =
-      BASE_CHARACTER_TEMPLATES.find((b) => b.id === baseCharId) || BASE_CHARACTER_TEMPLATES[0];
+      BASE_CHARACTER_TEMPLATES.find((b) => b.id === wantedBaseId) || BASE_CHARACTER_TEMPLATES[0];
     const baseVis =
       this.unitsVisualsData.units[baseTemplateMeta.id] ||
       defaultUnitsVisuals.units[baseTemplateMeta.id] ||
-      defaultUnitsVisuals.units.human_base;
+      defaultUnitsVisuals.units[DEFAULT_BASE_CHAR_ID];
 
     const newVis = deepClone(baseVis);
     newVis.displayName = name || cleanId;
@@ -648,6 +864,12 @@ export class UnitsBuildingsStateManager {
         gripRotation: [0, 0, 0]
       }
     };
+
+    // the worn-gear prefabs above were authored for the race's reference skeleton: add the pivot difference of the chosen base
+    const refBaseId = GEAR_REFERENCE_BASE[newVis.race];
+    if (refBaseId && refBaseId !== baseTemplateMeta.id) {
+      realignWornGear(newVis, this._baseVisual(refBaseId)?.hierarchy, newVis.hierarchy);
+    }
 
     if (weaponR && weaponR !== 'none' && this.unitsVisualsData.prefabs?.[weaponR]) {
       newVis.equipment.weapon_socket_R = {
