@@ -591,29 +591,29 @@ export const studioGearAndPoseMethods = {
           maxLv > 1
             ? `<div class="flex flex-col gap-1">
                 <span class="text-[10.5px] text-sky-300 font-bold">Preview & Animate at Level (Cumulative):</span>
-                <div class="flex flex-wrap gap-1">
+                <select id="st-bld-lv-select" class="w-full rounded bg-slate-900 border border-slate-700 px-2 py-1 text-xs font-bold text-sky-300">
                   ${Array.from({ length: maxLv }, (_, idx) => {
                     const lv = idx + 1;
-                    return `<button type="button" data-st-bld-lv="${lv}" class="flex-1 rounded px-2 py-1 text-[10px] font-extrabold cursor-pointer ${
-                      lv === curLv ? 'bg-sky-400 text-slate-950' : 'bg-slate-900 border border-slate-700 text-slate-300'
-                    }">Lv.${lv}</button>`;
+                    return `<option value="${lv}" ${lv === curLv ? 'selected' : ''}>Level ${lv}${lv === 1 ? ' (Base)' : ''}</option>`;
                   }).join('')}
-                </div>
+                </select>
               </div>`
             : ''
         }
         <div class="text-[11px] text-slate-300">Select a building part (roof, hall, turret_socket${this.unitsData.units?.[this.currentUnitId]?.canRecruitUnits ? ', door leaves' : ''}) to animate construction, level-up transitions, and destruction.</div>
-      </div>`;
-      host.querySelectorAll('[data-st-bld-lv]').forEach((btn) => {
-        btn.addEventListener('click', () => {
-          this.buildingPreviewLevel = Number(btn.getAttribute('data-st-bld-lv')) || 1;
-          this._spawnStudioUnit();
-          this._renderGearPanel();
-        });
+      </div>
+      ${this._skinsGridHtml()}`;
+      const tabBtn = this.rootContainer.querySelector('#tab-gear'); if (tabBtn) tabBtn.textContent = 'Skins';
+      this._bindSkinsGrid(host);
+      host.querySelector('#st-bld-lv-select')?.addEventListener('change', (e) => {
+        this.buildingPreviewLevel = Number(e.target.value) || 1;
+        this._spawnStudioUnit();
+        this._renderGearPanel();
       });
       return;
     }
 
+    { const tabBtn = this.rootContainer.querySelector('#tab-gear'); if (tabBtn) tabBtn.textContent = 'Gear'; }
     const SLOT_LABEL = {
       hand_R: "Weapon R (יד ימין)",
       hand_L: "Off-Hand L (יד שמאל)",

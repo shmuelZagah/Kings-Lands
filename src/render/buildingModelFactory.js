@@ -2,6 +2,8 @@ import defaultBuildingVisuals from '../data/buildingVisuals.json';
 import { sampleClipPose } from './keyframeSampler.js';
 import { getCumulativeBuildingUpgradesAtLevel } from '../tools/units_buildings/buildingStudioAdapter.js';
 import defaultBuildingsData from '../data/buildings.json';
+import { loadBuildingSkins } from '../data/buildingSkinStore.js';
+import defaultUnitsVisuals from '../data/visuals/units.json';
 /**
  * Kings Lands — 3D Building Actor Factory, Occluded Rings & Rally Flags
  * (src/render/buildingModelFactory.js)
@@ -147,6 +149,74 @@ export function mergeStaticGroupMeshesByMaterial(group, { castShadow = true, rec
 export class BuildingModelFactory {
   constructor() {
     this._sharedMaterials = new Map();
+  }
+
+  /**
+   * Building skins: `buildingSkins[buildingId] = { active: 'default' | skinId, items: { skinId: { name, fitRadius, mesh:{vertices,faces,colors} } } }`
+   * live in units.json (so the Studio edits and exports them with everything else). `skinsSource` can be swapped by the Studio
+   * to preview unsaved data.
+   */
+  /** Guard tower shows only once the building reaches its unlock level (`watchtowerLevel`). */
+  _watchtowerUnlocked(type, bld, bDefIn = null) {
+    if (!bld || !bld.hasWatchtower) return false;
+    const bDef = bDefIn || (this.buildingsSource || defaultBuildingsData)?.buildings?.[type] || null;
+    if (!bDef || bDef.hasBuiltInTurret) return true;
+    const wtLv = bDef.watchtowerLevel !== undefined ? (bDef.watchtowerLevel | 0) : 3;
+    return Math.max(1, (bld.level | 0) || 1) >= Math.max(1, wtLv);
+  }
+
+  getActiveSkin(type) {
+    const entry = this.skinsSource
+      ? this.skinsSource.buildingSkins?.[type]
+      : (loadBuildingSkins()[type] || defaultUnitsVisuals?.buildingSkins?.[type]);
+    if (!entry || !entry.active || entry.active === 'default') return null;
+    const item = entry.items?.[entry.active];
+    return item?.mesh?.faces?.length ? { id: entry.active, ...item } : null;
+  }
+
+  _skinGeometry(type, skin) {
+    this._skinGeoCache = this._skinGeoCache || new Map();
+    const key = `${type}:${skin.id}:${skin.mesh.faces.length}:${skin.mesh.vertices.length}`;
+    let geo = this._skinGeoCache.get(key);
+    if (geo) return geo;
+    const { vertices, faces, colors } = skin.mesh;
+    const cosCrease = Math.cos((55 * Math.PI) / 180);
+    // per-face normals, then per-corner normals averaged over the faces of the vertex that are within the crease angle
+    const fn = faces.map(([a, b, c]) => {
+      const A = vertices[a], B = vertices[b], C = vertices[c];
+      const ux = B[0] - A[0], uy = B[1] - A[1], uz = B[2] - A[2], vx = C[0] - A[0], vy = C[1] - A[1], vz = C[2] - A[2];
+      const n = [uy * vz - uz * vy, uz * vx - ux * vz, ux * vy - uy * vx];
+      const l = Math.hypot(n[0], n[1], n[2]) || 1;
+      return [n[0] / l, n[1] / l, n[2] / l, l];
+    });
+    const vf = vertices.map(() => []);
+    faces.forEach((f, i) => f.forEach((v) => vf[v].push(i)));
+    const pos = new Float32Array(faces.length * 9), nor = new Float32Array(faces.length * 9), col = new Float32Array(faces.length * 9);
+    const tmp = new THREE.Color();
+    faces.forEach((f, i) => {
+      for (let k = 0; k < 3; k++) {
+        const v = f[k];
+        let nx = 0, ny = 0, nz = 0;
+        for (const j of vf[v]) {
+          const d = fn[i][0] * fn[j][0] + fn[i][1] * fn[j][1] + fn[i][2] * fn[j][2];
+          if (d >= cosCrease) { nx += fn[j][0] * fn[j][3]; ny += fn[j][1] * fn[j][3]; nz += fn[j][2] * fn[j][3]; }
+        }
+        const l = Math.hypot(nx, ny, nz) || 1;
+        const o = i * 9 + k * 3;
+        pos[o] = vertices[v][0]; pos[o + 1] = vertices[v][1]; pos[o + 2] = vertices[v][2];
+        nor[o] = nx / l; nor[o + 1] = ny / l; nor[o + 2] = nz / l;
+        const c = colors?.[v] || [200, 200, 200];
+        tmp.setRGB(c[0] / 255, c[1] / 255, c[2] / 255, THREE.SRGBColorSpace);
+        col[o] = tmp.r; col[o + 1] = tmp.g; col[o + 2] = tmp.b;
+      }
+    });
+    geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    geo.setAttribute('normal', new THREE.BufferAttribute(nor, 3));
+    geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+    geo.computeBoundingSphere();
+    this._skinGeoCache.set(key, geo);
+    return geo;
   }
 
   _createActorMaterials(team = 1, isGhost = false, isAlly = false) {
@@ -321,7 +391,7 @@ export class BuildingModelFactory {
     if (actor.levelButtressesGroup) actor.levelButtressesGroup.visible = Boolean(cum.buttresses);
     if (actor.turretGroup) {
       actor.turretGroup.visible =
-        Boolean(bldState.hasWatchtower) &&
+        this._watchtowerUnlocked(actor.type, bldState, bDef) &&
         actor.type !== 'watchtower' &&
         actor.type !== 'ballista_tower';
     }
@@ -475,14 +545,25 @@ export class BuildingModelFactory {
 
     const doorSign = 1;
     const bodyGroup = new THREE.Group();
-    populateArchitectureByType(type, r, mats, bodyGroup, doorSign);
-
+    const skin = this.getActiveSkin(type);       // imported GLB skin replaces the procedural architecture
+    let skinMesh = null;
     let doorLeaves = null;
-    if (BUILDINGS_WITH_DOORS.has(type)) {
-      doorLeaves = addBuildingDoorway(bodyGroup, r, mats, doorSign, type);
+    if (skin) {
+      const skinMat = isGhost
+        ? mats.ghostMat
+        : new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.86, metalness: 0.04 });
+      if (!isGhost && Array.isArray(mats.standardMats)) mats.standardMats.push(skinMat); // select highlight keeps working
+      skinMesh = new THREE.Mesh(this._skinGeometry(type, skin), skinMat);
+      const k = r / (skin.fitRadius || r);
+      skinMesh.scale.set(k, k, k);
+      bodyGroup.add(skinMesh);
+    } else {
+      populateArchitectureByType(type, r, mats, bodyGroup, doorSign);
+      if (BUILDINGS_WITH_DOORS.has(type)) {
+        doorLeaves = addBuildingDoorway(bodyGroup, r, mats, doorSign, type);
+      }
+      addCourtyardGateFence(bodyGroup, type, r, mats, doorSign);
     }
-
-    addCourtyardGateFence(bodyGroup, type, r, mats, doorSign);
 
     if (!isGhost) {
       bodyGroup.traverse((child) => {
@@ -500,6 +581,8 @@ export class BuildingModelFactory {
         }
       });
     }
+
+    if (skinMesh) { skinMesh.castShadow = !isGhost; skinMesh.receiveShadow = !isGhost; }
 
     // Merge all static architecture parts sharing the same material (~38 meshes -> ~5 meshes per building)
     mergeStaticGroupMeshesByMaterial(bodyGroup, {
@@ -534,8 +617,11 @@ export class BuildingModelFactory {
     group.add(flashRingGroup);
 
     const turretGroup = new THREE.Group();
-    const towerX = r * 0.56;
-    const towerZ = -doorSign * r * 0.52;
+    const wtDef = (this.buildingsSource || defaultBuildingsData)?.buildings?.[type] || null;
+    const wtFx = Number.isFinite(Number(wtDef?.watchtowerX)) ? Number(wtDef.watchtowerX) : 0.56;
+    const wtFz = Number.isFinite(Number(wtDef?.watchtowerZ)) ? Number(wtDef.watchtowerZ) : -0.52;
+    const towerX = r * wtFx;
+    const towerZ = doorSign * r * wtFz;
     const towerShaft = new THREE.Mesh(
       new THREE.CylinderGeometry(1.1, 1.35, 8.2, 8),
       mats.stone
@@ -553,17 +639,10 @@ export class BuildingModelFactory {
     const hBody = type === 'citadel' ? 7.2 : 4.6;
 
     // Cumulative Level Feature 1: Royal Banners & Flags (typically unlocked at Lv.2 and kept at Lv.3+)
+    // (Royal banners / flags on buildings were removed on purpose: kept as an empty, hidden group for older callers.)
     const levelBannersGroup = new THREE.Group();
     levelBannersGroup.name = 'level_banners';
-    for (const side of [-1, 1]) {
-      const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 2.8, 6), mats.gold);
-      pole.position.set(side * (r * 0.52), hBody * 0.72, doorSign * (r * 0.62));
-      levelBannersGroup.add(pole);
-      const cloth = new THREE.Mesh(new THREE.BoxGeometry(0.55, 1.35, 0.04), mats.cloth);
-      cloth.position.set(side * (r * 0.52), hBody * 0.65, doorSign * (r * 0.66));
-      levelBannersGroup.add(cloth);
-    }
-    levelBannersGroup.visible = !isGhost && Boolean(initCum.banners);
+    levelBannersGroup.visible = false;
     group.add(levelBannersGroup);
 
     // Cumulative Level Feature 2: Gilded Roof & Crest Trim (typically unlocked at Lv.3 and kept at Lv.4+)
@@ -605,7 +684,7 @@ export class BuildingModelFactory {
 
     turretGroup.visible =
       !isGhost &&
-      Boolean(bld.hasWatchtower) &&
+      this._watchtowerUnlocked(type, bld) &&
       type !== 'watchtower' &&
       type !== 'ballista_tower';
     group.add(turretGroup);

@@ -143,7 +143,7 @@ export class InspectorPanel {
 
   switchTab(tab) {
     this.activeTab = tab;
-    const TABS = { transform: 'sky', gear: 'emerald', icons: 'amber', color: 'amber' };
+    const TABS = { transform: 'sky', gear: 'emerald', icons: 'amber', color: 'amber', import: 'sky' };
     const ON = {
       sky: 'flex-1 py-1 text-sky-400 border-b-2 border-sky-400 font-bold transition-all cursor-pointer',
       emerald: 'flex-1 py-1 text-emerald-400 border-b-2 border-emerald-400 font-bold transition-all cursor-pointer',
@@ -188,6 +188,7 @@ export class InspectorPanel {
           <button id="tab-gear" class="flex-1 py-1 text-slate-500 font-bold hover:text-slate-300 transition-all cursor-pointer">Gear</button>
           <button id="tab-icons" class="flex-1 py-1 text-slate-500 font-bold hover:text-slate-300 transition-all cursor-pointer">📸 Icons</button>
           <button id="tab-color" class="flex-1 py-1 text-slate-500 font-bold hover:text-slate-300 transition-all cursor-pointer">Colors</button>
+          <button id="tab-import" class="flex-1 py-1 text-slate-500 font-bold hover:text-slate-300 transition-all cursor-pointer">Import</button>
         </div>
 
         <!-- TRANSFORMS TAB -->
@@ -251,6 +252,11 @@ export class InspectorPanel {
         </div>
 
         <!-- COLORS TAB -->
+        <!-- IMPORT TAB (GLB → unit / gear / building skin) -->
+        <div id="panel-import" class="hidden flex flex-col gap-2">
+          <div id="insp-import" class="flex flex-col gap-2"></div>
+        </div>
+
         <div id="panel-color" class="hidden flex flex-col gap-2">
           <div class="text-slate-400 font-semibold mb-1">Pick Color Override (selected joint)</div>
           <input id="insp-color-picker" type="color" value="#888888" class="w-full h-10 rounded cursor-pointer bg-slate-950 border border-slate-700 mb-2">
@@ -270,6 +276,7 @@ export class InspectorPanel {
     this._el('tab-gear').addEventListener('click', () => this.switchTab('gear'));
     this._el('tab-icons').addEventListener('click', () => this.switchTab('icons'));
     this._el('tab-color').addEventListener('click', () => this.switchTab('color'));
+    this._el('tab-import').addEventListener('click', () => this.switchTab('import'));
 
     for (const f of FIELDS) {
       const num = this._el(f.id);

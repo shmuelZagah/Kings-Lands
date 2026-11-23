@@ -26,7 +26,8 @@ export const DEFAULT_IMPORT_OPTIONS = Object.freeze({
   targetHeight: 1.9,              // metres of the unit BEFORE `scale`
   scale: 1.0,
   rotateYDeg: 0,                  // 180 if the model comes out facing backwards
-  budgets: [3500, 1000, 280],     // triangles for LOD0, LOD1, LOD2 (whole character)
+  budgets: [6000, 1800, 500],     // triangles for LOD0, LOD1, LOD2 (whole character, before the joint skirts)
+  skirtRings: 2,                  // overlap rings so joints do not open up when they bend (0 = off)
   minPartTris: [24, 10, 4],       // floor per joint part, per LOD
   smoothNormals: true,            // one normal per vertex across all parts (no seams while the arms rotate)
   metalness: 0.08,
@@ -71,6 +72,8 @@ function gatherVertices(scene, rotY) {
   const pos = new Float32Array(total * 3), col = new Uint8Array(total * 3);
   const idx = [];
   const bone = new Int32Array(total).fill(-1);  // node index of the dominant bone, -1 = none
+  const infl = new Int32Array(total * 4).fill(-1);      // up to 4 influencing bone NODES per vertex
+  const inflW = new Float32Array(total * 4);
   const primOfVertex = new Int32Array(total);
   let vo = 0;
   const tmp = [0, 0, 0];
@@ -90,6 +93,7 @@ function gatherVertices(scene, rotY) {
           mat4Apply(m, x, y, z, tmp);
           ox += tmp[0] * w; oy += tmp[1] * w; oz += tmp[2] * w; wsum += w;
           if (w > bestW) { bestW = w; bestJ = j; }
+          infl[(vo + v) * 4 + k] = skin.joints[j]; inflW[(vo + v) * 4 + k] = w;
         }
         if (wsum > 0) { pos[(vo + v) * 3] = ox / wsum; pos[(vo + v) * 3 + 1] = oy / wsum; pos[(vo + v) * 3 + 2] = oz / wsum; }
         else { mat4Apply(nodeWorld, x, y, z, tmp); pos.set(tmp, (vo + v) * 3); }
@@ -105,7 +109,7 @@ function gatherVertices(scene, rotY) {
     for (let i = 0; i < p.indices.length; i++) idx.push(p.indices[i] + vo);
     vo += n;
   });
-  return { pos, col, idx: Uint32Array.from(idx), bone, primOfVertex, rot };
+  return { pos, col, idx: Uint32Array.from(idx), bone, infl, inflW, primOfVertex, rot };
 }
 
 // ------------------------------------------------------------------ humanoid skeleton mapping (by names)
@@ -240,24 +244,42 @@ export function buildUnitFromScene(scene, options = {}) {
   // --- vertex → joint
   const partNames = Object.keys(PARENT).filter(present);
   const nameToId = new Map(partNames.map((n, i) => [n, i]));
+  const sideXCache = new Map();
+  const nodeSideX = (node) => {
+    let sx = sideXCache.get(node);
+    if (sx === undefined) { const w = scene.nodes[node].world; const p = [w[12], w[13], w[14]]; g.rot(p, 0); sx = norm(p)[0]; sideXCache.set(node, sx); }
+    return sx;
+  };
   const vJoint = new Int16Array(nV);
   const pivotList = partNames.map((n) => pivots[n]);
   const nearestPivot = (x, y, z) => { let b = 0, bd = Infinity; pivotList.forEach((p, i) => { const d = (p[0] - x) ** 2 + (p[1] - y) ** 2 + (p[2] - z) ** 2; if (d < bd) { bd = d; b = i; } }); return b; };
   for (let v = 0; v < nV; v++) {
     const x = g.pos[v * 3], y = g.pos[v * 3 + 1], z = g.pos[v * 3 + 2];
     if (rigMode === 'skeleton') {
-      let part = null, node = g.bone[v];
-      if (node < 0) { // static prim: follow its node ancestry to a classified bone
+      // sum the weights of every bone that belongs to the same game joint (spine + chest + clavicle all count for "torso"),
+      // so a vertex goes to the joint that owns most of it, not to whichever single bone happens to be strongest
+      const sums = new Map();
+      for (let k = 0; k < 4; k++) {
+        const node = g.infl[v * 4 + k];
+        if (node < 0 || !(g.inflW[v * 4 + k] > 0)) continue;
+        const part = partOfNode.get(node);
+        if (!part) continue;
+        const sideX = nodeSideX(node);
+        const name = resolveJoint(jointName(part, sideOf(sideX)));
+        sums.set(name, (sums.get(name) || 0) + g.inflW[v * 4 + k]);
+      }
+      let bestName = null, bw = 0;
+      for (const [name, w] of sums) if (w > bw) { bw = w; bestName = name; }
+      if (bestName) { vJoint[v] = nameToId.get(bestName); continue; }
+      let node = -1;
+      { // static prim (or unclassified bones): follow the node ancestry to a classified bone
         let cur = scene.primitives[g.primOfVertex[v]].node;
         while (cur >= 0 && !partOfNode.has(cur)) cur = scene.nodes[cur].parent;
         node = cur;
       }
-      part = node >= 0 ? partOfNode.get(node) : null;
-      if (part) {
-        const w = scene.nodes[node].world; const p = [w[12], w[13], w[14]]; g.rot(p, 0);
-        const side = sideOf(norm(p)[0]);
-        vJoint[v] = nameToId.get(resolveJoint(jointName(part, side)));
-      } else vJoint[v] = nearestPivot(x, y, z);
+      const part = node >= 0 ? partOfNode.get(node) : null;
+      if (part) vJoint[v] = nameToId.get(resolveJoint(jointName(part, sideOf(nodeSideX(node)))));
+      else vJoint[v] = nearestPivot(x, y, z);
     } else {
       let best = 'pelvis', bd = Infinity;
       for (const c of caps) {
@@ -279,40 +301,99 @@ export function buildUnitFromScene(scene, options = {}) {
     const a = wJoint[wd.indices[f * 3]], b = wJoint[wd.indices[f * 3 + 1]], c = wJoint[wd.indices[f * 3 + 2]];
     triJoint[f] = a === b || a === c ? a : b === c ? b : a;
   }
-  // smoothing: a triangle whose neighbours (≥2 edges) all agree on another joint adopts it (kills 1-triangle islands)
+  // --- label clean-up so the rigid parts are clean, connected pieces (no interleaved triangles / floating shards)
+  let reassignedIslands = 0;
   {
     const edge = new Map();
     const key = (a, b) => (a < b ? a * 4294967296 + b : b * 4294967296 + a);
+    const nbr = Array.from({ length: nF }, () => []);
     for (let f = 0; f < nF; f++) for (let k = 0; k < 3; k++) {
       const kk = key(wd.indices[f * 3 + k], wd.indices[f * 3 + (k + 1) % 3]);
       const l = edge.get(kk); if (l) l.push(f); else edge.set(kk, [f]);
     }
-    const next = Int16Array.from(triJoint);
-    for (let f = 0; f < nF; f++) {
-      const votes = new Map();
-      for (let k = 0; k < 3; k++) for (const nf of edge.get(key(wd.indices[f * 3 + k], wd.indices[f * 3 + (k + 1) % 3])) || []) if (nf !== f) votes.set(triJoint[nf], (votes.get(triJoint[nf]) || 0) + 1);
-      for (const [j, n] of votes) if (n >= 2 && j !== triJoint[f] && !votes.has(triJoint[f])) { next[f] = j; break; }
+    for (const l of edge.values()) if (l.length === 2) { nbr[l[0]].push(l[1]); nbr[l[1]].push(l[0]); }
+    // (a) majority smoothing, 3 passes: adopt the label two of my neighbours share when I disagree with most of them
+    for (let pass = 0; pass < 3; pass++) {
+      const next = Int16Array.from(triJoint); let changed = 0;
+      for (let f = 0; f < nF; f++) {
+        const cnt = new Map();
+        for (const n of nbr[f]) cnt.set(triJoint[n], (cnt.get(triJoint[n]) || 0) + 1);
+        const own = cnt.get(triJoint[f]) || 0;
+        for (const [j, n] of cnt) if (j !== triJoint[f] && n >= 2 && n > own) { next[f] = j; changed++; break; }
+      }
+      triJoint.set(next);
+      if (!changed) break;
     }
-    triJoint.set(next);
+    // (b) islands: a small connected group of one label that is surrounded by another label belongs to that other label
+    const comp = new Int32Array(nF).fill(-1);
+    const sizeOfLabel = new Map();
+    for (let f = 0; f < nF; f++) sizeOfLabel.set(triJoint[f], (sizeOfLabel.get(triJoint[f]) || 0) + 1);
+    let nComp = 0;
+    for (let f0 = 0; f0 < nF; f0++) {
+      if (comp[f0] >= 0) continue;
+      const members = [f0]; comp[f0] = nComp;
+      for (let i = 0; i < members.length; i++) for (const n of nbr[members[i]]) if (comp[n] < 0 && triJoint[n] === triJoint[f0]) { comp[n] = nComp; members.push(n); }
+      const label = triJoint[f0];
+      const limit = Math.max(12, Math.round(0.04 * (sizeOfLabel.get(label) || 0)));
+      if (members.length <= limit) {
+        const touch = new Map();
+        for (const m of members) for (const n of nbr[m]) if (triJoint[n] !== label) touch.set(triJoint[n], (touch.get(triJoint[n]) || 0) + 1);
+        let best = -1, bc = 0; for (const [j, c] of touch) if (c > bc) { bc = c; best = j; }
+        if (best >= 0) { for (const m of members) triJoint[m] = best; reassignedIslands++; }
+      }
+      nComp++;
+    }
   }
+  // vertex usage by joint is no longer needed: seams are handled by the labelled decimation below
   const originalTris = scene.primitives.reduce((s, p) => s + p.indices.length / 3, 0);
 
   // --- LODs: the WHOLE welded character is decimated at once, with every triangle labelled by its joint part, so the
   //     vertices shared by two parts (the joint seams) are reduced consistently on both sides: no cracks while limbs rotate.
   const sizes0 = new Array(partNames.length).fill(0);
   for (let f = 0; f < nF; f++) sizes0[triJoint[f]]++;
+  /**
+   * Splits a decimated, labelled mesh into per-joint parts. Rigid parts tear open when a joint bends, so every part also
+   * gets a "skirt": the triangles of the neighbouring parts within `skirtRings` rings of the seam. At rest they lie exactly
+   * on top of the neighbour's own surface (same position, colour and normal → invisible); when the joint rotates the skirt
+   * keeps covering the gap, like the sleeve of a sleeve-joint.
+   */
   const splitByPart = (m) => {
-    const P = partNames.map(() => ({ gv: new Map(), pos: [], col: [], idx: [] }));
-    for (let f = 0; f < m.indices.length / 3; f++) {
-      const Q = P[m.labels[f]];
+    const nFm = m.indices.length / 3;
+    const vFaces = new Map();
+    for (let f = 0; f < nFm; f++) for (let k = 0; k < 3; k++) { const v = m.indices[f * 3 + k]; (vFaces.get(v) || vFaces.set(v, []).get(v)).push(f); }
+    const P = partNames.map(() => ({ gv: new Map(), pos: [], col: [], idx: [], nClean: 0 }));
+    const addFace = (Q, f) => {
       for (let k = 0; k < 3; k++) {
         const v = m.indices[f * 3 + k];
         let l = Q.gv.get(v);
         if (l === undefined) { l = Q.pos.length / 3; Q.gv.set(v, l); Q.pos.push(m.positions[v * 3], m.positions[v * 3 + 1], m.positions[v * 3 + 2]); Q.col.push(m.colors[v * 3], m.colors[v * 3 + 1], m.colors[v * 3 + 2]); }
         Q.idx.push(l);
       }
+    };
+    for (let f = 0; f < nFm; f++) addFace(P[m.labels[f]], f);
+    P.forEach((Q) => { Q.nClean = Q.idx.length; });
+    const rings = o.skirtRings | 0;
+    if (rings > 0) {
+      P.forEach((Q, label) => {
+        if (!Q.nClean) return;
+        const inPart = new Set(Q.gv.keys());
+        // seam vertices of this part = its vertices that also touch a face of another part
+        let frontier = new Set();
+        for (const v of inPart) if (vFaces.get(v).some((f) => m.labels[f] !== label)) frontier.add(v);
+        const taken = new Set();
+        for (let r = 0; r < rings; r++) {
+          const next = new Set();
+          for (const v of frontier) for (const f of vFaces.get(v)) {
+            if (m.labels[f] === label || taken.has(f)) continue;
+            taken.add(f);
+            for (let k = 0; k < 3; k++) next.add(m.indices[f * 3 + k]);
+          }
+          frontier = next;
+        }
+        for (const f of taken) addFace(Q, f);
+      });
     }
-    return P.map((Q) => ({ positions: Float32Array.from(Q.pos), colors: Uint8Array.from(Q.col), indices: Uint32Array.from(Q.idx) }));
+    return P.map((Q) => ({ positions: Float32Array.from(Q.pos), colors: Uint8Array.from(Q.col), indices: Uint32Array.from(Q.idx), nClean: Q.nClean }));
   };
   // cascade: LOD0 is cut from the original, LOD1 from LOD0, LOD2 from LOD1 (much faster, same quality at these ratios)
   let cursor = { positions: wd.positions, colors: wd.colors, indices: wd.indices, labels: triJoint };
@@ -329,7 +410,7 @@ export function buildUnitFromScene(scene, options = {}) {
     const k3 = (x, y, z) => `${Math.round(x * q)}|${Math.round(y * q)}|${Math.round(z * q)}`;
     lodParts[lodIdx].forEach((m) => {
       if (!m.indices || !m.indices.length) return;
-      for (let f = 0; f < m.indices.length; f += 3) {
+      for (let f = 0; f < m.nClean; f += 3) { // clean faces only: the skirt duplicates must not double-weight the seam normals
         const a = m.indices[f] * 3, b = m.indices[f + 1] * 3, c = m.indices[f + 2] * 3;
         const ux = m.positions[b] - m.positions[a], uy = m.positions[b + 1] - m.positions[a + 1], uz = m.positions[b + 2] - m.positions[a + 2];
         const vx = m.positions[c] - m.positions[a], vy = m.positions[c + 1] - m.positions[a + 1], vz = m.positions[c + 2] - m.positions[a + 2];
@@ -411,5 +492,76 @@ export function buildUnitFromScene(scene, options = {}) {
     lods,
     importInfo: { source: o.sourceName || null, rigMode, originalTriangles: originalTris, lodTriangles: lodTris, importedAt: new Date().toISOString() }
   };
-  return { unit, report: { rigMode, originalTris, lodTris, perJoint, warnings, joints: partNames } };
+  return { unit, report: { rigMode, originalTris, lodTris, perJoint, warnings, joints: partNames, reassignedIslands } };
+}
+
+// =====================================================================================================================
+// STATIC MODELS (armor / helmets / props / BUILDINGS): no skeleton, no joint cutting — one mesh, normalised and reduced.
+// =====================================================================================================================
+function ensureSkinMats(scene) {
+  if (scene.skinMats) return;
+  scene.skinMats = scene.skins.map((s) => s.joints.map((jn, i) => {
+    const jw = scene.nodes[jn].world, ib = s.inverseBind[i], m = new Float64Array(16);
+    for (let c = 0; c < 4; c++) for (let r = 0; r < 4; r++) { let v = 0; for (let k = 0; k < 4; k++) v += jw[k * 4 + r] * ib[c * 4 + k]; m[c * 4 + r] = v; }
+    return m;
+  }));
+}
+
+/**
+ * @param scene   result of readGlb()
+ * @param opts    {
+ *   rotateYDeg, budget (triangles),
+ *   fit: { mode:'size', size:m, anchor:'center'|'base', offset:[x,y,z] }      // gear: biggest dimension = size
+ *      | { mode:'footprint', radius:m, anchor:'base', scale:1 },               // building: footprint ≈ 1.5 × radius
+ *   mirrorX (for the left-hand twin of a pair), smoothNormals
+ * }
+ * @returns {{ vertices:number[][], faces:number[][], colors:number[][], normals:number[][]|null,
+ *             info:{ originalTriangles, triangles, size:[x,y,z], scale } , warnings:string[] }}
+ */
+export function buildStaticMeshFromScene(scene, opts = {}) {
+  const o = { rotateYDeg: 0, budget: 6000, fit: { mode: 'size', size: 0.3, anchor: 'center', offset: [0, 0, 0] }, mirrorX: false, smoothNormals: true, ...opts };
+  ensureSkinMats(scene);
+  const g = gatherVertices(scene, (o.rotateYDeg * Math.PI) / 180);
+  let min = [Infinity, Infinity, Infinity], max = [-Infinity, -Infinity, -Infinity];
+  for (let i = 0; i < g.pos.length; i += 3) for (let k = 0; k < 3; k++) { min[k] = Math.min(min[k], g.pos[i + k]); max[k] = Math.max(max[k], g.pos[i + k]); }
+  const dim = max.map((v, k) => v - min[k]);
+  if (!(Math.max(...dim) > 1e-9)) throw new Error('The model is empty.');
+  const f = o.fit || {};
+  let S;
+  if (f.mode === 'footprint') S = ((1.5 * f.radius) / Math.max(dim[0], dim[2], 1e-9)) * (f.scale ?? 1);
+  else S = f.size / Math.max(...dim);
+  const cx = (min[0] + max[0]) / 2, cz = (min[2] + max[2]) / 2;
+  const cy = f.anchor === 'base' ? min[1] : (min[1] + max[1]) / 2;
+  const off = f.offset || [0, 0, 0];
+  for (let i = 0; i < g.pos.length; i += 3) {
+    g.pos[i] = (g.pos[i] - cx) * S + off[0];
+    g.pos[i + 1] = (g.pos[i + 1] - cy) * S + off[1];
+    g.pos[i + 2] = (g.pos[i + 2] - cz) * S + off[2];
+  }
+  const diag = Math.hypot(...dim) * S;
+  const wd = weldByPosition(g.pos, g.col, g.idx, 1e-5 * Math.max(diag, 1e-3));
+  const originalTriangles = scene.primitives.reduce((s, p) => s + p.indices.length / 3, 0);
+  const res = simplifyMesh({ positions: wd.positions, colors: wd.colors, indices: wd.indices }, Math.min(o.budget, wd.indices.length / 3));
+  const nV = res.positions.length / 3;
+  const sign = o.mirrorX ? -1 : 1;
+  const r4 = (n) => Math.round(n * 1e4) / 1e4;
+  const vertices = Array.from({ length: nV }, (_, v) => [r4(sign * res.positions[v * 3]), r4(res.positions[v * 3 + 1]), r4(res.positions[v * 3 + 2])]);
+  const faces = [];
+  for (let t = 0; t < res.indices.length; t += 3) faces.push(o.mirrorX ? [res.indices[t], res.indices[t + 2], res.indices[t + 1]] : [res.indices[t], res.indices[t + 1], res.indices[t + 2]]);
+  const colors = Array.from({ length: nV }, (_, v) => [res.colors[v * 3], res.colors[v * 3 + 1], res.colors[v * 3 + 2]]);
+  let normals = null;
+  if (o.smoothNormals) {
+    const acc = Array.from({ length: nV }, () => [0, 0, 0]);
+    for (const [a, b, c] of faces) {
+      const A = vertices[a], B = vertices[b], C = vertices[c];
+      const ux = B[0] - A[0], uy = B[1] - A[1], uz = B[2] - A[2], vx = C[0] - A[0], vy = C[1] - A[1], vz = C[2] - A[2];
+      const n = [uy * vz - uz * vy, uz * vx - ux * vz, ux * vy - uy * vx];
+      for (const i of [a, b, c]) { acc[i][0] += n[0]; acc[i][1] += n[1]; acc[i][2] += n[2]; }
+    }
+    normals = acc.map((e) => { const l = Math.hypot(...e) || 1; return [+(e[0] / l).toFixed(3), +(e[1] / l).toFixed(3), +(e[2] / l).toFixed(3)]; });
+  }
+  return {
+    vertices, faces, colors, normals, warnings: [...(scene.warnings || [])],
+    info: { originalTriangles, triangles: faces.length, size: dim.map((d) => r4(d * S)), scale: S }
+  };
 }

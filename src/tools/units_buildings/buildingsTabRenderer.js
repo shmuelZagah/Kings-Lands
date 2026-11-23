@@ -1,3 +1,4 @@
+import { loadBuildingSkins } from '../../data/buildingSkinStore.js';
 import { BUILDING_LEVEL_UPGRADE_FEATURES, ensureBuildingLevelUpgradesConfig, getCumulativeBuildingUpgradesAtLevel } from './buildingStudioAdapter.js';
 /**
  * Kings Lands — Buildings Tab Renderer for Units & Buildings Lab
@@ -173,16 +174,7 @@ export function renderBuildingRightInspectorHtml(stateManager, buildingId, previ
                 const cumNow = getCumulativeBuildingUpgradesAtLevel(bDef, activeLv);
                 const curStepCfg = activeLv >= 2 ? (upgMap[String(activeLv)] || {}) : {};
                 const lvButtonsHtml =
-                  maxLv <= 6
-                    ? `<div class="flex flex-wrap gap-1">${Array.from({ length: maxLv }, (_, idx) => {
-                        const lv = idx + 1;
-                        return `<button type="button" data-bld-preview-level="${lv}" class="flex-1 rounded px-2 py-1 text-[10px] font-extrabold cursor-pointer transition ${
-                          lv === activeLv
-                            ? 'bg-sky-400 text-slate-950 shadow'
-                            : 'bg-slate-900 border border-slate-700 text-slate-300 hover:bg-slate-800'
-                        }">Lv.${lv}</button>`;
-                      }).join('')}</div>`
-                    : `<select id="ub-bld-preview-level-select" class="w-full rounded bg-slate-900 border border-slate-700 px-2 py-1 text-xs font-bold text-sky-300">
+                  `<select id="ub-bld-preview-level-select" class="w-full rounded bg-slate-900 border border-slate-700 px-2 py-1 text-xs font-bold text-sky-300">
                         ${Array.from({ length: maxLv }, (_, idx) => {
                           const lv = idx + 1;
                           return `<option value="${lv}" ${lv === activeLv ? 'selected' : ''}>Level ${lv} ${lv >= 2 ? `(Upgrade Lv.${lv - 1} → Lv.${lv})` : '(Base Building)'}</option>`;
@@ -241,6 +233,11 @@ export function renderBuildingRightInspectorHtml(stateManager, buildingId, previ
           hasWatchtower
             ? `
           <div class="border-t border-slate-800 pt-2 flex flex-col gap-1.5">
+            <div class="grid grid-cols-3 gap-1.5">
+              ${bldNumInput('watchtowerX', 'Tower X (×radius)', bDef.watchtowerX ?? 0.56, 0.05, -1.5, 1.5)}
+              ${bldNumInput('watchtowerZ', 'Tower Z (×radius)', bDef.watchtowerZ ?? -0.52, 0.05, -1.5, 1.5)}
+              <div class="text-[9.5px] text-slate-400 self-end">Tower appears only from "Tower at Lv"</div>
+            </div>
             <div class="grid grid-cols-4 gap-1.5">
               ${bldNumInput('watchtowerLevel', 'Tower at Lv', Math.max(1, bDef.watchtowerLevel || 1), 1, 1, 10)}
               ${bldNumInput('turretOffset.0', 'Muzzle X', tOff[0] ?? 0, 0.2, -10, 10)}
@@ -252,6 +249,19 @@ export function renderBuildingRightInspectorHtml(stateManager, buildingId, previ
             : ''
         }
       </div>
+
+      ${(() => {
+        const sk = loadBuildingSkins()[bDef.id];
+        const items = Object.entries(sk?.items || {});
+        if (!items.length) return '';
+        return `<div class="rounded-xl border border-sky-500/40 bg-slate-950/75 p-2.5 flex flex-col gap-1.5">
+          <span class="text-xs font-black text-sky-300">Skins (imported in the Studio)</span>
+          <select data-bld-skin-select class="w-full rounded bg-slate-900 border border-slate-700 px-2 py-1 text-xs font-bold text-slate-100">
+            <option value="default" ${(sk.active || 'default') === 'default' ? 'selected' : ''}>Default look</option>
+            ${items.map(([sid, it]) => `<option value="${sid}" ${sk.active === sid ? 'selected' : ''}>${it.name || sid}</option>`).join('')}
+          </select>
+        </div>`;
+      })()}
 
       <!-- Fix 11: Building Owns Recruited Units, Unlock Level, Train Time (s) & XP Reward -->
       <div class="rounded-xl border border-emerald-500/40 bg-slate-950/75 p-2.5 flex flex-col gap-2">

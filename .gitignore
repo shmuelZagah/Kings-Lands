@@ -1,0 +1,16 @@
+node_modules/
+dist/
+.vite/
+.env
+.env.*
+*.log
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+# Word temp files
+~$*
+~WRL*.tmp
+# exports
+units_export.json
+kings_lands_portraits.zip

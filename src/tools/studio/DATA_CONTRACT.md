@@ -250,3 +250,11 @@ joints carry `shape: "mesh"` parts, so poses, clips, Rig mode and the instancing
 - `lods` (optional) = `{ "1": { "<joint>": [meshDef] }, "2": { ... } }` — lighter geometry for the SAME joints. LOD0 is the `hierarchy` itself.
   `UnitRenderer` switches by on-screen height (`LOD_PIXEL_THRESHOLDS` in `unitRenderer.js`). Seam vertices between joints are reduced consistently, so no cracks open.
 - `importInfo` = `{ source, rigMode: "skeleton" | "proportional", originalTriangles, lodTriangles: [..] }` — informational only.
+
+### 9b. `buildingSkins` (top level of units.json) and imported gear
+
+```
+buildingSkins: { "<buildingId>": { active: "default" | "<skinId>", items: { "<skinId>": { name, fitRadius, mesh:{vertices,faces,colors}, importInfo } } } }
+```
+`BuildingModelFactory.getActiveSkin(type)` replaces the procedural architecture with the active skin (scaled by footprint / `fitRadius`; no door leaves).
+Imported gear is a normal prefab (`parts:[{shape:"mesh",...}]`) with an extra `importInfo`. Buildings no longer have banners / flags.

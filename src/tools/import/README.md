@@ -1,15 +1,17 @@
-# GLB import + automatic polygon reduction
+# GLB import (Studio → inspector → **Import** tab)
 
-```
-.glb ──readGlb──▶ scene ──buildUnitFromScene──▶ unit (units.json record, with lods)
-        glbReader.js        glbToUnit.js  ── meshSimplify.js (quadric decimation, seam-aware)
-```
-* Studio → **Import GLB** (top bar). Asks for an id and the triangle budget of LOD0 (default 3500); LOD1 ≈ 28 %, LOD2 ≈ 8 %.
-* Rig mapping: by bone names (Mixamo, Blender/Rigify, VRM, CC4…) → `pelvis torso head arm/forearm/hand leg/shin/foot (_R/_L)`.
-  Side is decided by geometry (+x = `_R`, the game's convention), not by the "Left/Right" in the name.
-  No skeleton (or not a humanoid) → automatic rig from body proportions; fix pivots afterwards in Studio → Rig mode.
-* Skin is cut into rigid parts (triangle → joint that owns most of its weight). Same structure the game already renders.
-* Limits: Draco/meshopt compressed GLBs (re-export without compression), humanoids only (animals / horses = next step),
-  GLB animations are not imported (build them in the Studio timeline), textures become per-vertex colours.
+Choose a .glb, then what it is:
 
-Tests: `node tests/glb_import_test.mjs` · preview image: `python3 tests/render_unit_preview.py unit.json out.png`
+| Import as | What happens |
+|---|---|
+| **New unit** | Cut into rigid joint parts (pelvis/torso/head/arms/legs…), LOD0-2, added as a NEW base unit of the current faction. Rename / delete from the same tab. |
+| **Armor / gear** | One mesh, scaled to the slot (head, chest, shoulder, bracer, glove, thigh, greave, boots, cape), saved as a prefab, optionally mirrored for the left side, equipped on the current unit. Fine-tune with Gear → Fit. |
+| **Building skin** | One static mesh fitted to the building's footprint (base on the ground). Shown in the building's **Skins** tab (scrollable grid, ✕ to delete, "Default" = procedural look). |
+
+Detail kit = triangle budget (Low / Medium / High / custom). Units also get LOD1 (30 %) and LOD2 (8 %) automatically.
+
+Modules: `glbReader.js` (GLB → data) · `glbToUnit.js` (`buildUnitFromScene`, `buildStaticMeshFromScene`) · `meshSimplify.js` (seam-aware quadric decimation).
+Rig mapping is by bone names (Mixamo, Blender/Rigify, VRM, CC4…); side comes from geometry (+x = `_R`). No skeleton → automatic rig by proportions.
+Limits: no Draco/meshopt compression, humanoids only for "New unit", GLB animations are not imported, textures are baked into vertex colours.
+
+Tests: `node tests/glb_import_test.mjs` · `node tests/simplify_quality_test.mjs` · `node tests/studio_import_smoke.mjs`

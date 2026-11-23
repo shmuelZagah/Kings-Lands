@@ -30,7 +30,6 @@ export const BUILDING_STUDIO_CLIPS = Object.freeze([
 ]);
 
 export const BUILDING_LEVEL_UPGRADE_FEATURES = Object.freeze([
-  { id: 'banners', label: '🚩 Royal Banners & Flags', defaultAtLevel: 2 },
   { id: 'trim', label: '👑 Gilded Roof & Crest Trim', defaultAtLevel: 3 },
   { id: 'braziers', label: '🔥 Entrance War Braziers', defaultAtLevel: 3 },
   { id: 'buttresses', label: '🛡️ Reinforced Stone Buttresses', defaultAtLevel: 4 }

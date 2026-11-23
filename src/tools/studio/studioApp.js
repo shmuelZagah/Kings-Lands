@@ -560,8 +560,6 @@ export class StudioApp {
             <button id="st-btn-portraits" class="rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700 px-3 py-1.5 text-xs font-semibold text-slate-200" title="Render portraits / icons as PNG files">Portraits</button>
             <button id="st-btn-export-json" class="rounded-lg bg-emerald-600 hover:bg-emerald-500 px-3 py-1.5 text-xs font-bold text-slate-950 shadow" title="Download JSON with all your changes (Ctrl+S saves the draft)">${isHeroesCat ? 'Export Heroes JSON' : 'Export JSON'}</button>
             <button id="st-btn-import-json" class="rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-600 px-3 py-1.5 text-xs font-semibold text-slate-200" title="Replace everything with an imported JSON file">Import JSON</button>
-            <button id="st-btn-import-glb" class="rounded-lg bg-sky-600 hover:bg-sky-500 px-3 py-1.5 text-xs font-bold text-slate-950 shadow" title="Import a .glb character: it is cut into rigid joint parts (so you can pose / animate / rig it here) and automatically reduced to game-ready polygon counts with LODs">Import GLB</button>
-            <input id="st-import-glb-file" type="file" accept=".glb,model/gltf-binary" class="hidden" />
             <input id="st-import-file" type="file" accept=".json,application/json" class="hidden" />
             <button id="st-btn-reset-all" class="rounded-lg bg-rose-900 hover:bg-rose-800 px-3 py-1.5 text-xs font-bold text-white shadow" title="Throw away every change and reload defaults">Restart All</button>
             <button id="st-btn-exit" class="rounded-lg ${isContextual ? 'bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold shadow-lg' : 'bg-slate-800 hover:bg-slate-700 border border-slate-600 font-semibold text-slate-200'} px-3 py-1.5 text-xs">${exitLabel}</button>
@@ -601,7 +599,7 @@ export class StudioApp {
                 <select id="st-team-select" class="w-full rounded bg-slate-800 border border-slate-600 px-2 py-1 text-slate-100">
                   <option value="1">Team 1</option><option value="2">Team 2</option>
                 </select>
-                <label class="flex items-center gap-1.5 cursor-pointer py-1">
+                <label id="st-banner-label" class="${this.entityCategory === 'buildings' ? 'hidden' : 'flex'} items-center gap-1.5 cursor-pointer py-1">
                   <input id="st-banner-toggle" type="checkbox" ${this.isBannerCarrier ? 'checked' : ''} class="accent-amber-400" />
                   <span class="text-slate-200">Banner</span>
                 </label>
@@ -774,7 +772,7 @@ export class StudioApp {
     try {
       this.currentUnitGroup = this.modelFactory.createVisual(this.currentUnitId, {
         teamId: this.currentTeamId,
-        isBannerCarrier: this.entityCategory === 'heroes' ? false : this.isBannerCarrier,
+        isBannerCarrier: this.entityCategory === 'heroes' || this._isBuildingNow() ? false : this.isBannerCarrier,
         customTeamColors: getFactionColors(this.unitsData, this.currentFaction)
       });
     } finally { unitDef.equipment = mainEq; }
@@ -782,6 +780,7 @@ export class StudioApp {
     if (unitDef?.isBuildingEntity) {
       try {
         if (!this._buildingModelFactory) this._buildingModelFactory = new BuildingModelFactory();
+        this._buildingModelFactory.buildingsSource = this.ubStateManager?.buildingsData;   // skins are read live from the shared skin store
         const bId = unitDef.buildingId || this.currentUnitId;
         const bDef = this.ubStateManager?.buildingsData?.buildings?.[bId] || { id: bId, footprintRadiusMeters: 5, maxHp: 1200 };
         const hasWt = bDef.hasWatchtowerSupport !== false && ((bDef.watchtowerLevel | 0) > 0 || Boolean(bDef.hasBuiltInTurret));
@@ -826,6 +825,8 @@ export class StudioApp {
 
     if (this.timelineEditor) { this.timelineEditor.refreshClipList(); this._syncClipSelection(); }
     else this._selectJoint(this.selectedSocketName);
+    { const bl = this.rootContainer.querySelector('#st-banner-label'); if (bl) bl.style.display = this._isBuildingNow() ? 'none' : ''; }
+    this._renderImportPanel();
   }
 
   /** Everything that depends on "which clip / scope / unit is showing" is refreshed here. */
@@ -1264,9 +1265,11 @@ export class StudioApp {
 
 import { studioGearAndPoseMethods } from './studioGearAndPose.js';
 import { studioControlsAndLoopMethods } from './studioControlsAndLoop.js';
+import { studioImportMethods } from './studioImport.js';
 
 Object.assign(
   StudioApp.prototype,
   studioGearAndPoseMethods,
-  studioControlsAndLoopMethods
+  studioControlsAndLoopMethods,
+  studioImportMethods
 );

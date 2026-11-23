@@ -18,6 +18,7 @@
  *   - Contextual jump to Animation Lab (`contextualBuildingId`) with Building Animation Session clips (`build_construct`, `idle`, `level_up`, `recruit_spawn`, `damage_stage_1`, `damage_stage_2`, `collapse_destroy`).
  */
 
+import { loadBuildingSkins, saveBuildingSkins } from '../../data/buildingSkinStore.js';
 import * as THREE from 'three';
 import { ModelFactory } from '../../render/modelFactory.js';
 import { BuildingModelFactory } from '../../render/buildingModelFactory.js';
@@ -846,6 +847,7 @@ export class UnitsBuildingsLabApp {
       const effHasWt =
         hasWt &&
         (Boolean(bDef.hasBuiltInTurret) || previewLv >= Math.max(1, (bDef.watchtowerLevel | 0) || 3));
+      this.buildingModelFactory.buildingsSource = this.stateManager.buildingsData;
       const actor = this.buildingModelFactory.createBuildingActor(
         {
           id: 1,
@@ -1474,6 +1476,14 @@ export class UnitsBuildingsLabApp {
       });
     });
 
+    rightEl?.querySelector('[data-bld-skin-select]')?.addEventListener('change', (e) => {
+      const sk = loadBuildingSkins()[this.selectedBuildingId];
+      if (!sk) return;
+      sk.active = e.target.value;
+      saveBuildingSkins();
+      this._spawnPreview3D();
+    });
+
     rightEl?.querySelector('#ub-bld-preview-level-select')?.addEventListener('change', (e) => {
       this.bldPreviewLevel = Number(e.target.value) || 1;
       this._renderWorkspace();
@@ -1568,6 +1578,8 @@ export class UnitsBuildingsLabApp {
         if (
           field === 'footprintRadiusMeters' ||
           field === 'watchtowerLevel' ||
+          field === 'watchtowerX' ||
+          field === 'watchtowerZ' ||
           field === 'maxGarrison' ||
           field.startsWith('turretOffset')
         ) {

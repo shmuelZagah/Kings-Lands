@@ -666,43 +666,6 @@ export const studioControlsAndLoopMethods = {
       this._toast(this.stateManager.notice || 'Imported', 4000);
     });
 
-    // ---- Import GLB: rigid-part conversion + automatic polygon reduction (src/tools/import/*)
-    const glbInput = qs('#st-import-glb-file');
-    qs('#st-btn-import-glb').addEventListener('click', () => glbInput.click());
-    glbInput.addEventListener('change', async () => {
-      const file = glbInput.files?.[0];
-      glbInput.value = '';
-      if (!file) return;
-      const stem = file.name.replace(/\.[^.]+$/, '');
-      const slug = stem.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '') || 'imported_unit';
-      const id = (prompt('Unit id (letters, digits, underscore):', slug) || '').trim().replace(/[^A-Za-z0-9_]/g, '_');
-      if (!id) return;
-      if (this.unitsData.units[id] && !confirm(`"${id}" already exists. Replace it?`)) return;
-      const budget = Math.max(300, Math.min(20000, Number(prompt('Triangles for the full-detail model (LOD0).\n3500 is right for a battlefield unit; a hero can use 6000-8000.\nLower LODs are made automatically (~28% and ~8%).', '3500')) || 3500));
-      this._toast('Importing… a large model can take several seconds', 8000);
-      await new Promise((r) => setTimeout(r, 40));
-      try {
-        const [{ readGlb }, { buildUnitFromScene }] = await Promise.all([import('../import/glbReader.js'), import('../import/glbToUnit.js')]);
-        const scene = await readGlb(await file.arrayBuffer());
-        const { unit, report } = buildUnitFromScene(scene, {
-          id, displayName: stem, race: this.currentFaction, sourceName: file.name,
-          budgets: [budget, Math.round(budget * 0.28), Math.round(budget * 0.08)]
-        });
-        this._beginEdit('import-glb');
-        this.unitsData.units[id] = unit;
-        this.stateManager.scheduleSave();
-        this.currentUnitId = id;
-        this._rebindData();
-        const qsel = this.rootContainer.querySelector('#st-unit-select'); if (qsel) qsel.value = id;
-        const msg = `Imported "${id}": ${report.originalTris.toLocaleString()} → ${report.lodTris.map((n) => n.toLocaleString()).join(' / ')} triangles (LOD0/1/2), rig: ${report.rigMode}.` + (report.warnings.length ? ` ⚠ ${report.warnings[report.warnings.length - 1]}` : '');
-        this._toast(msg, 9000);
-        if (report.warnings.length) console.warn('[GLB import]', report.warnings);
-      } catch (e) {
-        console.error(e);
-        this._toast(`Import failed: ${e.message}`, 9000);
-      }
-    });
-
     qs('#st-btn-reset-all').addEventListener('click', () => {
       this._beginEdit('reset-all');
       if (!this.stateManager.resetToDefault()) return;
