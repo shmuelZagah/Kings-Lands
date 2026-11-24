@@ -25,7 +25,13 @@ export class StudioStateManager {
     this.notice = dataRegistry.getNotice();
 
     this._unsubRegistry = dataRegistry.subscribe(() => {
-      if (this._isSavingSelf || this._dirty) return;
+      if (this._isSavingSelf) return;
+      if (this._dirty) {
+        // Pending local edits: save them now (a three-way merge: nothing another lab saved is overwritten);
+        // saveDraft reloads the merged result, so nothing is ignored and nothing is lost.
+        setTimeout(() => { if (this._dirty) this.saveDraft(); }, 0);
+        return;
+      }
       this.data = dataRegistry.getUnitsVisuals();
       for (const fn of this._subscribers) {
         try { fn(this.data); } catch (_) {}
@@ -179,12 +185,12 @@ export class StudioStateManager {
 
   /** Undo / Redo: swap in a serialized snapshot from `dataRegistry`. */
   snapshot() {
-    return JSON.stringify(dataRegistry.snapshot());
+    return dataRegistry.snapshotText();
   }
 
   restoreSnapshot(text) {
     try {
-      const parsed = typeof text === 'string' ? JSON.parse(text) : text;
+      const parsed = dataRegistry.parseSnapshot(text);
       this._isSavingSelf = true;
       let res;
       if (parsed?.data?.unitsVisuals || parsed?.unitsVisuals) {

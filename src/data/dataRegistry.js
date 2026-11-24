@@ -47,14 +47,14 @@ export const LEGACY_STORAGE_KEYS = Object.freeze({
 
 export const DEFAULT_BASE_CHAR_ID = 'human_base_1';
 export const LEGACY_BASE_ALIASES = Object.freeze({ human_base: 'human_base_1' });
-export const MANAGED_BASE_IDS = Object.freeze(['human_base_1', 'human_base_2']);
+export const MANAGED_BASE_IDS = Object.freeze(['human_base_1', 'human_base_2', 'mirukenkay_base_2']);
 export const RETIRED_UNIT_IDS = Object.freeze([
   'mirukenkay_light',
   'mirukenkay_medium',
   'mirukenkay_heavy',
   'mirukenkay_royal'
 ]);
-export const RETIRED_PREFAB_RE = /^mirukenkay_gb_/;
+export const RETIRED_PREFAB_RE = /^$^/; // nothing is retired any more (the mirukenkay_gb_* armour prefabs are shipped data)
 
 export function resolveBaseCharId(id, fallback = DEFAULT_BASE_CHAR_ID) {
   if (!id) return fallback;
@@ -70,22 +70,56 @@ function hashString(str) {
   return (h >>> 0).toString(16);
 }
 
+/**
+ * Fast deep clone for game data. Large mesh arrays (vertices / faces / indices / colors / normals / uvs with >= 32
+ * entries) are IMMUTABLE BLOBS: they are shared by reference instead of copied (they are only ever replaced, never
+ * edited in place - nothing in the code base mutates them). That makes cloning the 8 MB units data ~10x faster than
+ * structuredClone / JSON round-trips while every other value is still copied.
+ */
+const BLOB_KEYS = new Set(['vertices', 'faces', 'indices', 'colors', 'normals', 'uvs']);
+const BLOB_MIN = 32;
+
+function cloneData(v, key) {
+  if (v === null || typeof v !== 'object') return v;
+  if (Array.isArray(v)) {
+    if (key !== undefined && v.length >= BLOB_MIN && BLOB_KEYS.has(key)) return v;
+    const out = new Array(v.length);
+    for (let i = 0; i < v.length; i++) out[i] = cloneData(v[i]);
+    return out;
+  }
+  if (ArrayBuffer.isView(v)) return v;
+  const out = {};
+  for (const k in v) {
+    if (Object.prototype.hasOwnProperty.call(v, k)) out[k] = cloneData(v[k], k);
+  }
+  return out;
+}
+
 function deepClone(obj) {
   if (obj === undefined || obj === null) return obj;
-  if (typeof structuredClone === 'function') {
-    try {
-      return structuredClone(obj);
-    } catch (_) {
-      // Fallback to JSON round-trip for objects with edge structures
-    }
-  }
-  return JSON.parse(JSON.stringify(obj));
+  return cloneData(obj);
 }
 
 function stableEqual(a, b) {
   if (a === b) return true;
   if (!a || !b || typeof a !== 'object' || typeof b !== 'object') return false;
-  return JSON.stringify(a) === JSON.stringify(b);
+  const aa = Array.isArray(a);
+  if (aa !== Array.isArray(b)) return false;
+  if (aa) {
+    if (a.length !== b.length) return false;
+    for (let i = 0; i < a.length; i++) if (!stableEqual(a[i], b[i])) return false;
+    return true;
+  }
+  let na = 0;
+  for (const k in a) {
+    if (!Object.prototype.hasOwnProperty.call(a, k)) continue;
+    na++;
+    if (!stableEqual(a[k], b[k])) return false;
+    if (!(k in b)) return false;
+  }
+  let nb = 0;
+  for (const k in b) if (Object.prototype.hasOwnProperty.call(b, k)) nb++;
+  return na === nb;
 }
 
 function hasMeshShape(node) {
@@ -122,7 +156,7 @@ function isStaleManaged(id, cur, shipped, recorded) {
   if (!sh || !cur) return false;
   const shHash = computeManagedHashes(shipped)[id];
   if (recorded && recorded[id]) return recorded[id] !== shHash;
-  if (id === 'human_base_2') return true;
+  if (id === 'human_base_2' || id === 'mirukenkay_base_2') return true;
   return hasMeshShape(cur) && !hasMeshShape(sh);
 }
 
@@ -417,76 +451,69 @@ function normalizeAndSyncBundle(bundle, { syncUnitVisualFromStats = true } = {})
 
 // ------------------------------------------------------------------ Sync live shipped module exports (keeps untouched `src/sim/` working)
 
+function syncMap(target, source) {
+  for (const k of Object.keys(target)) if (!(k in source)) delete target[k];
+  for (const k of Object.keys(source)) {
+    if (!stableEqual(target[k], source[k])) target[k] = deepClone(source[k]);
+  }
+}
+
+function syncValue(target, key, value) {
+  if (!stableEqual(target[key], value)) target[key] = deepClone(value);
+}
+
 function syncRuntimeModuleExports(bundle) {
   const { unitStats, buildings, unitsVisuals, buildingVisuals, heroes } = bundle;
+  // Only entries that really differ are copied (equality short-circuits on shared mesh blobs), so a one-skin
+  // change no longer re-clones every unit, prefab and building.
 
-  if (unitStats?.formationRules) defaultUnitStats.formationRules = deepClone(unitStats.formationRules);
+  if (unitStats?.formationRules) syncValue(defaultUnitStats, 'formationRules', unitStats.formationRules);
   if (unitStats?.units) {
-    for (const k of Object.keys(defaultUnitStats.units)) {
-      if (!unitStats.units[k]) delete defaultUnitStats.units[k];
-    }
-    for (const [k, v] of Object.entries(unitStats.units)) {
-      defaultUnitStats.units[k] = deepClone(v);
-    }
+    defaultUnitStats.units = defaultUnitStats.units || {};
+    syncMap(defaultUnitStats.units, unitStats.units);
   }
 
-  if (buildings?.economy) Object.assign(defaultBuildingsData.economy, deepClone(buildings.economy));
+  if (buildings?.economy) {
+    defaultBuildingsData.economy = defaultBuildingsData.economy || {};
+    for (const [k, v] of Object.entries(buildings.economy)) syncValue(defaultBuildingsData.economy, k, v);
+  }
   if (buildings?.sharedBuildingWatchtower) {
-    defaultBuildingsData.sharedBuildingWatchtower = deepClone(buildings.sharedBuildingWatchtower);
+    syncValue(defaultBuildingsData, 'sharedBuildingWatchtower', buildings.sharedBuildingWatchtower);
   }
   if (buildings?.buildings) {
-    for (const k of Object.keys(defaultBuildingsData.buildings)) {
-      if (!buildings.buildings[k]) delete defaultBuildingsData.buildings[k];
-    }
-    for (const [k, v] of Object.entries(buildings.buildings)) {
-      defaultBuildingsData.buildings[k] = deepClone(v);
-    }
+    defaultBuildingsData.buildings = defaultBuildingsData.buildings || {};
+    syncMap(defaultBuildingsData.buildings, buildings.buildings);
   }
 
   if (unitsVisuals?.units) {
-    for (const k of Object.keys(defaultUnitsVisuals.units || {})) {
-      if (!unitsVisuals.units[k]) delete defaultUnitsVisuals.units[k];
-    }
-    for (const [k, v] of Object.entries(unitsVisuals.units)) {
-      defaultUnitsVisuals.units[k] = deepClone(v);
-    }
+    defaultUnitsVisuals.units = defaultUnitsVisuals.units || {};
+    syncMap(defaultUnitsVisuals.units, unitsVisuals.units);
   }
   if (unitsVisuals?.prefabs) {
     defaultUnitsVisuals.prefabs = defaultUnitsVisuals.prefabs || {};
-    for (const k of Object.keys(defaultUnitsVisuals.prefabs)) {
-      if (!unitsVisuals.prefabs[k]) delete defaultUnitsVisuals.prefabs[k];
-    }
-    for (const [k, v] of Object.entries(unitsVisuals.prefabs)) {
-      defaultUnitsVisuals.prefabs[k] = deepClone(v);
-    }
+    syncMap(defaultUnitsVisuals.prefabs, unitsVisuals.prefabs);
   }
-  if (unitsVisuals?.factions) defaultUnitsVisuals.factions = deepClone(unitsVisuals.factions);
-  if (unitsVisuals?.teamPalettes) defaultUnitsVisuals.teamPalettes = deepClone(unitsVisuals.teamPalettes);
-  if (unitsVisuals?.arrowConfig) defaultUnitsVisuals.arrowConfig = deepClone(unitsVisuals.arrowConfig);
-  if (unitsVisuals?.actionRules) defaultUnitsVisuals.actionRules = deepClone(unitsVisuals.actionRules);
+  if (unitsVisuals?.factions) syncValue(defaultUnitsVisuals, 'factions', unitsVisuals.factions);
+  if (unitsVisuals?.teamPalettes) syncValue(defaultUnitsVisuals, 'teamPalettes', unitsVisuals.teamPalettes);
+  if (unitsVisuals?.arrowConfig) syncValue(defaultUnitsVisuals, 'arrowConfig', unitsVisuals.arrowConfig);
+  if (unitsVisuals?.actionRules) syncValue(defaultUnitsVisuals, 'actionRules', unitsVisuals.actionRules);
   if (unitsVisuals?.animations?.keyframes) {
-    defaultUnitsVisuals.animations.keyframes = {
-      ...(defaultUnitsVisuals.animations?.keyframes || {}),
-      ...deepClone(unitsVisuals.animations.keyframes)
-    };
+    defaultUnitsVisuals.animations = defaultUnitsVisuals.animations || {};
+    const tgt = defaultUnitsVisuals.animations.keyframes || (defaultUnitsVisuals.animations.keyframes = {});
+    for (const [k, v] of Object.entries(unitsVisuals.animations.keyframes)) syncValue(tgt, k, v);
   }
   if (unitsVisuals?.animations?.procedural) {
-    defaultUnitsVisuals.animations.procedural = {
-      ...(defaultUnitsVisuals.animations?.procedural || {}),
-      ...deepClone(unitsVisuals.animations.procedural)
-    };
+    defaultUnitsVisuals.animations = defaultUnitsVisuals.animations || {};
+    const tgt = defaultUnitsVisuals.animations.procedural || (defaultUnitsVisuals.animations.procedural = {});
+    for (const [k, v] of Object.entries(unitsVisuals.animations.procedural)) syncValue(tgt, k, v);
   }
 
   if (buildingVisuals?.animations) {
-    defaultBuildingVisuals.animations = deepClone(buildingVisuals.animations);
+    syncValue(defaultBuildingVisuals, 'animations', buildingVisuals.animations);
   }
   if (heroes?.heroes) {
-    for (const k of Object.keys(defaultHeroesData.heroes || {})) {
-      if (!heroes.heroes[k]) delete defaultHeroesData.heroes[k];
-    }
-    for (const [k, v] of Object.entries(heroes.heroes)) {
-      defaultHeroesData.heroes[k] = deepClone(v);
-    }
+    defaultHeroesData.heroes = defaultHeroesData.heroes || {};
+    syncMap(defaultHeroesData.heroes, heroes.heroes);
   }
 }
 
@@ -1064,6 +1091,8 @@ let _version = 1;
 let _bundle = null;
 let _notice = '';
 let _lastValidation = null;
+let _lastChanged = ['*'];
+let _persistStatus = { ok: true, error: null, at: 0 };
 const _subscribers = new Set();
 
 function persistOverridesToStorage(bundle) {
@@ -1076,20 +1105,34 @@ function persistOverridesToStorage(bundle) {
     } catch (_) {}
     return { ok: true, bytes: 0 };
   }
+  let json = '';
   try {
-    const json = JSON.stringify(payload);
+    json = JSON.stringify(payload);
     storage.setItem(DRAFT_STORAGE_KEY, json);
     return { ok: true, bytes: json.length };
   } catch (error) {
-    return { ok: false, error: String(error?.name || error || 'QuotaExceededError') };
+    // Leftover pre-registry keys (old Studio drafts can be several MB) are the usual reason for a full quota: drop them and retry once.
+    try {
+      clearLegacyKeys();
+      storage.setItem(DRAFT_STORAGE_KEY, json);
+      return { ok: true, bytes: json.length };
+    } catch (error2) {
+      return { ok: false, error: String(error2?.name || error2 || 'QuotaExceededError') };
+    }
   }
 }
 
 function notifySubscribers(reason = 'update') {
+  let _snap = null;
   const evt = {
     version: _version,
     reason,
-    snapshot: getSnapshotObject()
+    changed: _lastChanged,
+    // built lazily: most listeners never look at it and it is a full (structurally shared) copy of the data
+    get snapshot() {
+      if (!_snap) _snap = getSnapshotObject();
+      return _snap;
+    }
   };
   for (const cb of _subscribers) {
     try {
@@ -1188,20 +1231,74 @@ function commitBundle(candidateBundle, { reason = 'save', persist = true, valida
     };
   }
 
+  const changed = _bundle ? computeChanged(_bundle, candidateBundle) : ['*'];
+  if (!changed.length && _bundle) {
+    // nothing differs from what the registry already holds: no write, no version bump, no event (labs echo their state back a lot)
+    _lastValidation = report;
+    return { ok: true, version: _version, report, unchanged: true, persisted: true };
+  }
+
+  let persisted = true;
+  let persistError = null;
   if (persist) {
     const storageRes = persistOverridesToStorage(candidateBundle);
     if (!storageRes.ok) {
-      return { ok: false, error: `Storage save failed: ${storageRes.error}`, issues: [], report };
+      // Never make the edit vanish: keep it in memory (every lab sees it) but tell the user loudly that it is not stored.
+      persisted = false;
+      persistError = storageRes.error;
+    } else {
+      clearLegacyKeys();
     }
-    clearLegacyKeys();
+    _persistStatus = { ok: persisted, error: persistError, at: Date.now() };
   }
 
   _bundle = candidateBundle;
   _lastValidation = report;
   _version += 1;
+  _lastChanged = changed;
   syncRuntimeModuleExports(_bundle);
   notifySubscribers(reason);
-  return { ok: true, version: _version, report };
+  if (!persisted) notifyPersistFailure(persistError);
+  return { ok: true, version: _version, report, changed, persisted, ...(persistError ? { warning: `Not saved to browser storage (${persistError}). Export JSON to keep this work.` } : {}) };
+}
+
+const ENTRY_MAPS = [
+  ['unitsVisuals', 'units', 'unit'],
+  ['unitsVisuals', 'prefabs', 'prefab'],
+  ['unitsVisuals', 'factions', 'faction'],
+  ['unitStats', 'units', 'stats'],
+  ['buildings', 'buildings', 'building'],
+  ['buildingSkins', null, 'skin'],
+  ['heroes', 'heroes', 'hero'],
+  ['heroes', 'prefabs', 'heroPrefab']
+];
+
+/** What differs between two bundles: section names ('unitsVisuals', 'buildingSkins', ...) and per-entry keys ('unit:swordsman', 'skin:barracks', ...). */
+function computeChanged(a, b) {
+  const out = [];
+  for (const sec of new Set([...Object.keys(a || {}), ...Object.keys(b || {})])) {
+    if (stableEqual(a?.[sec], b?.[sec])) continue;
+    out.push(sec);
+  }
+  if (!out.length) return out;
+  for (const [sec, sub, tag] of ENTRY_MAPS) {
+    if (!out.includes(sec)) continue;
+    const ma = (sub ? a?.[sec]?.[sub] : a?.[sec]) || {};
+    const mb = (sub ? b?.[sec]?.[sub] : b?.[sec]) || {};
+    for (const id of new Set([...Object.keys(ma), ...Object.keys(mb)])) {
+      if (!stableEqual(ma[id], mb[id])) out.push(`${tag}:${id}`);
+    }
+  }
+  return out;
+}
+
+function notifyPersistFailure(error) {
+  try {
+    console.warn('[DataRegistry] Could not write to localStorage (' + error + '). Changes are kept in memory only.');
+    if (typeof globalThis.window?.dispatchEvent === 'function' && typeof CustomEvent === 'function') {
+      globalThis.window.dispatchEvent(new CustomEvent('kings_lands_registry_persist_failed', { detail: { error } }));
+    }
+  } catch (_) {}
 }
 
 function getCombinedVisualsFromBundle(b) {
@@ -1375,6 +1472,95 @@ function getSnapshotObject() {
   };
 }
 
+
+// ---- compact snapshots (undo stacks): mesh blobs are stored as {"$blob": id} references instead of megabytes of numbers
+const _blobIds = new WeakMap();
+const _blobById = new Map();
+let _blobSeq = 0;
+
+function blobId(arr) {
+  let id = _blobIds.get(arr);
+  if (!id) {
+    id = ++_blobSeq;
+    _blobIds.set(arr, id);
+    _blobById.set(id, arr);
+  }
+  return id;
+}
+
+function stringifyWithBlobs(obj) {
+  return JSON.stringify(obj, (k, v) =>
+    Array.isArray(v) && v.length >= BLOB_MIN && BLOB_KEYS.has(k) ? { $blob: blobId(v) } : v
+  );
+}
+
+function reviveBlobs(node) {
+  if (!node || typeof node !== 'object') return node;
+  if (Array.isArray(node)) {
+    for (let i = 0; i < node.length; i++) node[i] = reviveBlobs(node[i]);
+    return node;
+  }
+  const keys = Object.keys(node);
+  if (keys.length === 1 && keys[0] === '$blob') {
+    const arr = _blobById.get(node.$blob);
+    if (!arr) throw new Error('Snapshot refers to a mesh that is no longer in memory');
+    return arr;
+  }
+  for (const k of keys) node[k] = reviveBlobs(node[k]);
+  return node;
+}
+
+function parseSnapshotText(text) {
+  const parsed = JSON.parse(text);
+  return reviveBlobs(parsed);
+}
+
+
+// ---- Working copies and three-way merge -------------------------------------------------------------------------
+// Labs/Studio edit a private copy of a whole section (unitsVisuals, unitStats, buildings, buildingVisuals, heroes) and
+// save it back. The getters below remember what each returned copy was loaded from (`_bases`). A save of such a copy is
+// a THREE-WAY MERGE (copy + what it was loaded from + what the registry holds now): only what that copy really changed
+// is written, so a stale copy can no longer overwrite what another lab saved in the meantime.
+// Both changed the same leaf -> the saving copy wins (it is the latest explicit action).
+
+const _bases = new WeakMap();
+
+function checkout(value) {
+  const working = deepClone(value);
+  _bases.set(working, deepClone(value));
+  return working;
+}
+
+function isPlain(o) {
+  return o !== null && typeof o === 'object' && !Array.isArray(o);
+}
+
+function merge3(w, b, c, depth) {
+  if (stableEqual(w, b)) return c;
+  if (stableEqual(c, b)) return deepClone(w);
+  if (depth < 5 && isPlain(w) && isPlain(b) && isPlain(c)) {
+    for (const k of new Set([...Object.keys(w), ...Object.keys(b)])) {
+      const inW = Object.prototype.hasOwnProperty.call(w, k);
+      const inB = Object.prototype.hasOwnProperty.call(b, k);
+      if (inW && inB) c[k] = merge3(w[k], b[k], c[k], depth + 1);
+      else if (inW) c[k] = deepClone(w[k]);          // added by the saving copy
+      else delete c[k];                              // deleted by the saving copy
+    }
+    return c;
+  }
+  return deepClone(w);
+}
+
+/** next[section] <- merge of `working` (a copy handed out by a getter) into the current state; unknown copies replace the section. */
+function mergeSectionInto(next, section, working) {
+  const base = _bases.get(working);
+  next[section] = base ? merge3(working, base, next[section], 0) : deepClone(working);
+}
+
+function rememberSaved(working) {
+  if (working && typeof working === 'object') _bases.set(working, deepClone(working));
+}
+
 // ------------------------------------------------------------------ Public Registry API
 
 export const dataRegistry = {
@@ -1456,16 +1642,16 @@ export const dataRegistry = {
       const u = us.units?.[id];
       return u ? deepClone(u) : null;
     }
-    return deepClone(us);
+    return checkout(us);
   },
   getUnitsVisuals() {
-    return deepClone(ensureLoaded().unitsVisuals);
+    return checkout(ensureLoaded().unitsVisuals);
   },
   saveUnits({ stats = null, visuals = null } = {}) {
-    const next = deepClone(ensureLoaded());
-    if (stats) next.unitStats = deepClone(stats);
-    if (visuals) next.unitsVisuals = deepClone(visuals);
-    return commitBundle(next, { reason: 'saveUnits' });
+    const working = {};
+    if (stats) working.unitStats = stats;
+    if (visuals) working.unitsVisuals = visuals;
+    return dataRegistry.commitWorking(working, { reason: 'saveUnits' });
   },
   saveUnit(id, { stats = undefined, visual = undefined } = {}) {
     if (!id) return { ok: false, error: 'Unit id is required' };
@@ -1486,7 +1672,7 @@ export const dataRegistry = {
       if (!arg2) return { ok: false, error: 'Unit stats payload is required' };
       next.unitStats.units[arg1] = { ...deepClone(arg2), id: arg1 };
     } else if (arg1 && typeof arg1 === 'object') {
-      next.unitStats = deepClone(arg1);
+      return dataRegistry.commitWorking({ unitStats: arg1 }, { reason: 'saveUnitStats' });
     } else {
       return { ok: false, error: 'Invalid saveUnitStats arguments' };
     }
@@ -1496,9 +1682,7 @@ export const dataRegistry = {
     if (!visualsData || typeof visualsData !== 'object') {
       return { ok: false, error: 'Invalid units visuals payload' };
     }
-    const next = deepClone(ensureLoaded());
-    next.unitsVisuals = deepClone(visualsData);
-    return commitBundle(next, { reason: 'saveUnitsVisuals' });
+    return dataRegistry.commitWorking({ unitsVisuals: visualsData }, { reason: 'saveUnitsVisuals' });
   },
   deleteUnit(id) {
     if (!id) return { ok: false, error: 'Unit id is required' };
@@ -1700,7 +1884,7 @@ export const dataRegistry = {
 
   // ---- Buildings ----
   getBuildings() {
-    return deepClone(ensureLoaded().buildings);
+    return checkout(ensureLoaded().buildings);
   },
   getBuilding(id) {
     if (!id) return null;
@@ -1708,15 +1892,13 @@ export const dataRegistry = {
     return b ? deepClone(b) : null;
   },
   getBuildingVisuals() {
-    return deepClone(ensureLoaded().buildingVisuals);
+    return checkout(ensureLoaded().buildingVisuals);
   },
   saveBuildings(buildingsData) {
     if (!buildingsData || typeof buildingsData !== 'object') {
       return { ok: false, error: 'Invalid buildings payload' };
     }
-    const next = deepClone(ensureLoaded());
-    next.buildings = deepClone(buildingsData);
-    return commitBundle(next, { reason: 'saveBuildings' });
+    return dataRegistry.commitWorking({ buildings: buildingsData }, { reason: 'saveBuildings' });
   },
   saveBuilding(id, bDef) {
     if (!id || !bDef) return { ok: false, error: 'Building id and definition are required' };
@@ -1735,9 +1917,7 @@ export const dataRegistry = {
     if (!buildingVisualsData || typeof buildingVisualsData !== 'object') {
       return { ok: false, error: 'Invalid buildingVisuals payload' };
     }
-    const next = deepClone(ensureLoaded());
-    next.buildingVisuals = deepClone(buildingVisualsData);
-    return commitBundle(next, { reason: 'saveBuildingVisuals' });
+    return dataRegistry.commitWorking({ buildingVisuals: buildingVisualsData }, { reason: 'saveBuildingVisuals' });
   },
 
   // ---- Heroes ----
@@ -1745,7 +1925,7 @@ export const dataRegistry = {
     return deepClone(ensureLoaded().heroes.heroes || {});
   },
   getHeroesData() {
-    return deepClone(ensureLoaded().heroes);
+    return checkout(ensureLoaded().heroes);
   },
   getHero(id) {
     if (!id) return null;
@@ -1756,12 +1936,11 @@ export const dataRegistry = {
     if (!heroesDataOrMap || typeof heroesDataOrMap !== 'object') {
       return { ok: false, error: 'Invalid heroes payload' };
     }
-    const next = deepClone(ensureLoaded());
     if ('heroes' in heroesDataOrMap && typeof heroesDataOrMap.heroes === 'object') {
-      next.heroes = deepClone(heroesDataOrMap);
-    } else {
-      next.heroes.heroes = deepClone(heroesDataOrMap);
+      return dataRegistry.commitWorking({ heroes: heroesDataOrMap }, { reason: 'saveHeroes' });
     }
+    const next = deepClone(ensureLoaded());
+    next.heroes.heroes = deepClone(heroesDataOrMap);
     return commitBundle(next, { reason: 'saveHeroes' });
   },
   saveHero(id, heroDef) {
@@ -1796,6 +1975,35 @@ export const dataRegistry = {
   getFileVersions() {
     return { ...FILE_VERSIONS };
   },
+  /** Monotonic data version (bumped by every real change). Labs remember the version they loaded. */
+  getVersion() {
+    ensureLoaded();
+    return _version;
+  },
+  /** { ok, error, at } of the last write to localStorage (ok:false = the data lives in memory only). */
+  getPersistStatus() {
+    return { ..._persistStatus };
+  },
+  /** Cheap facts for bug reports: localStorage keys + sizes, version, validation, persist status. */
+  diagnostics() {
+    ensureLoaded();
+    const keys = {};
+    try {
+      const st = globalThis.localStorage;
+      for (let i = 0; st && i < st.length; i++) {
+        const k = st.key(i);
+        if (/kings_lands/i.test(k)) keys[k] = (st.getItem(k) || '').length;
+      }
+    } catch (_) {}
+    return {
+      version: _version,
+      persist: { ..._persistStatus },
+      validation: _lastValidation ? { ok: _lastValidation.ok, counts: _lastValidation.counts } : null,
+      localStorageChars: keys,
+      buildingSkins: Object.fromEntries(Object.entries(_bundle.buildingSkins || {}).map(([k, v]) => [k, { active: v.active, items: Object.keys(v.items || {}) }])),
+      notice: _notice
+    };
+  },
   getLastValidationReport() {
     ensureLoaded();
     return deepClone(_lastValidation);
@@ -1816,6 +2024,28 @@ export const dataRegistry = {
   },
   syncRuntimeData({ unitStats = null, buildings = null, unitsVisuals = null, buildingVisuals = null, heroes = null } = {}) {
     syncRuntimeModuleExports({ unitStats, buildings, unitsVisuals, buildingVisuals, heroes });
+  },
+
+  /** Tell the registry that a section copy was modified on purpose by its owner and is "clean" (its merge base = its current content). */
+  markClean(copy) {
+    rememberSaved(copy);
+    return copy;
+  },
+
+  /**
+   * Save one or more section copies (see getUnitsVisuals/getUnitStats/getBuildings/getBuildingVisuals/getHeroesData)
+   * as a three-way merge: only what each copy changed is written. { unitStats, buildings, buildingVisuals, unitsVisuals, heroes }
+   */
+  commitWorking(working, options = {}) {
+    if (!working || typeof working !== 'object') return { ok: false, error: 'commitWorking expects an object of section copies' };
+    const next = deepClone(ensureLoaded());
+    for (const [section, copy] of Object.entries(working)) {
+      if (!copy || typeof copy !== 'object' || !(section in next)) continue;
+      mergeSectionInto(next, section, copy);
+    }
+    const res = commitBundle(next, { reason: options.reason || 'commitWorking', persist: options.persist !== false });
+    if (res.ok) for (const copy of Object.values(working)) rememberSaved(copy);
+    return res;
   },
 
   transaction(mutatorFn, options = {}) {
@@ -1841,8 +2071,17 @@ export const dataRegistry = {
     return getSnapshotObject();
   },
 
+  /** Snapshot as text for undo stacks (~10x smaller / faster than JSON.stringify(snapshot())). restoreSnapshot accepts it. */
+  snapshotText() {
+    return stringifyWithBlobs(getSnapshotObject());
+  },
+  /** Parse text produced by snapshotText() (resolves the mesh references). Plain JSON snapshots work too. */
+  parseSnapshot(text) {
+    return typeof text === 'string' ? parseSnapshotText(text) : text;
+  },
+
   restoreSnapshot(snapOrText, { reason = 'restoreSnapshot', persist = true } = {}) {
-    const parsed = typeof snapOrText === 'string' ? JSON.parse(snapOrText) : snapOrText;
+    const parsed = typeof snapOrText === 'string' ? parseSnapshotText(snapOrText) : snapOrText;
     const data = parsed?.data || parsed;
     if (!data || !data.unitsVisuals || !data.unitStats || !data.buildings || !data.heroes) {
       return { ok: false, error: 'Invalid registry snapshot object' };

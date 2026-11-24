@@ -24,6 +24,27 @@ const sharedUbStateManager = new UnitsBuildingsStateManager();
 const sharedHeroStateManager = new HeroStateManager();
 import { clearAndHideGameHud, restoreGameHud } from './ui/hud/hudVisibilityManager.js';
 import engineConfig from './data/engineConfig.json';
+import { dataRegistry } from './data/dataRegistry.js';
+
+// Visible warning when the browser refuses to store the data (quota): the edit still works everywhere in this session,
+// but it would be lost on reload - say so instead of failing silently.
+if (typeof window !== 'undefined') {
+  window.addEventListener('kings_lands_registry_persist_failed', (e) => {
+    let el = document.getElementById('kl-persist-warning');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'kl-persist-warning';
+      el.style.cssText = 'position:fixed;left:50%;bottom:14px;transform:translateX(-50%);z-index:99999;background:#7f1d1d;color:#fff;padding:8px 14px;border-radius:10px;font:600 13px system-ui;box-shadow:0 4px 18px #000a;cursor:pointer;max-width:80vw';
+      el.title = 'click to dismiss';
+      el.addEventListener('click', () => el.remove());
+      document.body.appendChild(el);
+    }
+    el.textContent = 'Not saved to browser storage (' + (e?.detail?.error || 'storage full') + '). Your edits work now but will be lost on reload - use Export JSON.';
+  });
+  // console helper for bug reports:  __klDiag()
+  window.__klDiag = () => dataRegistry.diagnostics();
+  window.__dataRegistry = dataRegistry;
+}
 
 let activeStudio = null;
 let activeHallOfHeroes = null;

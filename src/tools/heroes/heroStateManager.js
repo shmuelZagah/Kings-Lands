@@ -342,7 +342,11 @@ export class HeroStateManager {
     this._studioViewCache = null;
 
     this._unsubRegistry = dataRegistry.subscribe(() => {
-      if (this._isSavingSelf || this._dirty) return;
+      if (this._isSavingSelf) return;
+      if (this._dirty) {
+        setTimeout(() => { if (this._dirty) this.saveDraft(); }, 0);
+        return;
+      }
       this.data = dataRegistry.getHeroesData();
     });
   }
@@ -710,12 +714,12 @@ export class HeroStateManager {
 
   snapshot() {
     this.syncFromStudioView();
-    return JSON.stringify(dataRegistry.snapshot());
+    return dataRegistry.snapshotText();
   }
 
   restoreSnapshot(text) {
     try {
-      const parsed = typeof text === 'string' ? JSON.parse(text) : text;
+      const parsed = dataRegistry.parseSnapshot(text);
       this._isSavingSelf = true;
       let res;
       if (parsed?.data?.heroes || parsed?.heroes?.heroes) {

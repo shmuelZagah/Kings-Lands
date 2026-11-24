@@ -18,30 +18,35 @@ const _modelFactory = new ModelFactory(_combinedVisuals);
 const _buildingModelFactory = new BuildingModelFactory();
 const _subscribers = new Set();
 
-function syncFactoriesFromRegistry() {
-  _combinedVisuals = dataRegistry.getCombinedVisuals();
-  _modelFactory.visualsData = _combinedVisuals;
+function syncFactoriesFromRegistry(changed = null) {
+  // `changed` = section / entry keys from the registry event ('unitsVisuals', 'skin:barracks', ...); null = everything.
+  const has = (re) => !changed || changed.includes('*') || changed.some((k) => re.test(k));
 
-  const buildingsSource = dataRegistry.getBuildings();
-  const buildingVisualsSource = dataRegistry.getBuildingVisuals();
-  const skinsSource = { buildingSkins: dataRegistry.getBuildingSkins() };
+  if (has(/^(unitsVisuals|unitStats|heroes|unit:|stats:|prefab:|heroPrefab:|hero:|faction:)/)) {
+    _combinedVisuals = dataRegistry.getCombinedVisuals();
+    _modelFactory.visualsData = _combinedVisuals;
+  }
 
-  _buildingModelFactory.setDataSources({
-    buildingsSource,
-    buildingVisualsSource,
-    skinsSource
-  });
-  _buildingModelFactory.clearCaches();
+  if (has(/^(buildings|buildingVisuals|buildingSkins|building:|skin:)/)) {
+    _buildingModelFactory.setDataSources({
+      buildingsSource: dataRegistry.getBuildings(),
+      buildingVisualsSource: dataRegistry.getBuildingVisuals(),
+      skinsSource: { buildingSkins: dataRegistry.getBuildingSkins() }
+    });
+    _buildingModelFactory.clearCaches();
+  }
 }
 
 syncFactoriesFromRegistry();
 
 dataRegistry.subscribe((event) => {
-  syncFactoriesFromRegistry();
+  syncFactoriesFromRegistry(event.changed);
   for (const cb of _subscribers) {
     try {
       cb({
-        ...event,
+        version: event.version,
+        reason: event.reason,
+        changed: event.changed,
         combinedVisuals: _combinedVisuals,
         modelFactory: _modelFactory,
         buildingModelFactory: _buildingModelFactory
@@ -51,6 +56,11 @@ dataRegistry.subscribe((event) => {
     }
   }
 });
+
+/** Re-point the shared factories at the registry data (a lab that previewed an unsaved draft calls this when it closes). */
+export function refreshFromRegistry() {
+  syncFactoriesFromRegistry(null);
+}
 
 export function getModelFactory() {
   return _modelFactory;
@@ -280,6 +290,7 @@ export const modelProvider = {
   getBuildingModelFactory,
   getCombinedVisuals,
   subscribe,
+  refreshFromRegistry,
   createUnitModel,
   createBuildingModel,
   createHeroModel

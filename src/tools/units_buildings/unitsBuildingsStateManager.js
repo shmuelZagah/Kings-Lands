@@ -210,6 +210,13 @@ export class UnitsBuildingsStateManager {
 
     this._unsubRegistry = dataRegistry.subscribe(() => {
       if (this._isSavingAll) return;
+      // Unsaved local edits are written first (three-way merge, they never overwrite what another lab saved), then we reload.
+      if (this._saveTimer) {
+        clearTimeout(this._saveTimer);
+        this._saveTimer = null;
+        this.saveAll();
+        return;
+      }
       this._reloadFromRegistry();
     });
   }
@@ -226,6 +233,7 @@ export class UnitsBuildingsStateManager {
         ...heroPrefabs,
         ...this.unitsVisualsData.prefabs
       };
+      dataRegistry.markClean(this.unitsVisualsData); // the hero-prefab view is not a local edit
     }
 
     if (this.studioStateManager && !this.studioStateManager._dirty) {
@@ -852,11 +860,11 @@ export class UnitsBuildingsStateManager {
     if (this._isSavingAll) return { ok: true };
     this._isSavingAll = true;
     try {
-      const res = dataRegistry.transaction((next) => {
-        next.unitStats = deepClone(this.unitStatsData);
-        next.buildings = deepClone(this.buildingsData);
-        next.buildingVisuals = deepClone(this.buildingVisualsData);
-        next.unitsVisuals = deepClone(this.unitsVisualsData);
+      const res = dataRegistry.commitWorking({
+        unitStats: this.unitStatsData,
+        buildings: this.buildingsData,
+        buildingVisuals: this.buildingVisualsData,
+        unitsVisuals: this.unitsVisualsData
       }, { reason: 'unitsBuildingsSaveAll' });
 
       if (!res.ok) {

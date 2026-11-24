@@ -871,7 +871,6 @@ export class UnitsBuildingsLabApp {
         (Boolean(bDef.hasBuiltInTurret) || previewLv >= Math.max(1, (bDef.watchtowerLevel | 0) || 3));
       this.buildingModelFactory = modelProvider.getBuildingModelFactory();
       this.buildingModelFactory.buildingsSource = this.stateManager.buildingsData;
-      this.buildingModelFactory.clearCaches?.();
       const actor = modelProvider.createBuildingModel(bDef.id, {
         buildingDefOverride: bDef,
         team: 1,
@@ -1775,6 +1774,7 @@ export class UnitsBuildingsLabApp {
 
   destroy() {
     this._running = false;
+    try { modelProvider.refreshFromRegistry?.(); } catch (_) {}
     clearTimeout(this._toastTimer);
     if (typeof window !== 'undefined' && typeof window.removeEventListener === 'function' && this._onExternalUpdated) {
       window.removeEventListener('kings_lands_units_buildings_updated', this._onExternalUpdated);

@@ -746,7 +746,6 @@ export class StudioApp {
       try {
         this._buildingModelFactory = modelProvider.getBuildingModelFactory();
         this._buildingModelFactory.buildingsSource = this.ubStateManager?.buildingsData;
-        this._buildingModelFactory.clearCaches?.();
         const bId = unitDef.buildingId || this.currentUnitId;
         const bDef = this.ubStateManager?.buildingsData?.buildings?.[bId] || { id: bId, footprintRadiusMeters: 5, maxHp: 1200 };
         const hasWt = bDef.hasWatchtowerSupport !== false && ((bDef.watchtowerLevel | 0) > 0 || Boolean(bDef.hasBuiltInTurret));

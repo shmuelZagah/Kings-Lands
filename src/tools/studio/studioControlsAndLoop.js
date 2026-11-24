@@ -22,6 +22,7 @@
  *   - walk / run / gallop are procedural (parameters only). idle may be procedural and/or keyframed.
  */
 
+import { modelProvider } from '../../render/modelProvider.js';
 import * as THREE from 'three';
 import { buildSculptedArrowGeometry, spawn3DSpellEffect } from '../../render/worldEffectsRenderer.js';
 import { Animator3D } from '../../render/animator3d.js';
@@ -1007,6 +1008,7 @@ export const studioControlsAndLoopMethods = {
     if (this._ownsHeroStateManager) this.heroStateManager?.destroy();
     else this.heroStateManager?.flush?.();
 
+    try { modelProvider.refreshFromRegistry?.(); } catch (_) {} // back to the registry state (a draft building preview may have pointed the shared factory at this lab's copy)
     this.timelineEditor?.destroy();
     this.sandboxArena?.dispose();
     this.gizmoController?.dispose();
