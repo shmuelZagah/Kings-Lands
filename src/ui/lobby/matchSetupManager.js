@@ -1267,49 +1267,49 @@ export class EscPauseMenuModal {
       'fixed inset-0 z-50 flex items-center justify-center bg-slate-950/82 backdrop-blur-sm select-none';
     el.innerHTML = `
       <div
-        class="relative w-full max-w-[440px] rounded-sm px-11 py-12 shadow-[0_24px_64px_rgba(0,0,0,0.95)] text-center space-y-4 overflow-hidden"
+        class="relative w-full max-w-[420px] min-h-[540px] flex flex-col justify-center rounded-sm px-[76px] py-[72px] shadow-[0_24px_64px_rgba(0,0,0,0.95)] text-center space-y-3 overflow-hidden"
         style="background-image: linear-gradient(rgba(6,8,12,0.34), rgba(6,8,12,0.48)), url('/assets/pause_panel_bg.jpg'); background-size: 100% 100%; background-position: center;"
-        dir="rtl"
+        dir="ltr"
       >
         <div>
-          <div class="text-[10px] font-bold tracking-[0.3em] uppercase text-amber-400/90 drop-shadow">${this.isDevMode ? 'DEVELOPER MODE' : 'TACTICAL PAUSE'}</div>
-          <h2 class="text-2xl font-black text-amber-200 mt-0.5 drop-shadow-[0_2px_8px_rgba(0,0,0,0.95)]" style="font-family: Georgia, 'Times New Roman', serif;">המשחק מושהה (Paused)</h2>
-          <p class="text-xs text-stone-300 mt-1">מפה פעילה: <span class="text-amber-200 font-semibold">${setup?.mapName || 'Royal Valley Crossroads'}</span></p>
+          <div class="text-[10px] font-bold tracking-[0.26em] uppercase text-amber-400/90 drop-shadow">${this.isDevMode ? 'DEVELOPER MODE' : 'TACTICAL PAUSE'}</div>
+          <h2 class="text-2xl font-black text-amber-200 mt-0.5 drop-shadow-[0_2px_8px_rgba(0,0,0,0.95)]" style="font-family: Georgia, 'Times New Roman', serif;">Game Paused</h2>
+          <p class="text-[11px] text-stone-300 mt-1 leading-snug">Active Map: <span class="text-amber-200 font-semibold">${setup?.mapName || 'Royal Valley Crossroads'}</span></p>
         </div>
 
-        <div class="flex flex-col items-center gap-1.5 pt-2" style="font-family: Georgia, 'Times New Roman', serif;">
-          <button id="btn-esc-resume" type="button" class="w-full text-center px-4 py-2 bg-transparent border-0 text-amber-100 hover:text-amber-300 hover:bg-gradient-to-r hover:from-transparent hover:via-amber-400/15 hover:to-transparent transition-all duration-200 cursor-pointer tracking-[0.14em] text-xl font-bold drop-shadow-[0_2px_8px_rgba(0,0,0,0.98)]">
-            המשך משחק
+        <div class="flex flex-col items-center gap-1 pt-1" style="font-family: Georgia, 'Times New Roman', serif;">
+          <button id="btn-esc-resume" type="button" class="w-full text-center px-3 py-1.5 bg-transparent border-0 text-amber-100 hover:text-amber-300 hover:bg-gradient-to-r hover:from-transparent hover:via-amber-400/15 hover:to-transparent transition-all duration-200 cursor-pointer tracking-[0.1em] text-lg font-bold drop-shadow-[0_2px_8px_rgba(0,0,0,0.98)]">
+            Resume Game
           </button>
 
-          <button id="btn-esc-save-game" type="button" class="w-full text-center px-4 py-1.5 bg-transparent border-0 text-zinc-300 hover:text-amber-200 hover:bg-gradient-to-r hover:from-transparent hover:via-amber-400/15 hover:to-transparent transition-all duration-200 cursor-pointer tracking-[0.12em] text-lg font-semibold drop-shadow-[0_2px_8px_rgba(0,0,0,0.98)]">
-            שמור משחק
+          <button id="btn-esc-save-game" type="button" class="w-full text-center px-3 py-1 bg-transparent border-0 text-zinc-300 hover:text-amber-200 hover:bg-gradient-to-r hover:from-transparent hover:via-amber-400/15 hover:to-transparent transition-all duration-200 cursor-pointer tracking-[0.08em] text-base font-semibold drop-shadow-[0_2px_8px_rgba(0,0,0,0.98)]">
+            Save Game
           </button>
 
-          <button id="btn-esc-load-game" type="button" class="w-full text-center px-4 py-1.5 bg-transparent border-0 text-zinc-300 hover:text-amber-200 hover:bg-gradient-to-r hover:from-transparent hover:via-amber-400/15 hover:to-transparent transition-all duration-200 cursor-pointer tracking-[0.12em] text-lg font-semibold drop-shadow-[0_2px_8px_rgba(0,0,0,0.98)]">
-            טען שמירה
+          <button id="btn-esc-load-game" type="button" class="w-full text-center px-3 py-1 bg-transparent border-0 text-zinc-300 hover:text-amber-200 hover:bg-gradient-to-r hover:from-transparent hover:via-amber-400/15 hover:to-transparent transition-all duration-200 cursor-pointer tracking-[0.08em] text-base font-semibold drop-shadow-[0_2px_8px_rgba(0,0,0,0.98)]">
+            Load Game
           </button>
 
           ${
             this.isDevMode
-              ? `<div class="w-2/3 border-t border-amber-700/35 my-1 pt-2 text-[11px] font-bold text-amber-300/80 tracking-wider">מעבדות ופיתוח</div>
-                 <button id="btn-esc-units-lab" type="button" class="w-full text-center px-4 py-1 bg-transparent border-0 text-zinc-300 hover:text-amber-200 hover:bg-gradient-to-r hover:from-transparent hover:via-amber-400/15 hover:to-transparent transition-all duration-200 cursor-pointer text-base font-semibold drop-shadow-[0_2px_8px_rgba(0,0,0,0.98)]">
-                   יחידות ומבנים
+              ? `<div class="w-4/5 border-t border-amber-700/35 my-1 pt-1.5 text-[10px] font-bold uppercase text-amber-300/80 tracking-[0.16em]">Developer Labs</div>
+                 <button id="btn-esc-units-lab" type="button" class="w-full text-center px-3 py-0.5 bg-transparent border-0 text-zinc-300 hover:text-amber-200 hover:bg-gradient-to-r hover:from-transparent hover:via-amber-400/15 hover:to-transparent transition-all duration-200 cursor-pointer text-sm font-semibold drop-shadow-[0_2px_8px_rgba(0,0,0,0.98)]">
+                   Units &amp; Buildings
                  </button>
-                 <button id="btn-esc-heroes" type="button" class="w-full text-center px-4 py-1 bg-transparent border-0 text-zinc-300 hover:text-amber-200 hover:bg-gradient-to-r hover:from-transparent hover:via-amber-400/15 hover:to-transparent transition-all duration-200 cursor-pointer text-base font-semibold drop-shadow-[0_2px_8px_rgba(0,0,0,0.98)]">
-                   היכל הגיבורים
+                 <button id="btn-esc-heroes" type="button" class="w-full text-center px-3 py-0.5 bg-transparent border-0 text-zinc-300 hover:text-amber-200 hover:bg-gradient-to-r hover:from-transparent hover:via-amber-400/15 hover:to-transparent transition-all duration-200 cursor-pointer text-sm font-semibold drop-shadow-[0_2px_8px_rgba(0,0,0,0.98)]">
+                   Hall of Heroes
                  </button>
-                 <button id="btn-esc-studio" type="button" class="w-full text-center px-4 py-1 bg-transparent border-0 text-zinc-300 hover:text-amber-200 hover:bg-gradient-to-r hover:from-transparent hover:via-amber-400/15 hover:to-transparent transition-all duration-200 cursor-pointer text-base font-semibold drop-shadow-[0_2px_8px_rgba(0,0,0,0.98)]">
-                   מעבדת אנימציות
+                 <button id="btn-esc-studio" type="button" class="w-full text-center px-3 py-0.5 bg-transparent border-0 text-zinc-300 hover:text-amber-200 hover:bg-gradient-to-r hover:from-transparent hover:via-amber-400/15 hover:to-transparent transition-all duration-200 cursor-pointer text-sm font-semibold drop-shadow-[0_2px_8px_rgba(0,0,0,0.98)]">
+                   Animation Studio
                  </button>`
               : ''
           }
 
-          <div id="esc-save-toast" class="hidden text-xs font-bold text-emerald-300 py-1"></div>
+          <div id="esc-save-toast" class="hidden text-xs font-bold text-emerald-300 py-0.5"></div>
 
-          <div class="w-2/3 border-t border-amber-700/35 my-1 pt-1"></div>
-          <button id="btn-esc-exit-lobby" type="button" class="w-full text-center px-4 py-1.5 bg-transparent border-0 text-zinc-400 hover:text-rose-300 hover:bg-gradient-to-r hover:from-transparent hover:via-rose-500/15 hover:to-transparent transition-all duration-200 cursor-pointer tracking-[0.12em] text-base font-semibold drop-shadow-[0_2px_8px_rgba(0,0,0,0.98)]">
-            יציאה לעמוד הראשי
+          <div class="w-4/5 border-t border-amber-700/35 my-1 pt-1"></div>
+          <button id="btn-esc-exit-lobby" type="button" class="w-full text-center px-3 py-1 bg-transparent border-0 text-zinc-400 hover:text-rose-300 hover:bg-gradient-to-r hover:from-transparent hover:via-rose-500/15 hover:to-transparent transition-all duration-200 cursor-pointer tracking-[0.08em] text-sm font-semibold drop-shadow-[0_2px_8px_rgba(0,0,0,0.98)]">
+            Exit to Main Menu
           </button>
         </div>
       </div>
@@ -1327,7 +1327,7 @@ export class EscPauseMenuModal {
       const ok = await this.onSaveGame?.();
       const toast = el.querySelector('#esc-save-toast');
       if (toast) {
-        toast.textContent = ok ? '✅ המשחק נשמר בהצלחה!' : '⚠️ לא ניתן היה לשמור כרגע';
+        toast.textContent = ok ? 'Game saved successfully!' : 'Unable to save right now';
         toast.classList.remove('hidden');
       }
     });

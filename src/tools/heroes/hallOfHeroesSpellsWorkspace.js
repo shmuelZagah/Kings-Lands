@@ -21,7 +21,6 @@
  */
 
 import * as THREE from 'three';
-import { ModelFactory } from '../../render/modelFactory.js';
 import { spawn3DSpellEffect, inferDefaultVfxStyle } from '../../render/worldEffectsRenderer.js';
 import { Animator3D } from '../../render/animator3d.js';
 import { applySkinColors, disposeVisual, getFactionColors } from '../studio/skinUtils.js';
@@ -38,7 +37,6 @@ import {
   normalizeSpellId
 } from './heroStateManager.js';
 import { HERO_SPELL_SVG_ICONS } from '../../ui/hud/hudIcons.js';
-import defaultUnitsJson from '../../data/visuals/units.json';
 
 
 export const hallOfHeroesSpellsMethods = {

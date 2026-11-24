@@ -25,7 +25,7 @@ import { renderUnitSlotPreviewInnerHtml, renderVisualIconPickerGridHtml } from "
  */
 
 import * as THREE from 'three';
-import { ModelFactory, updateBowstringRig } from '../../render/modelFactory.js';
+import { updateBowstringRig } from '../../render/modelFactory.js';
 import { buildSculptedArrowGeometry, spawn3DSpellEffect } from '../../render/worldEffectsRenderer.js';
 import { Animator3D } from '../../render/animator3d.js';
 import { SynthAudio } from '../../audio/synthAudio.js';
@@ -33,7 +33,7 @@ import { GizmoController } from './gizmoController.js';
 import { TimelineEditor } from './timelineEditor.js';
 import { SandboxArena } from './sandboxArena.js';
 import { StudioStateManager } from './studioStateManager.js';
-import { HeroStateManager, getHeroSpellClipBases, findSpellDef } from '../heroes/heroStateManager.js';
+import { HeroStateManager, getHeroSpellClipBases, findSpellDef, invalidateHeroPortraitCache } from '../heroes/heroStateManager.js';
 import { InspectorPanel } from './inspectorPanel.js';
 import { ACTION_CLIPS, clipNameFor, getCombatBase, resolveClip, resolveClipVariants, variantIndexOf, withVariantIndex } from './clipResolver.js';
 import { BUILDING_STUDIO_CLIPS } from '../units_buildings/buildingStudioAdapter.js';
@@ -50,7 +50,6 @@ const ALLOWED_EQUIPMENT = {
   head: ['helmet_iron', 'helmet_leather', 'hood', 'king_engraved_crown', 'sisnat_war_helm', 'wizard_hat'],
   torso: ['cape', 'surcoat', 'sisnat_chest_armor']
 };
-const FACTIONS = ['human', 'orc', 'elf', 'katiler'];
 const MAX_ARENA_GROUPS = 4;   // per side, so the scene stays on screen
 const HAND_WEAPONS = ['sword', 'ravan_prince_sword', 'king_sovereign_sword', 'sisnat_double_axe', 'wizard_staff', 'spear', 'pike', 'worker_hammer', 'javelin', 'bow', 'crossbow'];
 const RANGED_WEAPONS = ['bow', 'crossbow', 'javelin'];
@@ -140,7 +139,9 @@ export const studioGearAndPoseMethods = {
     u.loadouts[id] = { label: 'Set 2', equipment: clonedEq };
     this.currentLoadout = id;
     this._restowAll();
+    this._markHeroVisualDirty();
     this.stateManager.scheduleSave();
+    this._syncUnitsStateToUbLab?.();
     this._spawnStudioUnit();
     this._renderGearPanel();
     this.timelineEditor?.refreshClipList();
@@ -155,7 +156,9 @@ export const studioGearAndPoseMethods = {
     if (!Object.keys(u.loadouts).length) delete u.loadouts;
     this.currentLoadout = MAIN_LOADOUT;
     this._restowAll();
+    this._markHeroVisualDirty();
     this.stateManager.scheduleSave();
+    this._syncUnitsStateToUbLab?.();
     this._spawnStudioUnit();
     this._renderGearPanel();
     this.timelineEditor?.refreshClipList();
@@ -168,11 +171,84 @@ export const studioGearAndPoseMethods = {
     return restow(this.unitsData, u);
   },
 
+  _markHeroVisualDirty() {
+    if (this.entityCategory !== 'heroes') return;
+    invalidateHeroPortraitCache(this.currentUnitId);
+    this.heroStateManager?.syncFromStudioView?.();
+    this.heroStateManager?.scheduleSave?.();
+  },
+
+  _syncUnitsStateToUbLab() {
+    if (this.entityCategory !== 'units' || !this.ubStateManager || !this.unitStateManager?.data) return;
+    this.ubStateManager.unitsVisualsData = this.unitStateManager.data;
+    this.ubStateManager.saveAll?.();
+    this.unitStateManager.saveDraft?.();
+  },
+
+  _setUnitActiveSkin(factionId, { spawn = true } = {}) {
+    if (!factionId) return;
+    this.currentFaction = factionId;
+    const facSel = this.rootContainer?.querySelector('#st-faction-select');
+    if (facSel) facSel.value = factionId;
+    if (this.entityCategory === 'units' && this.ubStateManager?.unitStatsData?.units?.[this.currentUnitId]) {
+      const uStat = this.ubStateManager.unitStatsData.units[this.currentUnitId];
+      const uVis = this.unitsData.units?.[this.currentUnitId];
+      const defRace = uStat.race || uVis?.race || 'human';
+      if (factionId === defRace) delete uStat.activeSkin;
+      else uStat.activeSkin = factionId;
+      this._syncUnitsStateToUbLab();
+    }
+    if (spawn) this._spawnStudioUnit();
+    else this._refreshUnitSkinStrip?.();
+  },
+
+  _refreshUnitSkinStrip() {
+    const row = this.rootContainer?.querySelector('#st-unit-skin-row');
+    const strip = this.rootContainer?.querySelector('#st-unit-skin-strip');
+    if (!row || !strip) return;
+    if (this.entityCategory !== 'units') {
+      row.classList.add('hidden');
+      strip.innerHTML = '';
+      return;
+    }
+    row.classList.remove('hidden');
+    const uStat = this.ubStateManager?.unitStatsData?.units?.[this.currentUnitId];
+    const uVis = this.unitsData.units?.[this.currentUnitId];
+    const defRace = uStat?.race || uVis?.race || 'human';
+    const activeSkin = uStat?.activeSkin && uStat.activeSkin !== 'default' ? uStat.activeSkin : defRace;
+    const factions = this._factions();
+    strip.innerHTML = factions
+      .map((fk) => {
+        const on = fk === activeSkin;
+        const tc = getFactionColors(this.unitsData, fk);
+        const c1 = tc?.primary || '#3b82f6';
+        const c2 = tc?.secondary || '#fbbf24';
+        const lbl = getFactionLabel(this.unitsData, fk);
+        return `<button type="button" data-st-unit-skin="${fk}" class="relative flex items-center gap-1.5 rounded border-2 px-1.5 py-1 text-left cursor-pointer transition ${
+          on ? 'border-emerald-400 bg-emerald-500/15' : 'border-slate-700 bg-slate-900/90 hover:border-slate-500'
+        }">
+          ${on ? `<span data-skin-check="true" class="pointer-events-none absolute -top-1.5 -left-1.5 z-10 flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500 text-slate-950 text-[10px] font-black shadow ring-1 ring-slate-950">✓</span>` : ''}
+          <span class="h-3.5 w-3.5 shrink-0 rounded-full border border-white/30" style="background: linear-gradient(135deg, ${c1} 50%, ${c2} 50%);"></span>
+          <span class="truncate text-[10px] font-bold ${on ? 'text-emerald-300' : 'text-slate-200'}">${lbl}</span>
+        </button>`;
+      })
+      .join('');
+    strip.querySelectorAll('[data-st-unit-skin]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const fk = btn.getAttribute('data-st-unit-skin');
+        this._setUnitActiveSkin(fk, { spawn: true });
+        this._toast(`Active skin set to ${getFactionLabel(this.unitsData, fk)}`);
+      });
+    });
+  },
+
   _autoStow() {
     const u = this.unitsData.units[this.currentUnitId];
     this._beginEdit('loadout');
     const added = restow(this.unitsData, u).filter((x) => x.loadout === this.currentLoadout);
+    this._markHeroVisualDirty();
     this.stateManager.scheduleSave();
+    this._syncUnitsStateToUbLab?.();
     this._spawnStudioUnit();
     this._renderGearPanel();
     if (added.length) this._selectJoint(added[0].socket, { fit: true });
@@ -424,8 +500,11 @@ export const studioGearAndPoseMethods = {
         this.renderer.render(this.scene, this.camera);
       }
     }
+    const prevVis = this.modelFactory.visualsData;
+    this.modelFactory.visualsData = this.unitsData;
+    let studio = null;
     try {
-      const studio = createPortraitStudio(this.modelFactory, this.unitsData);
+      studio = createPortraitStudio(this.modelFactory, this.unitsData);
       const canvas = studio.render(this.currentUnitId, this.currentFaction, {
         size: 256,
         view: "bust",
@@ -435,6 +514,9 @@ export const studioGearAndPoseMethods = {
       return canvas.toDataURL("image/png");
     } catch (_) {
       return "";
+    } finally {
+      studio?.dispose?.();
+      this.modelFactory.visualsData = prevVis;
     }
   },
 
@@ -897,11 +979,13 @@ export const studioGearAndPoseMethods = {
     }
     if (this.gripJoint === joint && !prefabId) this.gripJoint = null;
     this._restowAll();
+    this._markHeroVisualDirty();
     this._spawnStudioUnit();
     if (prefabId) this._selectJoint(joint, { fit: false });
     this._renderGearPanel();
     this.timelineEditor?.refreshClipList();
     this.stateManager.scheduleSave();
+    this._syncUnitsStateToUbLab?.();
   },
 
   // ================================================================== pose (the one place that decides what the rig looks like)
@@ -1139,6 +1223,7 @@ export const studioGearAndPoseMethods = {
     };
     walk(unitDef.hierarchy);
     walk(unitDef.mountHierarchy);
+    this._markHeroVisualDirty();
   },
 
   /** Show the easing editor when the playhead sits on a keyframe of the selected joint. */
@@ -1294,9 +1379,20 @@ export const studioGearAndPoseMethods = {
     else if (scope === 'faction') Object.keys(data.units).forEach((u) => setColor(u, fac));
     else setColor(this.currentUnitId, fac);
 
+    if (this.entityCategory === 'units' && (scope === 'current' || scope === 'faction')) {
+      const uStat = this.ubStateManager?.unitStatsData?.units?.[this.currentUnitId];
+      if (uStat) {
+        const defRace = uStat.race || unitDef?.race || 'human';
+        if (fac === defRace) delete uStat.activeSkin;
+        else uStat.activeSkin = fac;
+      }
+    }
+
     this._previewJoint = null;
+    this._markHeroVisualDirty();
     this._spawnStudioUnit();
     this.stateManager.scheduleSave();
+    this._syncUnitsStateToUbLab?.();
     this._toast(hex ? `Colour saved (${scope})` : 'Colour cleared');
   },
 

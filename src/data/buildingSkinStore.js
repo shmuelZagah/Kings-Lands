@@ -1,53 +1,25 @@
 /**
- * Building skins store (imported GLB skins for buildings).
+ * Building skins store (delegates to the single dataRegistry).
  *
- * Skins are kept OUT of the huge Studio draft (the whole units.json, >5 MB, which does not fit in
- * localStorage). The Studio writes here; the buildings lab and the game read from here.
- * Shape: { [buildingId]: { active: 'default'|skinId, items: { [skinId]: { name, fitRadius, mesh:{vertices,faces,colors}, importInfo } } } }
+ * Returns deep-cloned data on every read so callers cannot mutate shared state in-place.
+ * All writes go through dataRegistry (validated & persisted in the unified draft store).
  */
-export const BUILDING_SKINS_KEY = 'kings_lands_building_skins_v1';
 
-let cache = null;
+import { dataRegistry, LEGACY_STORAGE_KEYS } from './dataRegistry.js';
+
+export const BUILDING_SKINS_KEY = LEGACY_STORAGE_KEYS.BUILDING_SKINS;
 
 export function loadBuildingSkins() {
-  if (cache) return cache;
-  cache = {};
-  try {
-    const raw = globalThis.localStorage?.getItem(BUILDING_SKINS_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (parsed && typeof parsed === 'object') cache = parsed;
-    }
-  } catch (_) { /* storage blocked / corrupt: fall back to static data */ }
-  return cache;
+  return dataRegistry.getBuildingSkins();
 }
 
-const r4 = (n) => Math.round(n * 10000) / 10000;
-
-/** Writes the skins (compact numbers). Returns { ok, error?, bytes }. */
-export function saveBuildingSkins(skins = loadBuildingSkins()) {
-  const compact = {};
-  for (const [bid, e] of Object.entries(skins || {})) {
-    if (!e || !e.items || !Object.keys(e.items).length) continue;
-    const items = {};
-    for (const [sid, it] of Object.entries(e.items)) {
-      if (!it?.mesh) continue;
-      items[sid] = {
-        ...it,
-        mesh: {
-          vertices: it.mesh.vertices.map((v) => [r4(v[0]), r4(v[1]), r4(v[2])]),
-          faces: it.mesh.faces,
-          colors: it.mesh.colors
-        }
-      };
-    }
-    compact[bid] = { active: e.active || 'default', items };
+export function saveBuildingSkins(skins = null) {
+  if (!skins || typeof skins !== 'object') {
+    return { ok: true, bytes: 0 };
   }
-  try {
-    const json = JSON.stringify(compact);
-    globalThis.localStorage.setItem(BUILDING_SKINS_KEY, json);
-    return { ok: true, bytes: json.length };
-  } catch (error) {
-    return { ok: false, error: String(error?.name || error) };
+  const res = dataRegistry.saveBuildingSkins(skins);
+  if (!res.ok) {
+    return { ok: false, error: res.error || 'Failed to save building skins' };
   }
+  return { ok: true, bytes: 0 };
 }

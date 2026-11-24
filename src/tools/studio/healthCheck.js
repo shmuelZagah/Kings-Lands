@@ -301,6 +301,237 @@ export function runHealthCheck(data) {
   return finish(issues);
 }
 
+/**
+ * Cross-reference validator across all game data domains:
+ *  - building.options (unit recruitment) <-> unitStats & unitsVisuals
+ *  - building.mountedBallistaUnitId -> unitStats & unitsVisuals
+ *  - unitStats.baseCharId / baseModel -> unitsVisuals (resolving legacy aliases)
+ *  - unitStats[id] <-> unitsVisuals[id]
+ *  - unit & hero equipment / loadouts / mountedConfig -> combined prefabs
+ *  - hero baseUnitId / baseCharId -> unitsVisuals & valid torso hierarchy
+ *  - buildingSkins[bid].active -> buildingSkins[bid].items & buildings[bid]
+ */
+export function validateCrossReferences({
+  unitsVisuals = null,
+  unitStats = null,
+  buildings = null,
+  buildingVisuals = null,
+  buildingSkins = null,
+  heroes = null
+} = {}) {
+  const issues = [];
+  const add = (level, area, message, goto) =>
+    issues.push({ level, area, message, ...(goto ? { goto } : {}) });
+
+  const uVisMap = unitsVisuals?.units || {};
+  const uStatMap = unitStats?.units || {};
+  const bMap = buildings?.buildings || {};
+  const hMap = heroes?.heroes || {};
+  const combinedPrefabs = {
+    ...(unitsVisuals?.prefabs || {}),
+    ...(heroes?.prefabs || {})
+  };
+  const resolveAlias = (id) => (id === 'human_base' ? 'human_base_1' : id);
+
+  // 1. building <-> unit production lists & ballista turret unit ref
+  for (const [bid, bDef] of Object.entries(bMap)) {
+    if (!bDef || typeof bDef !== 'object') continue;
+    if (Array.isArray(bDef.options)) {
+      for (const opt of bDef.options) {
+        if (!opt || opt.kind !== 'unit') continue;
+        const uid = opt.unitType || opt.id;
+        if (!uid) {
+          add('error', 'cross-ref', `Building "${bid}" has a unit option with no unit id`, { building: bid });
+          continue;
+        }
+        if (unitStats && !uStatMap[uid]) {
+          add('error', 'cross-ref', `Building "${bid}" recruits unknown unit "${uid}" (missing in unitStats)`, { building: bid, unit: uid });
+        }
+        if (unitsVisuals && !uVisMap[uid]) {
+          add('error', 'cross-ref', `Building "${bid}" recruits unit "${uid}" with no visual definition in units`, { building: bid, unit: uid });
+        }
+      }
+    }
+    if (bDef.mountedBallistaUnitId && unitStats && !uStatMap[bDef.mountedBallistaUnitId]) {
+      add('error', 'cross-ref', `Building "${bid}" references unknown mountedBallistaUnitId "${bDef.mountedBallistaUnitId}"`, { building: bid, unit: bDef.mountedBallistaUnitId });
+    }
+  }
+
+  // 2. unitStats -> baseCharId & matching visual
+  const deletedSet = new Set(unitStats?._deletedUnits || []);
+  for (const [uid, uStat] of Object.entries(uStatMap)) {
+    if (!uStat || typeof uStat !== 'object' || deletedSet.has(uid)) continue;
+    const rawBase = uStat.baseCharId || uStat.baseModel;
+    if (rawBase && unitsVisuals) {
+      const resolvedBase = resolveAlias(rawBase);
+      if (!uVisMap[resolvedBase]) {
+        add('error', 'cross-ref', `Unit "${uid}" references missing base "${rawBase}"`, { unit: uid, base: rawBase });
+      }
+    }
+    if (unitsVisuals && !uVisMap[uid]) {
+      add('error', 'cross-ref', `Unit "${uid}" exists in unitStats but is missing in units visuals`, { unit: uid });
+    }
+  }
+
+  // 3. unit -> gear (prefabs across main equipment + loadouts)
+  for (const [uid, uVis] of Object.entries(uVisMap)) {
+    if (!uVis || typeof uVis !== 'object') continue;
+    for (const ld of loadoutsOf(uVis)) {
+      for (const [socket, eq] of Object.entries(ld.equipment || {})) {
+        if (eq?.prefab && !combinedPrefabs[eq.prefab]) {
+          add(
+            'error',
+            'cross-ref',
+            `Unit "${uid}" (${ld.id}:${socket}) references missing gear prefab "${eq.prefab}"`,
+            { unit: uid }
+          );
+        }
+      }
+    }
+  }
+
+  // 4. hero -> unit / hierarchy / gear (prefabs)
+  for (const [hid, hDef] of Object.entries(hMap)) {
+    if (!hDef || typeof hDef !== 'object') continue;
+    const heroBase = hDef.baseUnitId || hDef.baseCharId;
+    if (heroBase && unitsVisuals) {
+      const resolvedHeroBase = resolveAlias(heroBase);
+      if (!uVisMap[resolvedHeroBase] && !hMap[resolvedHeroBase]) {
+        add('error', 'cross-ref', `Hero "${hid}" references missing base unit "${heroBase}"`, { hero: hid });
+      }
+    }
+    const joints = collectJoints(hDef.hierarchy || {});
+    const mountJoints = collectJoints(hDef.mountHierarchy || {});
+    if (!joints.has('torso') && !mountJoints.has('torso')) {
+      add('error', 'cross-ref', `Hero "${hid}" hierarchy is missing required "torso" joint`, { hero: hid });
+    }
+    for (const ld of loadoutsOf(hDef)) {
+      for (const [socket, eq] of Object.entries(ld.equipment || {})) {
+        if (eq?.prefab && !combinedPrefabs[eq.prefab]) {
+          add(
+            'error',
+            'cross-ref',
+            `Hero "${hid}" (${ld.id}:${socket}) references missing gear prefab "${eq.prefab}"`,
+            { hero: hid }
+          );
+        }
+      }
+    }
+    if (hDef.mountedConfig?.equipment) {
+      for (const [socket, eq] of Object.entries(hDef.mountedConfig.equipment)) {
+        if (eq?.prefab && !combinedPrefabs[eq.prefab]) {
+          add(
+            'error',
+            'cross-ref',
+            `Hero "${hid}" (mountedConfig:${socket}) references missing gear prefab "${eq.prefab}"`,
+            { hero: hid }
+          );
+        }
+      }
+    }
+  }
+
+  // 5. buildingSkins -> active skin key & building existence
+  if (buildingSkins && typeof buildingSkins === 'object') {
+    for (const [bid, entry] of Object.entries(buildingSkins)) {
+      if (!entry || typeof entry !== 'object') continue;
+      if (buildings && Object.keys(bMap).length > 0 && !bMap[bid]) {
+        add('warn', 'cross-ref', `Building skin entry "${bid}" has no matching building in buildings.json`, { building: bid });
+      }
+      if (entry.active && entry.active !== 'default' && !entry.items?.[entry.active]) {
+        add('error', 'cross-ref', `Building "${bid}" active skin "${entry.active}" does not exist in its skin items`, { building: bid });
+      }
+    }
+  }
+
+  // 6. buildingVisuals top-level check
+  if (buildingVisuals && (!buildingVisuals.animations || typeof buildingVisuals.animations !== 'object')) {
+    add('error', 'cross-ref', 'buildingVisuals.animations is missing or invalid');
+  }
+
+  return finish(issues);
+}
+
+/**
+ * Full registry validation combining `runHealthCheck` (using combined unit+hero prefabs)
+ * and `validateCrossReferences`. Returns `{ ok, error, issues, counts, blockingIssues }`.
+ */
+export function validateRegistryState(bundle = {}) {
+  const {
+    unitsVisuals = null,
+    unitStats = null,
+    buildings = null,
+    buildingVisuals = null,
+    buildingSkins = null,
+    heroes = null
+  } = bundle || {};
+
+  const cross = validateCrossReferences({
+    unitsVisuals,
+    unitStats,
+    buildings,
+    buildingVisuals,
+    buildingSkins,
+    heroes
+  });
+
+  let studioReport = { issues: [], counts: { error: 0, warn: 0, info: 0 } };
+  if (unitsVisuals) {
+    const mergedForHealth = {
+      ...unitsVisuals,
+      prefabs: {
+        ...(unitsVisuals.prefabs || {}),
+        ...(heroes?.prefabs || {})
+      }
+    };
+    studioReport = runHealthCheck(mergedForHealth);
+  }
+
+  // Deduplicate issues by (level + area + message)
+  const seen = new Set();
+  const merged = [];
+  for (const issue of [...cross.issues, ...studioReport.issues]) {
+    const key = `${issue.level}|${issue.area}|${issue.message}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    merged.push(issue);
+  }
+
+  // Blocking errors: any broken cross-reference OR structural error in file/unit/model/prefab
+  const blockingIssues = merged.filter(
+    (i) =>
+      i.level === 'error' &&
+      (i.area === 'cross-ref' ||
+        i.area === 'file' ||
+        i.area === 'model' ||
+        i.area.startsWith('unit ') ||
+        i.area.startsWith('prefab '))
+  );
+  // Filter out legacy false-positive warning/error when a unit only exists in unitStats-less visuals vs prefabs already merged:
+  const referenceBlocking = blockingIssues.filter((i) => {
+    if (i.area === 'cross-ref') return true;
+    if (i.area === 'file') return true;
+    if (i.message.includes('is not in prefabs') || i.message.includes('has no hierarchy') || i.message.includes('has no "torso" joint')) {
+      return true;
+    }
+    return false;
+  });
+
+  const finished = finish(merged);
+  const ok = referenceBlocking.length === 0;
+  const error = ok
+    ? null
+    : referenceBlocking.slice(0, 3).map((i) => i.message).join('; ') +
+      (referenceBlocking.length > 3 ? ` (+${referenceBlocking.length - 3} more)` : '');
+
+  return {
+    ok,
+    error,
+    blockingIssues: referenceBlocking,
+    ...finished
+  };
+}
+
 function finish(issues) {
   const order = { error: 0, warn: 1, info: 2 };
   issues.sort((a, b) => order[a.level] - order[b.level] || a.area.localeCompare(b.area));

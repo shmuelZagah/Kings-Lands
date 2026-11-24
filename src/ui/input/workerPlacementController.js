@@ -4,11 +4,11 @@ import { CommandTypes } from '../../core/commandBus.js';
 import { EventTypes } from '../../core/eventBus.js';
 import { sampleTerrainHeightFx, classifyTileTypeFx } from '../../sim/gameState.js';
 import { NavTileType } from '../../sim/nav/grid.js';
-import { BuildingModelFactory } from '../../render/buildingModelFactory.js';
+import { modelProvider } from '../../render/modelProvider.js';
+import { dataRegistry } from '../../data/dataRegistry.js';
 import { TopResourceBar } from '../hud/topResourceBar.js';
 import { WorkerBuildChainMenu } from '../hud/workerBuildChainMenu.js';
 import { WorldPicker } from './worldPicker.js';
-import buildingsData from '../../data/buildings.json';
 
 const MAX_SLOPE_HEIGHT_DIFF_FX = 2252;
 const RALLY_ENEMY_SNAP_RADIUS_METERS = 1.4;
@@ -47,8 +47,12 @@ export class WorkerPlacementController {
       formationPreview?.worldPicker ||
       new WorldPicker({ scene, camera, domElement, simBridge, terrainRenderer });
 
-    this.buildingDefs = buildingsData.buildings;
-    this.buildingModelFactory = new BuildingModelFactory();
+    this.buildingDefs = dataRegistry.getBuildings().buildings;
+    this.buildingModelFactory = modelProvider.getBuildingModelFactory();
+    this._unsubRegistry = dataRegistry.subscribe(() => {
+      this.buildingDefs = dataRegistry.getBuildings().buildings;
+      if (this.buildChainMenu) this.buildChainMenu.buildingDefs = this.buildingDefs;
+    });
 
     this.activePlacementType = null;
     this.placementFacingDir = 256;

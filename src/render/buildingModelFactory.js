@@ -1,9 +1,6 @@
-import defaultBuildingVisuals from '../data/buildingVisuals.json';
+import { dataRegistry } from '../data/dataRegistry.js';
 import { sampleClipPose } from './keyframeSampler.js';
 import { getCumulativeBuildingUpgradesAtLevel } from '../tools/units_buildings/buildingStudioAdapter.js';
-import defaultBuildingsData from '../data/buildings.json';
-import { loadBuildingSkins } from '../data/buildingSkinStore.js';
-import defaultUnitsVisuals from '../data/visuals/units.json';
 /**
  * Kings Lands — 3D Building Actor Factory, Occluded Rings & Rally Flags
  * (src/render/buildingModelFactory.js)
@@ -149,29 +146,61 @@ export function mergeStaticGroupMeshesByMaterial(group, { castShadow = true, rec
 export class BuildingModelFactory {
   constructor() {
     this._sharedMaterials = new Map();
+    this.buildingsSource = null;
+    this.buildingVisualsSource = null;
+    this.skinsSource = null;
+  }
+
+  setDataSources({ buildingsSource = null, buildingVisualsSource = null, skinsSource = null } = {}) {
+    if (buildingsSource) this.buildingsSource = buildingsSource;
+    if (buildingVisualsSource) this.buildingVisualsSource = buildingVisualsSource;
+    if (skinsSource) this.skinsSource = skinsSource;
+  }
+
+  clearCaches() {
+    if (this._skinGeoCache) {
+      for (const geo of this._skinGeoCache.values()) {
+        try { geo.dispose?.(); } catch (_) {}
+      }
+      this._skinGeoCache.clear();
+    }
+  }
+
+  _getBuildingsData() {
+    if (!this.buildingsSource) {
+      this.buildingsSource = dataRegistry.getBuildings();
+    }
+    return this.buildingsSource;
+  }
+
+  _getBuildingVisualsData() {
+    if (!this.buildingVisualsSource) {
+      this.buildingVisualsSource = dataRegistry.getBuildingVisuals();
+    }
+    return this.buildingVisualsSource;
   }
 
   /**
    * Building skins: `buildingSkins[buildingId] = { active: 'default' | skinId, items: { skinId: { name, fitRadius, mesh:{vertices,faces,colors} } } }`
-   * live in units.json (so the Studio edits and exports them with everything else). `skinsSource` can be swapped by the Studio
-   * to preview unsaved data.
    */
   /** Guard tower shows only once the building reaches its unlock level (`watchtowerLevel`). */
   _watchtowerUnlocked(type, bld, bDefIn = null) {
     if (!bld || !bld.hasWatchtower) return false;
-    const bDef = bDefIn || (this.buildingsSource || defaultBuildingsData)?.buildings?.[type] || null;
+    const bDef = bDefIn || this._getBuildingsData()?.buildings?.[type] || null;
     if (!bDef || bDef.hasBuiltInTurret) return true;
     const wtLv = bDef.watchtowerLevel !== undefined ? (bDef.watchtowerLevel | 0) : 3;
     return Math.max(1, (bld.level | 0) || 1) >= Math.max(1, wtLv);
   }
 
-  getActiveSkin(type) {
+  getActiveSkin(type, skinIdOverride = null) {
     const entry = this.skinsSource
       ? this.skinsSource.buildingSkins?.[type]
-      : (loadBuildingSkins()[type] || defaultUnitsVisuals?.buildingSkins?.[type]);
-    if (!entry || !entry.active || entry.active === 'default') return null;
-    const item = entry.items?.[entry.active];
-    return item?.mesh?.faces?.length ? { id: entry.active, ...item } : null;
+      : dataRegistry.getBuildingSkin(type);
+    if (!entry) return null;
+    const targetSkinId = skinIdOverride || entry.active;
+    if (!targetSkinId || targetSkinId === 'default') return null;
+    const item = entry.items?.[targetSkinId];
+    return item?.mesh?.faces?.length ? { id: targetSkinId, ...item } : null;
   }
 
   _skinGeometry(type, skin) {
@@ -367,7 +396,7 @@ export class BuildingModelFactory {
       dtSeconds = bDefOverride;
       bDefOverride = null;
     }
-    const bDef = (bDefOverride && typeof bDefOverride === "object" ? bDefOverride : null) || defaultBuildingsData?.buildings?.[actor.type] || null;
+    const bDef = (bDefOverride && typeof bDefOverride === "object" ? bDefOverride : null) || this._getBuildingsData()?.buildings?.[actor.type] || null;
 
     // 1. Recruitment / Door Open Animation (recruit_spawn)
     const shouldOpenDoor = Boolean(
@@ -412,7 +441,7 @@ export class BuildingModelFactory {
     }
 
     // Sample synchronized building keyframe animation from buildingVisuals.json / Studio edits
-    const kfBag = defaultBuildingVisuals?.animations?.keyframes || {};
+    const kfBag = this._getBuildingVisualsData()?.animations?.keyframes || {};
     const resolveBldClip = (clipBase) =>
       kfBag[`${actor.type}_human_${clipBase}`] ||
       kfBag[`${actor.type}_${clipBase}`] ||
@@ -545,7 +574,7 @@ export class BuildingModelFactory {
 
     const doorSign = 1;
     const bodyGroup = new THREE.Group();
-    const skin = this.getActiveSkin(type);       // imported GLB skin replaces the procedural architecture
+    const skin = this.getActiveSkin(type, options.skinId || options.skin || null);       // imported GLB skin replaces the procedural architecture
     let skinMesh = null;
     let doorLeaves = null;
     if (skin) {
@@ -617,7 +646,7 @@ export class BuildingModelFactory {
     group.add(flashRingGroup);
 
     const turretGroup = new THREE.Group();
-    const wtDef = (this.buildingsSource || defaultBuildingsData)?.buildings?.[type] || null;
+    const wtDef = this._getBuildingsData()?.buildings?.[type] || null;
     const wtFx = Number.isFinite(Number(wtDef?.watchtowerX)) ? Number(wtDef.watchtowerX) : 0.56;
     const wtFz = Number.isFinite(Number(wtDef?.watchtowerZ)) ? Number(wtDef.watchtowerZ) : -0.52;
     const towerX = r * wtFx;
@@ -633,7 +662,7 @@ export class BuildingModelFactory {
     towerRoof.position.set(towerX, 9.4, towerZ);
     turretGroup.add(towerRoof);
 
-    const bDef = defaultBuildingsData?.buildings?.[type] || null;
+    const bDef = this._getBuildingsData()?.buildings?.[type] || null;
     const initLevel = Math.max(1, (bld.level | 0) || 1);
     const initCum = getCumulativeBuildingUpgradesAtLevel(bDef, initLevel);
     const hBody = type === 'citadel' ? 7.2 : 4.6;

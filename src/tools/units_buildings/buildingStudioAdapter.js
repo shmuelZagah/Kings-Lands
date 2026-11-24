@@ -15,8 +15,8 @@
  *   - `collapse_destroy` (Destruction / Collapse)
  */
 
-import defaultBuildingsData from '../../data/buildings.json';
-import defaultBuildingVisuals from '../../data/buildingVisuals.json';
+import { dataRegistry } from '../../data/dataRegistry.js';
+import { getFactions, getFactionColors, FACTION_TEAM_COLORS } from '../studio/skinUtils.js';
 
 export const BUILDING_STUDIO_CLIPS = Object.freeze([
   'build_construct',
@@ -110,12 +110,13 @@ export const BUILDING_CLIP_LABELS = Object.freeze({
  * (excluding `citadel_slot`) is represented as an articulated 3D hierarchy for `ModelFactory` & `Animator3D`.
  */
 export function buildBuildingsStudioViewData(
-  buildingsData = defaultBuildingsData,
-  buildingVisuals = defaultBuildingVisuals,
+  buildingsData = null,
+  buildingVisuals = null,
   baseUnitsData = null
 ) {
+  const effBuildingsData = buildingsData || dataRegistry.getBuildings();
   const units = {};
-  const bMap = buildingsData?.buildings || defaultBuildingsData.buildings || {};
+  const bMap = effBuildingsData?.buildings || {};
 
   for (const [bId, bDef] of Object.entries(bMap)) {
     if (bId === 'citadel_slot') continue;
@@ -188,9 +189,20 @@ export function buildBuildingsStudioViewData(
       Number(tOff[2]) * 0.35 || 0
     ];
 
+    const bSkinPalette = {};
+    const dynamicFactions = getFactions(baseUnitsData);
+    for (const fId of dynamicFactions) {
+      const tc = getFactionColors(baseUnitsData, fId) || FACTION_TEAM_COLORS[fId];
+      bSkinPalette[fId] = {
+        primary: tc?.primary || '#2563eb',
+        secondary: tc?.secondary || '#94a3b8'
+      };
+    }
+
     units[bId] = {
       displayName: bDef.name || bId,
       buildingId: bId,
+      race: bDef.race || undefined,
       isBuildingEntity: true,
       canRecruitUnits: canBuildingRecruitUnits(bDef),
       allowedBuildingClips: getBuildingStudioClipsForBuilding(bDef),
@@ -270,19 +282,19 @@ export function buildBuildingsStudioViewData(
           }
         }
       },
-      skins: {
-        human: { primary: '#2563eb', secondary: '#94a3b8' },
-        elf: { primary: '#10b981', secondary: '#e2e8f0' },
-        orc: { primary: '#dc2626', secondary: '#475569' },
-        katiler: { primary: '#f59e0b', secondary: '#64748b' }
-      }
+      skins: bSkinPalette
     };
   }
 
-  const rawBldKf = {
-    ...(defaultBuildingVisuals?.animations?.keyframes || {}),
-    ...(buildingVisuals?.animations?.keyframes || {})
-  };
+  const registryBuildingVisuals = dataRegistry.getBuildingVisuals();
+  const rawBldKf = buildingVisuals
+    ? {
+        ...(registryBuildingVisuals?.animations?.keyframes || {}),
+        ...(buildingVisuals?.animations?.keyframes || {})
+      }
+    : {
+        ...(registryBuildingVisuals?.animations?.keyframes || {})
+      };
   const keyframes = {};
   for (const [k, v] of Object.entries(rawBldKf)) {
     if (!v) continue;
@@ -304,10 +316,9 @@ export function buildBuildingsStudioViewData(
   return {
     version: 3,
     factions: baseUnitsData?.factions || {
-      human: { label: 'Human', sharedUnits: true },
-      elf: { label: 'Elf', sharedUnits: true },
-      orc: { label: 'Orc', sharedUnits: true },
-      katiler: { label: 'Katiler', sharedUnits: true }
+      human: { displayName: 'Human', sharedUnits: true },
+      katiler: { displayName: 'Katiler', sharedUnits: false },
+      mirukenkay: { displayName: 'Mirukenkay', sharedUnits: false }
     },
     prefabs: baseUnitsData?.prefabs || {},
     units,

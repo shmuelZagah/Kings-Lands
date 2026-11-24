@@ -19,7 +19,7 @@
  */
 
 import { TICKS_PER_SEC } from '../core/fx.js';
-import defaultHeroesJson from '../data/heroes.json';
+import { dataRegistry } from '../data/dataRegistry.js';
 
 export const SPELL_CAST_TIMING_PROFILES = Object.freeze({
   // ---------------------------------------------------------------------------
@@ -228,6 +228,10 @@ export function getSpellCastTimingProfile(spellId, weaponMode = 'melee', distanc
  * Default Hero body spell keyframe animations (`spell_<spellId>`).
  * Can be edited here in code or visually in the Animation Lab!
  */
+export function getHeroSpellKeyframeAnimations() {
+  return dataRegistry.getHeroesData()?.animations?.keyframes || {};
+}
+
 export const HERO_SPELL_KEYFRAME_ANIMATIONS = Object.freeze({
-  ...(defaultHeroesJson?.animations?.keyframes || {})
+  ...(dataRegistry.getHeroesData()?.animations?.keyframes || {})
 });

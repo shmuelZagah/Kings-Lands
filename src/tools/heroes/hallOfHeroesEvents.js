@@ -21,7 +21,7 @@
  */
 
 import * as THREE from 'three';
-import { ModelFactory } from '../../render/modelFactory.js';
+import { modelProvider } from '../../render/modelProvider.js';
 import { spawn3DSpellEffect, inferDefaultVfxStyle } from '../../render/worldEffectsRenderer.js';
 import { Animator3D } from '../../render/animator3d.js';
 import { applySkinColors, disposeVisual, getFactionColors } from '../studio/skinUtils.js';
@@ -38,7 +38,7 @@ import {
   normalizeSpellId
 } from './heroStateManager.js';
 import { HERO_SPELL_SVG_ICONS } from '../../ui/hud/hudIcons.js';
-import defaultUnitsJson from '../../data/visuals/units.json';
+import { dataRegistry } from '../../data/dataRegistry.js';
 
 
 export const hallOfHeroesEventsMethods = {
@@ -171,20 +171,30 @@ export const hallOfHeroesEventsMethods = {
       if (!this.currentHero || !this.camera) return;
       const hero = this.currentHero;
       const faction = hero.race || 'human';
-      const combinedVisuals = buildCombinedVisualsData(defaultUnitsJson, this.heroesData);
-      const factory = new ModelFactory(combinedVisuals);
+      const combinedVisuals = buildCombinedVisualsData(
+        this._getBaseUnitsData?.() || dataRegistry.getUnitsVisuals(),
+        this.heroesData
+      );
+      const factory = modelProvider.getModelFactory();
+      const prevVisuals = factory.visualsData;
+      factory.visualsData = combinedVisuals;
       const studio = createPortraitStudio(factory, combinedVisuals);
-      const canvas = studio.render(this.selectedHeroId, faction, {
-        size: 256,
-        background: 'transparent',
-        customCamera: {
-          position: this.camera.position.clone(),
-          target: this.camTarget.clone(),
-          fov: this.camera.fov
-        }
-      });
-      const dataUrl = canvas.toDataURL('image/png');
-      studio.dispose();
+      let dataUrl = '';
+      try {
+        const canvas = studio.render(this.selectedHeroId, faction, {
+          size: 256,
+          background: 'transparent',
+          customCamera: {
+            position: this.camera.position.clone(),
+            target: this.camTarget.clone(),
+            fov: this.camera.fov
+          }
+        });
+        dataUrl = canvas.toDataURL('image/png');
+      } finally {
+        studio.dispose();
+        factory.visualsData = prevVisuals;
+      }
 
       this.heroStateManager.setHeroPortrait(this.selectedHeroId, dataUrl);
       this._renderPreviewHeader();
@@ -516,7 +526,11 @@ export const hallOfHeroesEventsMethods = {
     clearTimeout(this._toastTimer);
     window.removeEventListener('resize', this._resizeHandler);
     this._resizeObserver?.disconnect();
-    this.heroStateManager?.flush();
+    if (this._ownsHeroStateManager) {
+      this.heroStateManager?.destroy();
+    } else {
+      this.heroStateManager?.flush();
+    }
     if (this.heroMeshGroup) disposeVisual(this.heroMeshGroup);
     this.renderer?.dispose();
     this.renderer?.domElement?.remove();

@@ -1,6 +1,6 @@
 import { resolveUnitActiveCapabilities } from '../../sim/combatCapabilitiesRegistry.js';
 import { resolveAutoUnitIconKey } from '../hud/unitIconsCatalog.js';
-import unitStatsData from '../../data/unitStats.json';
+import { dataRegistry } from '../../data/dataRegistry.js';
 /**
  * Kings Lands — Total War-Style 2D Ground Tactical Icons & Formation Ghost Preview
  * (src/ui/input/formationGhostPreview.js)
@@ -58,6 +58,10 @@ export class FormationGhostPreview {
     this.iconInstancedMeshes = new Map();
     this._flashTimer = 0;
     this._flashDuration = 0.28;
+    this._unitStatsData = dataRegistry.getUnitStats();
+    this._unsubRegistry = dataRegistry.subscribe(() => {
+      this._unitStatsData = dataRegistry.getUnitStats();
+    });
 
     this._buildMeshes();
   }
@@ -556,6 +560,7 @@ export class FormationGhostPreview {
         arrow.visible = true;
       }
 
+      const unitStatsData = this._unitStatsData || dataRegistry.getUnitStats();
       const uStat = unitStatsData?.units?.[pl.unitType];
       const descForPl = descriptors.find((d) => (d.companyId | 0) === (pl.companyId | 0));
       const activeLoadoutIdx = (descForPl?.activeLoadoutIdx | 0) || 0;

@@ -1,8 +1,7 @@
 import * as THREE from 'three';
 import { CommandTypes } from '../../core/commandBus.js';
 import { OPTION_SVG_ICONS, buildOrbDecorationsSvg } from './hudIcons.js';
-import buildingsData from '../../data/buildings.json';
-import unitStatsData from '../../data/unitStats.json';
+import { dataRegistry } from '../../data/dataRegistry.js';
 import { findCustomIconById } from './unitIconsCatalog.js';
 import { loadUnitsBuildingsConfigFromStorage } from '../../tools/units_buildings/unitsBuildingsStateManager.js';
 import { loadHeroesDataFromStorage, getOrRenderHeroPortraitUrl } from '../../tools/heroes/heroStateManager.js';
@@ -16,8 +15,9 @@ export class BuildingRadialMenu {
     this.synthAudio = synthAudio;
 
     const initUb = loadUnitsBuildingsConfigFromStorage();
-    this.buildingDefs = initUb.buildingsData?.buildings || buildingsData.buildings;
-    this.unitStatsDefs = initUb.unitStatsData?.units || unitStatsData.units;
+    this.unitStatsFull = initUb.unitStatsData || dataRegistry.getUnitStats();
+    this.buildingDefs = initUb.buildingsData?.buildings || dataRegistry.getBuildings().buildings;
+    this.unitStatsDefs = this.unitStatsFull?.units || dataRegistry.getUnitStats().units;
     this.selectedBuildingIds = new Set();
     this.isHeroSubmenuOpen = false;
     this._projVec = new THREE.Vector3();
@@ -58,8 +58,9 @@ export class BuildingRadialMenu {
     });
     window.addEventListener('kings_lands_units_buildings_updated', () => {
       const ub = loadUnitsBuildingsConfigFromStorage();
-      this.buildingDefs = ub.buildingsData?.buildings || buildingsData.buildings;
-      this.unitStatsDefs = ub.unitStatsData?.units || unitStatsData.units;
+      this.unitStatsFull = ub.unitStatsData || dataRegistry.getUnitStats();
+      this.buildingDefs = ub.buildingsData?.buildings || dataRegistry.getBuildings().buildings;
+      this.unitStatsDefs = this.unitStatsFull?.units || dataRegistry.getUnitStats().units;
       this._lastRenderedKey = '';
     });
   }
@@ -120,11 +121,13 @@ export class BuildingRadialMenu {
     this.orbPanelEl = document.createElement('aside');
     this.orbPanelEl.id = 'phase5-building-orb-panel';
     this.orbPanelEl.className =
-      'fixed -bottom-4 -right-4 z-30 hidden w-[258px] h-[238px] rounded-[50%] border-2 border-amber-400/70 backdrop-blur-md select-none origin-bottom-right overflow-hidden pointer-events-auto';
-    this.orbPanelEl.style.background =
-      'radial-gradient(ellipse at 50% 35%, rgba(20, 184, 166, 0.25) 0%, rgba(15, 23, 42, 0.96) 58%, rgba(2, 6, 23, 0.99) 100%)';
+      'fixed -bottom-4 -right-4 z-30 hidden w-[258px] h-[238px] rounded-[50%] border-2 border-amber-400/65 select-none origin-bottom-right overflow-hidden pointer-events-auto';
+    this.orbPanelEl.style.backgroundImage =
+      "radial-gradient(circle at center, rgba(6,10,18,0.68) 0%, rgba(6,10,18,0.45) 65%, rgba(2,4,8,0.8) 100%), url('/assets/hud_orb_frame.jpg')";
+    this.orbPanelEl.style.backgroundSize = 'cover';
+    this.orbPanelEl.style.backgroundPosition = 'center';
     this.orbPanelEl.style.boxShadow =
-      '0 14px 36px rgba(0, 0, 0, 0.9), inset 0 0 28px rgba(45, 212, 191, 0.24), inset 0 2px 6px rgba(251, 191, 36, 0.35)';
+      '0 14px 36px rgba(0, 0, 0, 0.92), inset 0 0 22px rgba(251, 191, 36, 0.25)';
 
     this.orbPanelEl.addEventListener('mousedown', (e) => e.stopPropagation());
     this.orbPanelEl.addEventListener('mouseup', (e) => e.stopPropagation());
@@ -714,7 +717,7 @@ export class BuildingRadialMenu {
         const reqLv = (opt.unlockLevel | 0) || 1;
         const isLockedByLevel = (primaryBld.level || 1) < reqLv;
         const unitKey = opt.kind === 'unit' ? (opt.unitType || opt.id) : null;
-        const uStat = unitKey ? (this.unitStatsDefs?.[unitKey] || unitStatsData?.units?.[unitKey]) : null;
+        const uStat = unitKey ? this.unitStatsDefs?.[unitKey] : null;
         const effectiveCost = (opt.kind === 'unit' && uStat?.cost) ? uStat.cost : opt.cost;
         const effectiveName = (opt.kind === 'unit' && uStat?.name) ? uStat.name : opt.name;
         const unitRoleIcon = uStat
@@ -726,7 +729,7 @@ export class BuildingRadialMenu {
           costText: isLockedByLevel ? `Requires Building Lv.${reqLv}` : this._formatCostText(effectiveCost),
           recruitPortraitUrl:
             uStat?.recruitPortraitUrl ||
-            findCustomIconById(unitStatsData?.customPlaceholderIcons, uStat?.recruitIconKey)?.dataUrl ||
+            findCustomIconById(this.unitStatsFull?.customPlaceholderIcons, uStat?.recruitIconKey)?.dataUrl ||
             null,
           recruitIconKey: uStat?.recruitIconKey || null,
           unitRoleIcon,

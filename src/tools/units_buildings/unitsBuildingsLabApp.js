@@ -18,12 +18,11 @@
  *   - Contextual jump to Animation Lab (`contextualBuildingId`) with Building Animation Session clips (`build_construct`, `idle`, `level_up`, `recruit_spawn`, `damage_stage_1`, `damage_stage_2`, `collapse_destroy`).
  */
 
-import { loadBuildingSkins, saveBuildingSkins } from '../../data/buildingSkinStore.js';
+import { dataRegistry, DEFAULT_BASE_CHAR_ID } from '../../data/dataRegistry.js';
 import * as THREE from 'three';
-import { ModelFactory } from '../../render/modelFactory.js';
-import { BuildingModelFactory } from '../../render/buildingModelFactory.js';
+import { modelProvider } from '../../render/modelProvider.js';
 import { Animator3D } from '../../render/animator3d.js';
-import { applySkinColors, disposeVisual } from '../studio/skinUtils.js';
+import { disposeVisual } from '../studio/skinUtils.js';
 import { createPortraitStudio } from '../studio/portraitRenderer.js';
 import { canBuildingRecruitUnits, ensureBuildingLevelUpgradesConfig } from './buildingStudioAdapter.js';
 import { computeCapabilitiesForLoadout } from '../../sim/combatCapabilitiesRegistry.js';
@@ -31,10 +30,8 @@ import { MAIN_LOADOUT, asLoadout, equipmentOf, restow, grantedActions, weaponTyp
 import { ACTION_CLIPS, getCombatBase, getLocomotionBase, resolveClip } from '../studio/clipResolver.js';
 import {
   UnitsBuildingsStateManager,
-  BASE_CHARACTER_TEMPLATES,
   computeEligibleFormationsForUnit
 } from './unitsBuildingsStateManager.js';
-import { DEFAULT_BASE_CHAR_ID } from '../studio/baseUnitsMigration.js';
 import {
   renderUnitsLeftListHtml,
   renderUnitRightInspectorHtml
@@ -97,7 +94,7 @@ export class UnitsBuildingsLabApp {
     this.previewActorGroup = null;
     this.buildingActor = null;
     this.unitAnimator = null;
-    this.buildingModelFactory = new BuildingModelFactory();
+    this.buildingModelFactory = modelProvider.getBuildingModelFactory();
 
     this.camYaw = 0.42;
     this.camPitch = 0.28;
@@ -108,6 +105,13 @@ export class UnitsBuildingsLabApp {
     this._lastY = 0;
     this._running = false;
     this._toastTimer = null;
+    this._onExternalUpdated = () => {
+      if (this.stateManager?._isSavingAll) return;
+      this._renderWorkspace();
+    };
+    if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+      window.addEventListener('kings_lands_units_buildings_updated', this._onExternalUpdated);
+    }
 
     this._buildDOM();
     this._initThreeScene();
@@ -122,6 +126,11 @@ export class UnitsBuildingsLabApp {
       chip.className =
         'rounded-full border border-amber-500/40 bg-amber-500/10 px-2.5 py-0.5 text-[11px] font-semibold text-amber-300';
       chip.textContent = msg || 'Saving…';
+    } else if (state === 'error') {
+      chip.className =
+        'rounded-full border border-rose-500/50 bg-rose-500/15 px-2.5 py-0.5 text-[11px] font-semibold text-rose-300';
+      chip.textContent = msg || 'Save failed';
+      if (msg) this._toast(msg, 4500);
     } else {
       chip.className =
         'rounded-full border border-emerald-500/40 bg-emerald-500/10 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-300';
@@ -165,9 +174,6 @@ export class UnitsBuildingsLabApp {
                 📊 Simulation
               </button>
             </div>
-            <span id="ub-save-chip" class="rounded-full border border-emerald-500/40 bg-emerald-500/10 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-300">
-              Saved
-            </span>
           </div>
 
           <div class="flex items-center gap-1.5">
@@ -188,7 +194,7 @@ export class UnitsBuildingsLabApp {
               Reset
             </button>
             <button type="button" id="ub-btn-exit" class="rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700 px-3 py-1 text-xs font-semibold text-slate-200 cursor-pointer">
-              Back to Game
+              Back
             </button>
           </div>
         </header>
@@ -269,22 +275,28 @@ export class UnitsBuildingsLabApp {
     });
   }
 
-  _openContextualAnimationLab() {
+  _openContextualAnimationLab(opts = {}) {
     this.stateManager.saveAll();
     if (this.activeTab === 'buildings') {
       this.onOpenAnimationLab?.({
         contextualBuildingId: this.selectedBuildingId,
         initialCategory: 'buildings',
-        initialUnitId: this.selectedBuildingId
+        initialUnitId: this.selectedBuildingId,
+        ...(opts.initialInspectorTab ? { initialInspectorTab: opts.initialInspectorTab } : {})
       });
     } else {
       const ldIdx = this.activeLoadoutId && this.activeLoadoutId !== MAIN_LOADOUT ? 1 : 0;
+      const uStat = this.stateManager.unitStatsData.units?.[this.selectedUnitId];
+      const activeSkin =
+        uStat?.activeSkin && uStat.activeSkin !== 'default' ? uStat.activeSkin : (uStat?.race || 'human');
       this.onOpenAnimationLab?.({
         contextualUnitId: this.selectedUnitId,
         initialCategory: 'units',
         initialUnitId: this.selectedUnitId,
+        initialFaction: activeSkin,
         initialAnim: this.activeUnitAnim || 'idle',
-        initialLoadoutIdx: ldIdx
+        initialLoadoutIdx: ldIdx,
+        ...(opts.initialInspectorTab ? { initialInspectorTab: opts.initialInspectorTab } : {})
       });
     }
   }
@@ -612,22 +624,27 @@ export class UnitsBuildingsLabApp {
         this.renderer.render(this.scene, this.camera);
       }
     }
+    const factory = modelProvider.getModelFactory();
+    const prevVisuals = factory.visualsData;
+    let studio = null;
     try {
       const uStat = this.stateManager.unitStatsData.units?.[unitId];
-      const faction = uStat?.race || 'human';
-      const factory = new ModelFactory(this.stateManager.unitsVisualsData);
-      const studio = createPortraitStudio(factory, this.stateManager.unitsVisualsData);
+      const faction =
+        uStat?.activeSkin && uStat.activeSkin !== 'default' ? uStat.activeSkin : (uStat?.race || 'human');
+      factory.visualsData = this.stateManager.unitsVisualsData;
+      studio = createPortraitStudio(factory, this.stateManager.unitsVisualsData);
       const canvas = studio.render(unitId, faction, {
         size: 256,
         view: viewMode,
         angle: 'three_quarter',
         background: 'transparent'
       });
-      const dataUrl = canvas.toDataURL('image/png');
-      studio.dispose();
-      return dataUrl;
+      return canvas.toDataURL('image/png');
     } catch (_) {
       return null;
+    } finally {
+      studio?.dispose?.();
+      factory.visualsData = prevVisuals;
     }
   }
 
@@ -652,19 +669,16 @@ export class UnitsBuildingsLabApp {
       const uVis = this.stateManager.unitsVisualsData.units?.[this.selectedUnitId];
       if (!uStat || !uVis) return;
 
-      const factory = new ModelFactory(this.stateManager.unitsVisualsData);
-      const savedMainEq = uVis.equipment;
-      uVis.equipment = equipmentOf(uVis, this.activeLoadoutId);
-      let grp;
-      try {
-        grp = factory.createVisual(this.selectedUnitId, {
-          teamId: 1,
-          isBannerCarrier: false
-        });
-      } finally {
-        uVis.equipment = savedMainEq;
-      }
-      applySkinColors(grp, uVis, uStat.race || 'human');
+      const activeSkin =
+        uStat.activeSkin && uStat.activeSkin !== 'default' ? uStat.activeSkin : (uStat.race || 'human');
+      const grp = modelProvider.createUnitModel(this.selectedUnitId, {
+        skin: activeSkin,
+        team: 1,
+        loadoutId: this.activeLoadoutId,
+        equipmentOverride: equipmentOf(uVis, this.activeLoadoutId),
+        isBannerCarrier: false,
+        visualsOverride: this.stateManager.unitsVisualsData
+      });
       this.previewActorGroup = grp;
       this.pedestalGroup.add(grp);
 
@@ -753,25 +767,31 @@ export class UnitsBuildingsLabApp {
       const uVisB = this.stateManager.unitsVisualsData.units?.[this.duelOpponentId];
       if (!uStatA || !uVisA || !uStatB || !uVisB) return;
 
-      const factory = new ModelFactory(this.stateManager.unitsVisualsData);
       const duelGroup = new THREE.Group();
 
+      const activeSkinA =
+        uStatA.activeSkin && uStatA.activeSkin !== 'default' ? uStatA.activeSkin : (uStatA.race || 'human');
       const asLdA = asLoadout(uVisA, this.activeLoadoutId);
-      const savedMainEqA = uVisA.equipment;
-      uVisA.equipment = asLdA.equipment || uVisA.equipment;
-      let grpA;
-      try {
-        grpA = factory.createVisual(this.selectedUnitId, { teamId: 1, isBannerCarrier: false });
-      } finally {
-        uVisA.equipment = savedMainEqA;
-      }
-      applySkinColors(grpA, uVisA, uStatA.race || 'human');
+      const grpA = modelProvider.createUnitModel(this.selectedUnitId, {
+        skin: activeSkinA,
+        team: 1,
+        loadoutId: this.activeLoadoutId,
+        equipmentOverride: asLdA.equipment || uVisA.equipment,
+        isBannerCarrier: false,
+        visualsOverride: this.stateManager.unitsVisualsData
+      });
       grpA.position.set(-1.35, 0, 0);
       grpA.rotation.y = Math.PI * 0.5;
       duelGroup.add(grpA);
 
-      const grpB = factory.createVisual(this.duelOpponentId, { teamId: 2, isBannerCarrier: false });
-      applySkinColors(grpB, uVisB, uStatB.race || 'human');
+      const activeSkinB =
+        uStatB.activeSkin && uStatB.activeSkin !== 'default' ? uStatB.activeSkin : (uStatB.race || 'human');
+      const grpB = modelProvider.createUnitModel(this.duelOpponentId, {
+        skin: activeSkinB,
+        team: 2,
+        isBannerCarrier: false,
+        visualsOverride: this.stateManager.unitsVisualsData
+      });
       grpB.position.set(1.35, 0, 0);
       grpB.rotation.y = -Math.PI * 0.5;
       duelGroup.add(grpB);
@@ -782,8 +802,8 @@ export class UnitsBuildingsLabApp {
       this.unitAnimator = new Animator3D(grpA, this.stateManager.unitsVisualsData.animations, { entityId: 1 });
       this.simOpponentAnimator = new Animator3D(grpB, this.stateManager.unitsVisualsData.animations, { entityId: 2 });
       const data = this.stateManager.unitsVisualsData;
-      const raceA = uStatA.race || 'human';
-      const raceB = uStatB.race || 'human';
+      const raceA = activeSkinA;
+      const raceB = activeSkinB;
       this.unitAnimator.setLocomotion(resolveClip(data, this.selectedUnitId, raceA, 'idle'), 1.0);
       this.simOpponentAnimator.setLocomotion(resolveClip(data, this.duelOpponentId, raceB, 'idle'), 1.0);
       const cBaseA = getCombatBase(asLdA, raceA, data.prefabs);
@@ -849,34 +869,21 @@ export class UnitsBuildingsLabApp {
       const effHasWt =
         hasWt &&
         (Boolean(bDef.hasBuiltInTurret) || previewLv >= Math.max(1, (bDef.watchtowerLevel | 0) || 3));
+      this.buildingModelFactory = modelProvider.getBuildingModelFactory();
       this.buildingModelFactory.buildingsSource = this.stateManager.buildingsData;
-      const actor = this.buildingModelFactory.createBuildingActor(
-        {
-          id: 1,
-          type: bDef.id,
-          team: 1,
-          level: previewLv,
-          footprintRadiusMeters: bDef.footprintRadiusMeters || 5,
-          isCompleted: !this.bldPreviewScaffold,
-          hasWatchtower: effHasWt,
-          hp: bDef.maxHp || 1200,
-          maxHp: bDef.maxHp || 1200
-        },
-        { isGhost: false }
-      );
-      this.buildingModelFactory.updateBuildingLiveState?.(
-        actor,
-        {
-          isCompleted: !this.bldPreviewScaffold,
-          level: previewLv,
-          hasWatchtower: effHasWt,
-          isDoorOpen: this.bldPreviewDoorOpen,
-          hp: bDef.maxHp || 1200,
-          maxHp: bDef.maxHp || 1200
-        },
-        bDef,
-        0.05
-      );
+      this.buildingModelFactory.clearCaches?.();
+      const actor = modelProvider.createBuildingModel(bDef.id, {
+        buildingDefOverride: bDef,
+        team: 1,
+        level: previewLv,
+        footprintRadiusMeters: bDef.footprintRadiusMeters || 5,
+        isCompleted: !this.bldPreviewScaffold,
+        hasWatchtower: effHasWt,
+        doorOpen: this.bldPreviewDoorOpen,
+        hp: bDef.maxHp || 1200,
+        maxHp: bDef.maxHp || 1200,
+        isGhost: false
+      });
       this.buildingActor = actor;
       this.previewActorGroup = actor.group;
       this.pedestalGroup.add(actor.group);
@@ -944,7 +951,10 @@ export class UnitsBuildingsLabApp {
     if (!this.unitAnimator) return;
     const uStat = this.stateManager.unitStatsData.units?.[this.selectedUnitId];
     const uVis = this.stateManager.unitsVisualsData.units?.[this.selectedUnitId];
-    const faction = uStat?.race || uVis?.race || 'human';
+    const faction =
+      uStat?.activeSkin && uStat.activeSkin !== 'default'
+        ? uStat.activeSkin
+        : (uStat?.race || uVis?.race || 'human');
     const data = this.stateManager.unitsVisualsData;
     const asLd = asLoadout(uVis, this.activeLoadoutId);
     if (animMode === 'walk' || animMode === 'gallop') {
@@ -993,17 +1003,12 @@ export class UnitsBuildingsLabApp {
       });
     });
 
-    // Base chosen for the NEXT new unit (kept on the state manager so it survives re-rendering the left bar)
-    leftEl?.querySelector('#ub-new-unit-base')?.addEventListener('change', (e) => {
-      this.stateManager.newUnitBaseId = e.target.value;
-    });
-
-    // Fix 1 (Part A): Create New Unit starting from a clean Base Character (chosen in the selector above the button, unarmed)
+    // Fix 1 (Part A): Create New Unit starting from default appearance (unarmed; Base Character & skins edited in Studio)
     leftEl?.querySelector('#ub-btn-create-unit')?.addEventListener('click', () => {
       const count = Object.keys(this.stateManager.unitStatsData.units || {}).length + 1;
       const newId = this.stateManager.createNewUnit({
         name: `New Unit #${count}`,
-        baseCharId: leftEl.querySelector('#ub-new-unit-base')?.value || this.stateManager.newUnitBaseId || DEFAULT_BASE_CHAR_ID,
+        baseCharId: DEFAULT_BASE_CHAR_ID,
         mountType: 'none',
         weaponR: 'none',
         weaponL: 'none'
@@ -1213,30 +1218,29 @@ export class UnitsBuildingsLabApp {
       reader.readAsDataURL(file);
     });
 
-    // Base Character: move the selected unit onto another base of its race (body replaced; gear, weapons, stats, mount, animations kept)
-    rightEl?.querySelector('#ub-unit-base-select')?.addEventListener('change', (e) => {
-      const wanted = e.target.value;
-      const cur = this.stateManager.getUnitBaseId(this.selectedUnitId);
-      const label = (id) => BASE_CHARACTER_TEMPLATES.find((b) => b.id === id)?.label || id;
-      if (!wanted || wanted === cur) return;
-      const ok = globalThis.confirm?.(
-        `Switch "${this.selectedUnitId}" from ${label(cur)} to ${label(wanted)}?\n\n` +
-        'The body (bones and meshes) is replaced by the new base.\n' +
-        'Kept: stats, weapons, armour/clothing, loadouts, mount, animations. Worn gear is re-fitted to the new skeleton, ' +
-        'but may need touching up because the bodies are shaped differently. A bare base gets basic clothing in empty clothing slots.\n\n' +
-        'Any hand-edits made to this unit\'s own body or skeleton are lost.'
-      );
-      if (ok === false) {
-        e.target.value = cur;
-        return;
-      }
-      const res = this.stateManager.rebaseUnit(this.selectedUnitId, wanted);
+    // Open Animation Studio directly on Look / Gear / Base Character controls
+    rightEl?.querySelector('#ub-btn-edit-look-studio')?.addEventListener('click', () => {
+      this._openContextualAnimationLab({ initialInspectorTab: 'gear' });
+    });
+    rightEl?.querySelector('#ub-btn-edit-cosmetic-studio')?.addEventListener('click', () => {
+      this._openContextualAnimationLab({ initialInspectorTab: 'gear' });
+    });
+    const applyUnitSkin = (val) => {
+      const uStat = this.stateManager.unitStatsData.units?.[this.selectedUnitId];
+      if (!uStat) return;
+      if (!val || val === 'default') delete uStat.activeSkin;
+      else uStat.activeSkin = val;
+      this.stateManager.saveAll();
       this._renderWorkspace();
-      this._toast(
-        res.ok
-          ? `"${this.selectedUnitId}" now uses ${label(wanted)}${res.dressed?.some((x) => !x.startsWith('-')) ? ' (basic clothing added)' : ''}`
-          : `Could not switch base: ${res.reason}`
-      );
+      this._toast(`Updated visual skin to "${!val || val === 'default' ? 'Default' : val}"`);
+    };
+    rightEl?.querySelector('#ub-unit-skin-select')?.addEventListener('change', (e) => {
+      applyUnitSkin(e.target.value);
+    });
+    rightEl?.querySelectorAll('[data-unit-skin-pick]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        applyUnitSkin(btn.getAttribute('data-unit-skin-pick'));
+      });
     });
 
     // Fix 5: Mount dropdown (`None`, `Warhorse`, `Dire Wolf`, `War Chameleon`)
@@ -1365,6 +1369,9 @@ export class UnitsBuildingsLabApp {
 
     // Fix 4: Equip Cosmetic Visual Appearance (Helmet, Chest, Cape, Mount Armor) across all loadouts
     const applyCosmeticSocket = (uVis, socket, prefabId) => {
+      const pDef = this.stateManager.unitsVisualsData.prefabs?.[prefabId];
+      const defOffset = Array.isArray(pDef?.gripOffset) ? [...pDef.gripOffset] : [0, 0, 0];
+      const defRot = Array.isArray(pDef?.gripRotation) ? [...pDef.gripRotation] : [0, 0, 0];
       for (const eqObj of [
         uVis.equipment || (uVis.equipment = {}),
         ...Object.values(uVis.loadouts || {}).map((l) => l.equipment || (l.equipment = {}))
@@ -1372,10 +1379,11 @@ export class UnitsBuildingsLabApp {
         if (!prefabId || prefabId === 'none') {
           delete eqObj[socket];
         } else {
+          const samePrefab = eqObj[socket]?.prefab === prefabId;
           eqObj[socket] = {
             prefab: prefabId,
-            gripOffset: eqObj[socket]?.gripOffset || [0, 0, 0],
-            gripRotation: eqObj[socket]?.gripRotation || [0, 0, 0]
+            gripOffset: samePrefab && Array.isArray(eqObj[socket]?.gripOffset) ? eqObj[socket].gripOffset : [...defOffset],
+            gripRotation: samePrefab && Array.isArray(eqObj[socket]?.gripRotation) ? eqObj[socket].gripRotation : [...defRot]
           };
         }
       }
@@ -1473,6 +1481,9 @@ export class UnitsBuildingsLabApp {
         const uStat = this.stateManager.unitStatsData.units[this.selectedUnitId];
         if (!uStat) return;
         uStat[key] = inp.value;
+        if (key === 'name' && this.stateManager.unitsVisualsData?.units?.[this.selectedUnitId]) {
+          this.stateManager.unitsVisualsData.units[this.selectedUnitId].displayName = inp.value;
+        }
         this.stateManager.scheduleSave();
       });
     });
@@ -1509,12 +1520,31 @@ export class UnitsBuildingsLabApp {
       });
     });
 
-    rightEl?.querySelector('[data-bld-skin-select]')?.addEventListener('change', (e) => {
-      const sk = loadBuildingSkins()[this.selectedBuildingId];
+    rightEl?.querySelector('#ub-btn-edit-bld-skins-studio')?.addEventListener('click', () => {
+      this._openContextualAnimationLab({ initialInspectorTab: 'gear' });
+    });
+
+    const applyBuildingSkin = (sid) => {
+      const sk = dataRegistry.getBuildingSkin(this.selectedBuildingId);
+      if (!sk && (!sid || sid === 'default')) {
+        this._renderWorkspace();
+        return;
+      }
       if (!sk) return;
-      sk.active = e.target.value;
-      saveBuildingSkins();
-      this._spawnPreview3D();
+      const res = dataRegistry.setActiveBuildingSkin(this.selectedBuildingId, sid || 'default');
+      if (!res.ok) {
+        this._toast(res.error || 'Could not apply building skin', 4500);
+        return;
+      }
+      this._renderWorkspace();
+    };
+    rightEl?.querySelector('[data-bld-skin-select]')?.addEventListener('change', (e) => {
+      applyBuildingSkin(e.target.value);
+    });
+    rightEl?.querySelectorAll('[data-bld-skin-pick]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        applyBuildingSkin(btn.getAttribute('data-bld-skin-pick'));
+      });
     });
 
     rightEl?.querySelector('#ub-bld-preview-level-select')?.addEventListener('change', (e) => {
@@ -1746,6 +1776,9 @@ export class UnitsBuildingsLabApp {
   destroy() {
     this._running = false;
     clearTimeout(this._toastTimer);
+    if (typeof window !== 'undefined' && typeof window.removeEventListener === 'function' && this._onExternalUpdated) {
+      window.removeEventListener('kings_lands_units_buildings_updated', this._onExternalUpdated);
+    }
     this._ro?.disconnect?.();
     if (this.previewActorGroup) {
       disposeVisual(this.previewActorGroup);

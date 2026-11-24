@@ -19,8 +19,8 @@
  */
 
 import * as THREE from 'three';
-import { ModelFactory, updateBowstringRig } from '../../render/modelFactory.js';
-import { BuildingModelFactory } from '../../render/buildingModelFactory.js';
+import { updateBowstringRig } from '../../render/modelFactory.js';
+import { modelProvider } from '../../render/modelProvider.js';
 import { buildSculptedArrowGeometry, spawn3DSpellEffect } from '../../render/worldEffectsRenderer.js';
 import { Animator3D } from '../../render/animator3d.js';
 import { SynthAudio } from '../../audio/synthAudio.js';
@@ -39,6 +39,7 @@ import { createPortraitStudio, canvasToPngBytes, makeZip, downloadBytes, PORTRAI
 import * as KT from './keyTracks.js';
 import { createClipVariation, deleteClipVariation, ensureKeyframeClip, ensureProceduralClip, readClipName } from './clipEditing.js';
 import { FACTION_TEAM_COLORS, getFactions, getFactionLabel, getFactionColors, isSharedUnitsFaction, applySkinColors, disposeVisual, ownMaterial } from './skinUtils.js';
+import { filterStudioEntitiesForFaction } from '../labSync.js';
 
 const ALLOWED_EQUIPMENT = {
   weapon_socket_R: ['sword', 'ravan_prince_sword', 'king_sovereign_sword', 'sisnat_double_axe', 'spear', 'pike', 'worker_hammer', 'javelin', 'bow', 'crossbow', 'ballista_crossbow', 'wizard_staff'],
@@ -46,7 +47,6 @@ const ALLOWED_EQUIPMENT = {
   head: ['helmet_iron', 'helmet_leather', 'hood', 'king_engraved_crown', 'sisnat_war_helm', 'wizard_hat'],
   torso: ['cape', 'surcoat', 'sisnat_chest_armor']
 };
-const FACTIONS = ['human', 'orc', 'elf', 'katiler'];
 const MAX_ARENA_GROUPS = 4;   // per side, so the scene stays on screen
 const HAND_WEAPONS = ['sword', 'ravan_prince_sword', 'king_sovereign_sword', 'sisnat_double_axe', 'wizard_staff', 'spear', 'pike', 'worker_hammer', 'javelin', 'bow', 'crossbow', 'ballista_crossbow'];
 const RANGED_WEAPONS = ['bow', 'crossbow', 'javelin'];
@@ -92,9 +92,12 @@ export class StudioApp {
               : "units";
 
     this._saveStatus = { state: 'saved', message: '' };
+    this._ownsUnitStateManager = !options.ubStateManager?.studioStateManager;
+    this._ownsHeroStateManager = !options.heroStateManager;
     this.unitStateManager = options.ubStateManager?.studioStateManager || new StudioStateManager({ onStatus: (s, m) => this._onSaveStatus(s, m) });
     this.unitStateManager.onStatus = (s, m) => this._onSaveStatus(s, m);
     this.heroStateManager = options.heroStateManager || new HeroStateManager({ onStatus: (s, m) => this._onSaveStatus(s, m) });
+    this.heroStateManager.onStatus = (s, m) => this._onSaveStatus(s, m);
     if (this.unitStateManager?.data && this.heroStateManager?.data?.prefabs) {
       this.unitStateManager.data.prefabs = {
         ...(this.unitStateManager.data.prefabs || {}),
@@ -149,35 +152,7 @@ export class StudioApp {
       importJsonText: (txt) => {
         const res = this.heroStateManager.importHeroesJsonText(txt);
         if (res.ok) {
-          this.ubStateManager = options.ubStateManager || new UnitsBuildingsStateManager({ studioStateManager: this.unitStateManager });
-    this._heroesStudioView = this.heroStateManager.getStudioViewData(this.unitStateManager.data);
-    this._buildingsStudioView = buildBuildingsStudioViewData(this.ubStateManager.buildingsData, this.ubStateManager.buildingVisualsData, this.unitStateManager.data);
-    this._buildingsStateAdapter = {
-      get data() { return this._view; },
-      _view: this._buildingsStudioView,
-      notice: "",
-      saveDraft: () => this.ubStateManager.saveAll(),
-      scheduleSave: (d) => {
-        if (this._buildingsStudioView?.animations?.keyframes) {
-          this.ubStateManager.buildingVisualsData.animations.keyframes = {
-            ...(this.ubStateManager.buildingVisualsData.animations.keyframes || {}),
-            ...this._buildingsStudioView.animations.keyframes
-          };
-        }
-        this.ubStateManager.scheduleSave(d);
-      },
-      flush: () => this.ubStateManager.saveAll(),
-      exportCustomJson: () => this.ubStateManager.exportCombinedBundleJson(),
-      importJsonText: (txt) => this.ubStateManager.importCombinedBundleText(txt),
-      resetToDefault: () => { this.ubStateManager.resetAllToDefaults(); return true; },
-      resetClip: () => ({ ok: false, cancelled: true }),
-      snapshot: () => JSON.stringify(this._buildingsStudioView),
-      restoreSnapshot: (txt) => {
-        try { this._buildingsStudioView = JSON.parse(txt); this._buildingsStateAdapter._view = this._buildingsStudioView; } catch (_) {}
-      },
-      destroy: () => {}
-    };
-          this._heroStateAdapter._view = this._heroesStudioView;
+          this._rebuildCrossLabViews();
         }
         return res;
       },
@@ -185,35 +160,7 @@ export class StudioApp {
         if (!confirm('Reset all Heroes data to the default heroes.json?')) return false;
         const ok = this.heroStateManager.resetToDefault();
         if (ok) {
-          this.ubStateManager = options.ubStateManager || new UnitsBuildingsStateManager({ studioStateManager: this.unitStateManager });
-    this._heroesStudioView = this.heroStateManager.getStudioViewData(this.unitStateManager.data);
-    this._buildingsStudioView = buildBuildingsStudioViewData(this.ubStateManager.buildingsData, this.ubStateManager.buildingVisualsData, this.unitStateManager.data);
-    this._buildingsStateAdapter = {
-      get data() { return this._view; },
-      _view: this._buildingsStudioView,
-      notice: "",
-      saveDraft: () => this.ubStateManager.saveAll(),
-      scheduleSave: (d) => {
-        if (this._buildingsStudioView?.animations?.keyframes) {
-          this.ubStateManager.buildingVisualsData.animations.keyframes = {
-            ...(this.ubStateManager.buildingVisualsData.animations.keyframes || {}),
-            ...this._buildingsStudioView.animations.keyframes
-          };
-        }
-        this.ubStateManager.scheduleSave(d);
-      },
-      flush: () => this.ubStateManager.saveAll(),
-      exportCustomJson: () => this.ubStateManager.exportCombinedBundleJson(),
-      importJsonText: (txt) => this.ubStateManager.importCombinedBundleText(txt),
-      resetToDefault: () => { this.ubStateManager.resetAllToDefaults(); return true; },
-      resetClip: () => ({ ok: false, cancelled: true }),
-      snapshot: () => JSON.stringify(this._buildingsStudioView),
-      restoreSnapshot: (txt) => {
-        try { this._buildingsStudioView = JSON.parse(txt); this._buildingsStateAdapter._view = this._buildingsStudioView; } catch (_) {}
-      },
-      destroy: () => {}
-    };
-          this._heroStateAdapter._view = this._heroesStudioView;
+          this._rebuildCrossLabViews();
         }
         return ok;
       },
@@ -221,40 +168,16 @@ export class StudioApp {
       snapshot: () => this.heroStateManager.snapshot(),
       restoreSnapshot: (txt) => {
         this.heroStateManager.restoreSnapshot(txt);
-        this.ubStateManager = options.ubStateManager || new UnitsBuildingsStateManager({ studioStateManager: this.unitStateManager });
-    this._heroesStudioView = this.heroStateManager.getStudioViewData(this.unitStateManager.data);
-    this._buildingsStudioView = buildBuildingsStudioViewData(this.ubStateManager.buildingsData, this.ubStateManager.buildingVisualsData, this.unitStateManager.data);
-    this._buildingsStateAdapter = {
-      get data() { return this._view; },
-      _view: this._buildingsStudioView,
-      notice: "",
-      saveDraft: () => this.ubStateManager.saveAll(),
-      scheduleSave: (d) => {
-        if (this._buildingsStudioView?.animations?.keyframes) {
-          this.ubStateManager.buildingVisualsData.animations.keyframes = {
-            ...(this.ubStateManager.buildingVisualsData.animations.keyframes || {}),
-            ...this._buildingsStudioView.animations.keyframes
-          };
-        }
-        this.ubStateManager.scheduleSave(d);
+        this._rebuildCrossLabViews();
       },
-      flush: () => this.ubStateManager.saveAll(),
-      exportCustomJson: () => this.ubStateManager.exportCombinedBundleJson(),
-      importJsonText: (txt) => this.ubStateManager.importCombinedBundleText(txt),
-      resetToDefault: () => { this.ubStateManager.resetAllToDefaults(); return true; },
-      resetClip: () => ({ ok: false, cancelled: true }),
-      snapshot: () => JSON.stringify(this._buildingsStudioView),
-      restoreSnapshot: (txt) => {
-        try { this._buildingsStudioView = JSON.parse(txt); this._buildingsStateAdapter._view = this._buildingsStudioView; } catch (_) {}
-      },
-      destroy: () => {}
-    };
-        this._heroStateAdapter._view = this._heroesStudioView;
-      },
-      destroy: () => this.heroStateManager.destroy()
+      destroy: () => {
+        if (this._ownsHeroStateManager) this.heroStateManager.destroy();
+        else this.heroStateManager.flush();
+      }
     };
 
-    this.modelFactory = new ModelFactory(this.unitsData);
+    this.modelFactory = modelProvider.getModelFactory();
+    this._buildingModelFactory = modelProvider.getBuildingModelFactory();
     try { this.synthAudio = new SynthAudio(); } catch (e) { this.synthAudio = null; }
 
     this.view = 'studio';                 // 'studio' | 'arena'
@@ -271,7 +194,9 @@ export class StudioApp {
       this.currentFaction = 'human';
     } else if (this.contextualUnitId && this.unitsData.units[this.contextualUnitId]) {
       this.currentUnitId = this.contextualUnitId;
-      this.currentFaction = this.unitsData.units[this.contextualUnitId]?.race || 'human';
+      const uStat = this.ubStateManager?.unitStatsData?.units?.[this.contextualUnitId];
+      const desired = options.initialFaction || (uStat?.activeSkin && uStat.activeSkin !== 'default' ? uStat.activeSkin : null) || this.unitsData.units[this.contextualUnitId]?.race || 'human';
+      this.currentFaction = this._factions().includes(desired) ? desired : (this.unitsData.units[this.contextualUnitId]?.race || 'human');
     } else if (this.entityCategory === 'heroes') {
       const heroKeys = Object.keys(this._heroesStudioView.units);
       this.currentUnitId = heroKeys[0] || 'wizard';
@@ -282,7 +207,9 @@ export class StudioApp {
       this.currentFaction = "human";
     } else {
       this.currentUnitId = options.initialUnitId && this.unitsData.units[options.initialUnitId] ? options.initialUnitId : (this.unitsData.units.swordsman ? "swordsman" : Object.keys(this.unitsData.units)[0]);
-      this.currentFaction = this.unitsData.units[this.currentUnitId]?.race || "human";
+      const uStat = this.ubStateManager?.unitStatsData?.units?.[this.currentUnitId];
+      const desired = options.initialFaction || (uStat?.activeSkin && uStat.activeSkin !== 'default' ? uStat.activeSkin : null) || this.unitsData.units[this.currentUnitId]?.race || 'human';
+      this.currentFaction = this._factions().includes(desired) ? desired : (this.unitsData.units[this.currentUnitId]?.race || "human");
     }
     const initUnitDef = this.unitsData.units?.[this.currentUnitId];
     const secondLdKey = Object.keys(initUnitDef?.loadouts || {}).find((k) => k !== MAIN_LOADOUT);
@@ -367,6 +294,7 @@ export class StudioApp {
   _onSaveStatus(state, message) {
     this._saveStatus = { state, message: message || '' };
     if (state === 'saved') this._updateHealthBadge?.();
+    if (state === 'error' && message) this._toast(message, 5000);
     this._renderStatus();
   }
 
@@ -407,24 +335,33 @@ export class StudioApp {
     if (sel) sel.innerHTML = this._factionOptions(this.currentFaction);
   }
 
-  /** Units that belong to one people: a unit with a `race` only to that people, units without a race to shared peoples. */
+  _rebuildCrossLabViews() {
+    if (this.unitStateManager?.data && this.heroStateManager?.data?.prefabs) {
+      this.unitStateManager.data.prefabs = {
+        ...(this.unitStateManager.data.prefabs || {}),
+        ...(this.heroStateManager.data.prefabs || {})
+      };
+    }
+    this._heroesStudioView = this.heroStateManager.getStudioViewData(this.unitStateManager.data);
+    for (const u of Object.values(this._heroesStudioView.units || {})) {
+      restow(this._heroesStudioView, u);
+    }
+    if (this._heroStateAdapter) {
+      this._heroStateAdapter._view = this._heroesStudioView;
+    }
+    this._buildingsStudioView = buildBuildingsStudioViewData(
+      this.ubStateManager.buildingsData,
+      this.ubStateManager.buildingVisualsData,
+      this.unitStateManager.data
+    );
+    if (this._buildingsStateAdapter) {
+      this._buildingsStateAdapter._view = this._buildingsStudioView;
+    }
+  }
+
+  /** Units/Heroes/Buildings belonging to one faction/people (`עמים`). */
   _unitsOfPeople(people) {
-    if (this.entityCategory === "buildings") {
-      return Object.keys(this.unitsData.units || {});
-    }
-    if (this.entityCategory === "heroes") {
-      const allHeroes = Object.keys(this.unitsData.units || {});
-      const matching = allHeroes.filter((id) => {
-        const r = this.unitsData.units[id]?.race || 'human';
-        return !people || r === people || people === 'human';
-      });
-      return matching.length > 0 ? matching : allHeroes;
-    }
-    const usesShared = isSharedUnitsFaction(this.unitsData, people);
-    return Object.keys(this.unitsData.units).filter((id) => {
-      const race = this._raceOf(id);
-      return race ? race === people : usesShared;
-    });
+    return filterStudioEntitiesForFaction(this.unitsData.units, this.entityCategory, people, this.unitsData);
   }
 
   _raceOf(id) {
@@ -455,45 +392,23 @@ export class StudioApp {
   _switchEntityCategory(cat) {
     if (this.contextualHeroId) return;
     if (this.entityCategory === cat) return;
+    const prevCat = this.entityCategory;
     this.stateManager.flush();
-    this.entityCategory = cat;
-    if (cat === 'heroes') {
-      this.ubStateManager = options.ubStateManager || new UnitsBuildingsStateManager({ studioStateManager: this.unitStateManager });
-    this._heroesStudioView = this.heroStateManager.getStudioViewData(this.unitStateManager.data);
-    this._buildingsStudioView = buildBuildingsStudioViewData(this.ubStateManager.buildingsData, this.ubStateManager.buildingVisualsData, this.unitStateManager.data);
-    this._buildingsStateAdapter = {
-      get data() { return this._view; },
-      _view: this._buildingsStudioView,
-      notice: "",
-      saveDraft: () => this.ubStateManager.saveAll(),
-      scheduleSave: (d) => {
-        if (this._buildingsStudioView?.animations?.keyframes) {
-          this.ubStateManager.buildingVisualsData.animations.keyframes = {
-            ...(this.ubStateManager.buildingVisualsData.animations.keyframes || {}),
-            ...this._buildingsStudioView.animations.keyframes
-          };
-        }
-        this.ubStateManager.scheduleSave(d);
-      },
-      flush: () => this.ubStateManager.saveAll(),
-      exportCustomJson: () => this.ubStateManager.exportCombinedBundleJson(),
-      importJsonText: (txt) => this.ubStateManager.importCombinedBundleText(txt),
-      resetToDefault: () => { this.ubStateManager.resetAllToDefaults(); return true; },
-      resetClip: () => ({ ok: false, cancelled: true }),
-      snapshot: () => JSON.stringify(this._buildingsStudioView),
-      restoreSnapshot: (txt) => {
-        try { this._buildingsStudioView = JSON.parse(txt); this._buildingsStateAdapter._view = this._buildingsStudioView; } catch (_) {}
-      },
-      destroy: () => {}
-    };
-      this._heroStateAdapter._view = this._heroesStudioView;
+    if (prevCat === 'units' && this.ubStateManager && this.unitStateManager?.data) {
+      this.ubStateManager.unitsVisualsData = this.unitStateManager.data;
+      this.ubStateManager.saveAll();
+    } else if (prevCat === 'heroes' && this.heroStateManager) {
+      this.heroStateManager.syncFromStudioView();
+      this.heroStateManager.saveDraft();
     }
+    this.entityCategory = cat;
+    this._rebuildCrossLabViews();
     this.modelFactory.visualsData = this.unitsData;
-    this.sandboxArena.setData(this.unitsData);
+    this.sandboxArena?.setData(this.unitsData);
     if (this.timelineEditor) this.timelineEditor.animations = this.unitsData.animations;
 
     const list = this._unitsOfPeople(this.currentFaction);
-    this.currentUnitId = list[0] || Object.keys(this.unitsData.units)[0];
+    this.currentUnitId = list[0] || Object.keys(this.unitsData.units || {})[0];
     this.currentLoadout = MAIN_LOADOUT;
 
     const tabUnits = this.rootContainer.querySelector("#st-tab-units");
@@ -512,13 +427,19 @@ export class StudioApp {
       lblClass.textContent = cat === "heroes" ? "Hero:" : cat === "buildings" ? "Building:" : "Unit:";
     }
     if (btnExport) {
-      btnExport.textContent = cat === 'heroes' ? 'Export Heroes JSON' : 'Export JSON';
+      btnExport.textContent = cat === 'heroes' ? 'Export Heroes JSON' : cat === 'buildings' ? 'Export Bundle JSON' : 'Export JSON';
     }
 
     this._refreshUnitList();
     this._updateHealthBadge();
     this._spawnStudioUnit();
-    this._toast(cat === 'heroes' ? 'Switched to Heroes (גיבורים) — saves to heroes.json' : 'Switched to Units (יחידות) — saves to units.json');
+    this._toast(
+      cat === 'heroes'
+        ? 'Switched to Heroes (גיבורים) — saves to heroes.json'
+        : cat === 'buildings'
+          ? 'Switched to Buildings (מבנים) — saves to buildings bundle'
+          : 'Switched to Units (יחידות) — saves to units.json'
+    );
   }
 
   _buildStudioDOM() {
@@ -531,7 +452,7 @@ export class StudioApp {
         ? '← Back to Units Lab'
         : this.contextualBuildingId
           ? '← Back to Buildings Lab'
-          : 'Back to Game';
+          : 'Back';
     const headerTitle = this.contextualHeroId
       ? `Kings Lands • Hero Animation Lab (${activeDef?.displayName || this.contextualHeroId})`
       : this.contextualUnitId
@@ -553,10 +474,9 @@ export class StudioApp {
               <button id="st-mode-arena" class="${TAB_OFF}">2. Arena</button>
             </div>
             ${!isContextual ? `<button id="st-btn-open-units-lab" class="rounded-lg border border-emerald-400/60 bg-emerald-500/15 hover:bg-emerald-500/25 px-3 py-1 text-xs font-bold text-emerald-300 transition">⚔️ Units & Buildings Lab</button><button id="st-btn-open-heroes" class="rounded-lg border border-amber-400/60 bg-amber-500/15 hover:bg-amber-500/25 px-3 py-1 text-xs font-bold text-amber-300 transition">👑 Hall of Heroes</button>` : ''}
-            <span id="st-save-chip" class="${CHIP.saved.cls}">${CHIP.saved.text}</span>
           </div>
           <div class="flex flex-wrap items-center gap-1.5">
-            <button id="st-btn-health" class="rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700 px-3 py-1.5 text-xs font-semibold text-slate-200" title="Scan data for broken references, missing events and other mistakes">Health</button>
+            <button id="st-btn-health" class="whitespace-nowrap inline-flex items-center gap-1.5 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700 px-3 py-1.5 text-xs font-semibold text-slate-200" title="Scan data for broken references, missing events and other mistakes">Health</button>
             <button id="st-btn-portraits" class="rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700 px-3 py-1.5 text-xs font-semibold text-slate-200" title="Render portraits / icons as PNG files">Portraits</button>
             <button id="st-btn-export-json" class="rounded-lg bg-emerald-600 hover:bg-emerald-500 px-3 py-1.5 text-xs font-bold text-slate-950 shadow" title="Download JSON with all your changes (Ctrl+S saves the draft)">${isHeroesCat ? 'Export Heroes JSON' : 'Export JSON'}</button>
             <button id="st-btn-import-json" class="rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-600 px-3 py-1.5 text-xs font-semibold text-slate-200" title="Replace everything with an imported JSON file">Import JSON</button>
@@ -595,6 +515,16 @@ export class StudioApp {
                     <select id="st-unit-select" class="w-full rounded bg-slate-800 border border-slate-600 px-2.5 py-1.5 font-semibold text-slate-100 mb-2">${this._unitOptions(this.currentUnitId)}</select>
                   `
               }
+              <div id="st-base-char-row" class="hidden mt-2 pt-2 border-t border-slate-800">
+                <label class="block text-slate-400 mb-1" title="Choose the Base Character body for this unit (weapons, mounts, stats & animations are kept)">Base Character:</label>
+                <select id="st-base-char-select" class="w-full rounded bg-slate-800 border border-slate-600 px-2 py-1 text-xs font-bold text-amber-200"></select>
+              </div>
+              <div id="st-unit-skin-row" class="hidden mt-2 pt-2 border-t border-slate-800">
+                <div class="flex items-center justify-between mb-1">
+                  <span class="text-slate-400">Active Unit Skin:</span>
+                </div>
+                <div id="st-unit-skin-strip" class="grid grid-cols-2 gap-1.5"></div>
+              </div>
               <div class="grid grid-cols-2 gap-2 mt-2">
                 <select id="st-team-select" class="w-full rounded bg-slate-800 border border-slate-600 px-2 py-1 text-slate-100">
                   <option value="1">Team 1</option><option value="2">Team 2</option>
@@ -758,6 +688,27 @@ export class StudioApp {
 
   // ================================================================== unit / joints
 
+  _refreshBaseCharControl() {
+    const row = this.rootContainer?.querySelector('#st-base-char-row');
+    const sel = this.rootContainer?.querySelector('#st-base-char-select');
+    if (!row || !sel) return;
+    if (this.entityCategory !== 'units' || !this.ubStateManager) {
+      row.classList.add('hidden');
+      return;
+    }
+    const choices = this.ubStateManager.listBasesForUnit(this.currentUnitId) || [];
+    if (!choices.length) {
+      row.classList.add('hidden');
+      return;
+    }
+    row.classList.remove('hidden');
+    sel.disabled = choices.length <= 1;
+    sel.classList.toggle('opacity-60', choices.length <= 1);
+    sel.innerHTML = choices
+      .map((b) => `<option value="${b.id}" ${b.current ? 'selected' : ''}>${b.label}</option>`)
+      .join('');
+  }
+
   _spawnStudioUnit() {
     this._restoreColorPreview();
     if (this.currentUnitGroup) {
@@ -767,36 +718,48 @@ export class StudioApp {
     this.gizmoController.detach();
 
     const unitDef = this.unitsData.units[this.currentUnitId];
+    if (!unitDef) {
+      this._refreshBaseCharControl();
+      return;
+    }
     const mainEq = unitDef.equipment;
     unitDef.equipment = this._eq();      // the factory builds whichever loadout is being edited
     try {
-      this.currentUnitGroup = this.modelFactory.createVisual(this.currentUnitId, {
-        teamId: this.currentTeamId,
+      const commonOpts = {
+        visualsOverride: this.unitsData,
+        skin: this.currentFaction,
+        team: this.currentTeamId,
         isBannerCarrier: this.entityCategory === 'heroes' || this._isBuildingNow() ? false : this.isBannerCarrier,
         customTeamColors: getFactionColors(this.unitsData, this.currentFaction)
-      });
+      };
+      this.currentUnitGroup = this.entityCategory === 'heroes'
+        ? modelProvider.createHeroModel(this.currentUnitId, {
+            ...commonOpts,
+            loadoutId: this.currentLoadout
+          })
+        : modelProvider.createUnitModel(this.currentUnitId, {
+            ...commonOpts,
+            equipmentOverride: unitDef.equipment
+          });
     } finally { unitDef.equipment = mainEq; }
-    applySkinColors(this.currentUnitGroup, unitDef, this.currentFaction);
     if (unitDef?.isBuildingEntity) {
       try {
-        if (!this._buildingModelFactory) this._buildingModelFactory = new BuildingModelFactory();
-        this._buildingModelFactory.buildingsSource = this.ubStateManager?.buildingsData;   // skins are read live from the shared skin store
+        this._buildingModelFactory = modelProvider.getBuildingModelFactory();
+        this._buildingModelFactory.buildingsSource = this.ubStateManager?.buildingsData;
+        this._buildingModelFactory.clearCaches?.();
         const bId = unitDef.buildingId || this.currentUnitId;
         const bDef = this.ubStateManager?.buildingsData?.buildings?.[bId] || { id: bId, footprintRadiusMeters: 5, maxHp: 1200 };
         const hasWt = bDef.hasWatchtowerSupport !== false && ((bDef.watchtowerLevel | 0) > 0 || Boolean(bDef.hasBuiltInTurret));
-        const bActor = this._buildingModelFactory.createBuildingActor(
-          {
-            id: 1,
-            type: bId,
-            team: this.currentTeamId || 1,
-            footprintRadiusMeters: bDef.footprintRadiusMeters || 5,
-            isCompleted: true,
-            hasWatchtower: hasWt,
-            hp: bDef.maxHp || 1200,
-            maxHp: bDef.maxHp || 1200
-          },
-          { isGhost: false }
-        );
+        const bActor = modelProvider.createBuildingModel(bId, {
+          buildingDefOverride: bDef,
+          team: this.currentTeamId || 1,
+          level: this.buildingPreviewLevel || 1,
+          footprintRadiusMeters: bDef.footprintRadiusMeters || 5,
+          isCompleted: true,
+          hasWatchtower: hasWt,
+          hp: bDef.maxHp || 1200,
+          maxHp: bDef.maxHp || 1200
+        });
         const s = 0.34;
         bActor.group.scale.set(s, s, s);
         const socks = this.currentUnitGroup.userData?.sockets || {};
@@ -826,6 +789,8 @@ export class StudioApp {
     if (this.timelineEditor) { this.timelineEditor.refreshClipList(); this._syncClipSelection(); }
     else this._selectJoint(this.selectedSocketName);
     { const bl = this.rootContainer.querySelector('#st-banner-label'); if (bl) bl.style.display = this._isBuildingNow() ? 'none' : ''; }
+    this._refreshBaseCharControl();
+    this._refreshUnitSkinStrip?.();
     this._renderImportPanel();
   }
 
@@ -911,10 +876,16 @@ export class StudioApp {
     const b = this.rootContainer?.querySelector('#st-btn-health');
     if (!b) return;
     const { counts } = runHealthCheck(this.unitsData);
-    const base = 'rounded-lg border px-3 py-1.5 text-xs font-semibold ';
-    if (counts.error) { b.className = base + 'border-rose-500 bg-rose-900/60 text-rose-100 hover:bg-rose-800'; b.textContent = `Health ✕ ${counts.error}`; }
-    else if (counts.warn) { b.className = base + 'border-amber-500 bg-amber-900/40 text-amber-100 hover:bg-amber-800/60'; b.textContent = `Health ! ${counts.warn}`; }
-    else { b.className = base + 'border-emerald-600 bg-slate-800 text-emerald-300 hover:bg-slate-700'; b.textContent = 'Health ✓'; }
+    const base = 'whitespace-nowrap inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold ';
+    if (counts.error || counts.warn) {
+      b.className = base + (counts.error
+        ? 'border-rose-500/70 bg-rose-950/60 text-slate-100 hover:bg-rose-900/70'
+        : 'border-amber-500/70 bg-amber-950/50 text-slate-100 hover:bg-amber-900/60');
+      b.innerHTML = '<span>Health</span><span class="text-rose-500 font-black leading-none">!</span>';
+    } else {
+      b.className = base + 'border-emerald-600 bg-slate-800 text-emerald-300 hover:bg-slate-700';
+      b.innerHTML = '<span>Health</span><span class="text-emerald-400 font-bold leading-none">✓</span>';
+    }
   }
 
   _healthReportText(issues) {
@@ -1017,6 +988,7 @@ export class StudioApp {
       </div>`);
     const q = (s) => this.rootContainer.querySelector(`#st-modal-card ${s}`);
     this._portraitStudio?.dispose();
+    this.modelFactory.visualsData = this.unitsData;
     this._portraitStudio = createPortraitStudio(this.modelFactory, this.unitsData);
     const read = () => {
       o.size = Number(q('#pt-size').value); o.view = q('#pt-view').value; o.angle = q('#pt-angle').value; o.background = q('#pt-bg').value;

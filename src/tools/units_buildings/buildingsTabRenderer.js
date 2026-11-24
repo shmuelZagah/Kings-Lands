@@ -1,4 +1,4 @@
-import { loadBuildingSkins } from '../../data/buildingSkinStore.js';
+import { dataRegistry } from '../../data/dataRegistry.js';
 import { BUILDING_LEVEL_UPGRADE_FEATURES, ensureBuildingLevelUpgradesConfig, getCumulativeBuildingUpgradesAtLevel } from './buildingStudioAdapter.js';
 /**
  * Kings Lands — Buildings Tab Renderer for Units & Buildings Lab
@@ -251,15 +251,36 @@ export function renderBuildingRightInspectorHtml(stateManager, buildingId, previ
       </div>
 
       ${(() => {
-        const sk = loadBuildingSkins()[bDef.id];
+        const sk = dataRegistry.getBuildingSkin(bDef.id);
         const items = Object.entries(sk?.items || {});
-        if (!items.length) return '';
-        return `<div class="rounded-xl border border-sky-500/40 bg-slate-950/75 p-2.5 flex flex-col gap-1.5">
-          <span class="text-xs font-black text-sky-300">Skins (imported in the Studio)</span>
-          <select data-bld-skin-select class="w-full rounded bg-slate-900 border border-slate-700 px-2 py-1 text-xs font-bold text-slate-100">
-            <option value="default" ${(sk.active || 'default') === 'default' ? 'selected' : ''}>Default look</option>
-            ${items.map(([sid, it]) => `<option value="${sid}" ${sk.active === sid ? 'selected' : ''}>${it.name || sid}</option>`).join('')}
+        const activeId = sk?.active || 'default';
+        const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+        const card = (sid, label, icon, isPlaceholder = false) => {
+          const on = activeId === sid;
+          return `<button type="button" data-bld-skin-pick="${esc(sid)}" class="relative flex flex-col items-center justify-between gap-1 rounded-lg border-2 p-2 text-center cursor-pointer transition ${
+            on
+              ? 'border-emerald-400 bg-emerald-500/15 ring-1 ring-emerald-400/50'
+              : 'border-slate-700 bg-slate-900/90 hover:border-slate-500'
+          }">
+            ${on ? `<span data-skin-check="true" class="pointer-events-none absolute top-1 left-1 z-10 flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500 text-slate-950 text-[10px] font-black shadow ring-1 ring-slate-950">✓</span>` : ''}
+            <span class="text-xl leading-none mt-1">${isPlaceholder ? '📦' : icon}</span>
+            <span class="w-full truncate text-[10.5px] font-bold ${on ? 'text-emerald-300' : 'text-slate-200'}">${esc(label)}</span>
+          </button>`;
+        };
+        return `<div class="rounded-xl border border-sky-500/40 bg-slate-950/75 p-2.5 flex flex-col gap-2">
+          <div class="flex items-center justify-between gap-2">
+            <span class="text-xs font-black text-sky-300">Building Skins (From Studio)</span>
+            <button type="button" id="ub-btn-edit-bld-skins-studio" class="rounded-lg border border-sky-400/60 bg-sky-500/15 hover:bg-sky-500/25 px-2 py-0.5 text-[10px] font-extrabold text-sky-300 cursor-pointer transition">🎬 Import / Edit Skins in Studio</button>
+          </div>
+          <div class="grid grid-cols-3 gap-1.5">
+            ${card('default', 'Default look', '🏰', false)}
+            ${items.map(([sid, it]) => card(sid, it.name || sid, '🏠', Boolean(it.isPlaceholderCube))).join('')}
+          </div>
+          <select data-bld-skin-select class="hidden">
+            <option value="default" ${activeId === 'default' ? 'selected' : ''}>Default look</option>
+            ${items.map(([sid, it]) => `<option value="${esc(sid)}" ${activeId === sid ? 'selected' : ''}>${esc(it.name || sid)}</option>`).join('')}
           </select>
+          ${!items.length ? `<div class="text-[10.5px] text-slate-400">Import custom .glb skins in Animation Studio to add more looks.</div>` : ''}
         </div>`;
       })()}
 

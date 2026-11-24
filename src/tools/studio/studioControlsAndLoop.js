@@ -23,7 +23,6 @@
  */
 
 import * as THREE from 'three';
-import { ModelFactory, updateBowstringRig } from '../../render/modelFactory.js';
 import { buildSculptedArrowGeometry, spawn3DSpellEffect } from '../../render/worldEffectsRenderer.js';
 import { Animator3D } from '../../render/animator3d.js';
 import { SynthAudio } from '../../audio/synthAudio.js';
@@ -47,7 +46,6 @@ const ALLOWED_EQUIPMENT = {
   head: ['helmet_iron', 'helmet_leather', 'hood', 'king_engraved_crown', 'sisnat_war_helm', 'wizard_hat'],
   torso: ['cape', 'surcoat', 'sisnat_chest_armor']
 };
-const FACTIONS = ['human', 'orc', 'elf', 'katiler'];
 const MAX_ARENA_GROUPS = 4;   // per side, so the scene stays on screen
 const HAND_WEAPONS = ['sword', 'ravan_prince_sword', 'king_sovereign_sword', 'sisnat_double_axe', 'wizard_staff', 'spear', 'pike', 'worker_hammer', 'javelin', 'bow', 'crossbow'];
 const RANGED_WEAPONS = ['bow', 'crossbow', 'javelin'];
@@ -241,6 +239,10 @@ export const studioControlsAndLoopMethods = {
     this._undoTag = '';
     this.stateManager.restoreSnapshot(target);
     this._rebindData();
+    if (this.ubStateManager && this.entityCategory === 'units' && this.unitStateManager?.data) {
+      this.ubStateManager.unitsVisualsData = this.unitStateManager.data;
+      this.ubStateManager.saveAll();
+    }
     this._toast(label === 'undo' ? 'Undo' : 'Redo');
   },
 
@@ -353,28 +355,59 @@ export const studioControlsAndLoopMethods = {
     qs("#st-tab-heroes")?.addEventListener("click", () => this._switchEntityCategory("heroes"));
     qs("#st-tab-buildings")?.addEventListener("click", () => this._switchEntityCategory("buildings"));
     qs("#st-btn-open-units-lab")?.addEventListener("click", () => {
-      this.stateManager.flush();
+      this._flushCurrentCategory();
       if (this.onOpenUnitsBuildingsLab) {
+        const bId = this.entityCategory === "buildings" ? this.currentUnitId : (this._lastBuildingId || undefined);
+        const tab = this.entityCategory === "buildings" ? "buildings" : "units";
         this.onOpenUnitsBuildingsLab({
-          initialTab: this.entityCategory === "buildings" ? "buildings" : "units",
-          initialUnitId: this.entityCategory === "units" ? this.currentUnitId : undefined,
-          initialBuildingId: this.entityCategory === "buildings" ? this.currentUnitId : undefined
+          initialTab: tab,
+          initialUnitId: tab === "units" ? this.currentUnitId : undefined,
+          initialBuildingId: bId
         });
       }
     });
     qs('#st-btn-open-heroes')?.addEventListener('click', () => {
-      this.stateManager.flush();
+      this._flushCurrentCategory();
       if (this.onOpenHallOfHeroes) this.onOpenHallOfHeroes();
     });
 
     qs('#st-unit-select').addEventListener('change', (e) => {
       this.currentUnitId = e.target.value;
       this.currentLoadout = MAIN_LOADOUT;
-      const race = this._raceOf(this.currentUnitId);   // a unit made for one people opens in that people's skin
+      const uStat = this.ubStateManager?.unitStatsData?.units?.[this.currentUnitId];
+      const activeSkin = uStat?.activeSkin && uStat.activeSkin !== 'default' ? uStat.activeSkin : null;
+      const race = activeSkin || this._raceOf(this.currentUnitId);
       if (race && this._factions().includes(race)) { this.currentFaction = race; qs('#st-faction-select').value = race; }
       this._spawnStudioUnit();
     });
-    qs('#st-faction-select').addEventListener('change', (e) => { this.currentFaction = e.target.value; this._refreshUnitList(); this._spawnStudioUnit(); });
+    qs('#st-base-char-select')?.addEventListener('change', (e) => {
+      const wanted = e.target.value;
+      if (!wanted || !this.ubStateManager || this.entityCategory !== 'units') return;
+      this._beginEdit('rebase');
+      this.ubStateManager.unitsVisualsData = this.unitStateManager.data;
+      const res = this.ubStateManager.rebaseUnit(this.currentUnitId, wanted);
+      if (!res.ok) {
+        this._toast(res.reason || 'Could not switch base character');
+        this._refreshBaseCharControl();
+        return;
+      }
+      this.unitStateManager.data = this.ubStateManager.unitsVisualsData;
+      this.modelFactory.visualsData = this.unitsData;
+      this.unitStateManager.flush?.();
+      this._spawnStudioUnit();
+      this._renderGearPanel();
+      this.timelineEditor?.refreshClipList();
+      this._toast(`Updated base character to ${wanted}`);
+    });
+    qs('#st-faction-select').addEventListener('change', (e) => {
+      this.currentFaction = e.target.value;
+      if (this.isContextualMode && this.entityCategory === 'units') {
+        this._setUnitActiveSkin?.(this.currentFaction, { spawn: true });
+        return;
+      }
+      this._refreshUnitList();
+      this._spawnStudioUnit();
+    });
     qs('#st-team-select').addEventListener('change', (e) => { this.currentTeamId = Number(e.target.value) || 1; this._spawnStudioUnit(); });
     qs('#st-banner-toggle').addEventListener('change', (e) => { this.isBannerCarrier = e.target.checked; this._spawnStudioUnit(); });
 
@@ -634,15 +667,22 @@ export const studioControlsAndLoopMethods = {
         return;
       }
       if (this.entityCategory === 'heroes') {
+        const prevVis = this.modelFactory.visualsData;
+        this.modelFactory.visualsData = this.unitsData;
+        let dataUrl = '';
         const studio = createPortraitStudio(this.modelFactory, this.unitsData);
-        const canvas = studio.render(this.currentUnitId, this.currentFaction, {
-          size: 256,
-          view: 'bust',
-          angle: 'three_quarter',
-          background: 'transparent'
-        });
-        const dataUrl = canvas.toDataURL('image/png');
-        studio.dispose();
+        try {
+          const canvas = studio.render(this.currentUnitId, this.currentFaction, {
+            size: 256,
+            view: 'bust',
+            angle: 'three_quarter',
+            background: 'transparent'
+          });
+          dataUrl = canvas.toDataURL('image/png');
+        } finally {
+          studio.dispose();
+          this.modelFactory.visualsData = prevVis;
+        }
         this.heroStateManager.setHeroPortrait(this.currentUnitId, dataUrl);
         this._toast('Captured transparent portrait');
         return;
@@ -663,6 +703,7 @@ export const studioControlsAndLoopMethods = {
       const res = this.stateManager.importJsonText(await file.text());
       if (!res.ok) { this._toast(res.error, 5000); return; }
       this._rebindData();
+      this._flushCurrentCategory();
       this._toast(this.stateManager.notice || 'Imported', 4000);
     });
 
@@ -670,15 +711,12 @@ export const studioControlsAndLoopMethods = {
       this._beginEdit('reset-all');
       if (!this.stateManager.resetToDefault()) return;
       this._rebindData();
+      this._flushCurrentCategory();
       this._toast('Everything was reset to the shipped units.json');
     });
 
     qs('#st-btn-exit').addEventListener('click', () => {
-      this.stateManager.flush();
-      if (this.ubStateManager && this.entityCategory === 'units') {
-        this.ubStateManager.unitsVisualsData = this.unitStateManager.data;
-        this.ubStateManager.saveAll();
-      }
+      this._flushCurrentCategory();
       if (this.onExitStudio) {
         const currentLoadoutIdx = this.currentLoadout && this.currentLoadout !== 'main' ? 1 : 0;
         const currentAnim = this.timelineEditor?.activeBaseName || this._initialRequestedAnim || 'idle';
@@ -935,6 +973,17 @@ export const studioControlsAndLoopMethods = {
     this._raf = requestAnimationFrame(frame);
   },
 
+  _flushCurrentCategory() {
+    this.stateManager?.flush?.();
+    if (this.entityCategory === 'heroes' && this.heroStateManager) {
+      this.heroStateManager.syncFromStudioView();
+      this.heroStateManager.saveDraft();
+    } else if (this.ubStateManager && this.unitStateManager?.data) {
+      this.ubStateManager.unitsVisualsData = this.unitStateManager.data;
+      this.ubStateManager.saveAll();
+    }
+  },
+
   destroy() {
     this._running = false;
     cancelAnimationFrame(this._raf);
@@ -950,8 +999,14 @@ export const studioControlsAndLoopMethods = {
     window.removeEventListener('resize', this._resizeHandler);
     this._resizeObserver?.disconnect();
 
-    this.unitStateManager?.destroy();
-    this.heroStateManager?.destroy();
+    this._unsubUnitState?.();
+    this._unsubUnitState = null;
+    this._flushCurrentCategory();
+    if (this._ownsUnitStateManager) this.unitStateManager?.destroy();
+    else this.unitStateManager?.flush?.();
+    if (this._ownsHeroStateManager) this.heroStateManager?.destroy();
+    else this.heroStateManager?.flush?.();
+
     this.timelineEditor?.destroy();
     this.sandboxArena?.dispose();
     this.gizmoController?.dispose();

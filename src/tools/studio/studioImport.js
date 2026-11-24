@@ -10,7 +10,8 @@
  */
 
 import { buildBuildingsStudioViewData } from '../units_buildings/buildingStudioAdapter.js';
-import { loadBuildingSkins, saveBuildingSkins } from '../../data/buildingSkinStore.js';
+import { dataRegistry } from '../../data/dataRegistry.js';
+import { ensureUnitStatsForVisualUnit, removeUnitAcrossLabs } from '../labSync.js';
 
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const slug = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '') || 'imported';
@@ -82,7 +83,7 @@ export const studioImportMethods = {
     const myUnits = Object.entries(data.units || {}).filter(([, u]) => u?.importInfo);
     const myGear = Object.entries(data.prefabs || {}).filter(([, p]) => p?.importInfo);
     const mySkins = [];
-    for (const [bid, e] of Object.entries(loadBuildingSkins())) for (const [sid, it] of Object.entries(e.items || {})) mySkins.push({ bid, sid, name: it.name });
+    for (const [bid, e] of Object.entries(dataRegistry.getBuildingSkins())) for (const [sid, it] of Object.entries(e.items || {})) mySkins.push({ bid, sid, name: it.name });
     const myBlds = Object.entries(this.ubStateManager?.buildingsData?.buildings || {}).filter(([, b]) => b?.isCustom);
     const row = (label, sub, attr) => `<div class="flex items-center gap-1.5 rounded bg-slate-950/60 border border-slate-800 px-2 py-1"><div class="min-w-0 flex-1"><div class="truncate text-slate-200">${esc(label)}</div><div class="truncate text-[10px] text-slate-500">${esc(sub)}</div></div><button type="button" ${attr} class="rounded bg-rose-900/80 hover:bg-rose-800 px-2 py-0.5 text-[10px] font-bold text-white">Delete</button></div>`;
 
@@ -181,7 +182,11 @@ export const studioImportMethods = {
       if (!v) return;
       this._beginEdit('rename-unit');
       this.unitsData.units[this.currentUnitId].displayName = v;
+      if (this.entityCategory === 'units' && this.ubStateManager?.unitStatsData?.units?.[this.currentUnitId]) {
+        this.ubStateManager.unitStatsData.units[this.currentUnitId].name = v;
+      }
       this.stateManager.scheduleSave();
+      this._flushCurrentCategory?.();
       this._refreshUnitList();
       this._toast(`Renamed to "${v}"`);
     });
@@ -235,6 +240,11 @@ export const studioImportMethods = {
     });
     this._beginEdit('import-unit');
     data.units[id] = unit;
+    if (this.ubStateManager) {
+      this.ubStateManager.unitsVisualsData = data;
+      ensureUnitStatsForVisualUnit(this.ubStateManager.unitStatsData, data, id, unit);
+      this.ubStateManager.saveAll();
+    }
     this.currentUnitId = id;
     this._rebindData();
     const sel = this.rootContainer.querySelector('#st-unit-select'); if (sel) sel.value = id;
@@ -290,8 +300,8 @@ export const studioImportMethods = {
       fit: { mode: 'footprint', radius, anchor: 'base', scale: Number(st.scale) > 0 ? Number(st.scale) : 1 }
     });
     this._beginEdit('import-building-skin');
-    const skinsRoot = loadBuildingSkins();
-    const entry = skinsRoot[bid] || (skinsRoot[bid] = { active: 'default', items: {} });
+    const skinsRoot = dataRegistry.getBuildingSkins();
+    const entry = skinsRoot[bid] || { active: 'default', items: {} };
     for (const [k, v] of Object.entries(entry.items)) if (v.isPlaceholderCube) delete entry.items[k];
     const sid = this._uniqueId(slug(name), entry.items);
     entry.items[sid] = {
@@ -299,9 +309,34 @@ export const studioImportMethods = {
       importInfo: { source: st.file.name, originalTriangles: mesh.info.originalTriangles, triangles: mesh.info.triangles, size: mesh.info.size }
     };
     entry.active = sid;
-    this._persistBuildingSkins();
-    if (data.units?.[bid]) { this.currentUnitId = bid; const sel = this.rootContainer.querySelector('#st-unit-select'); if (sel) sel.value = bid; }
+    this._lastBuildingId = bid;
+    const saveRes = dataRegistry.saveBuildingSkin(bid, entry);
+    if (!saveRes.ok) {
+      this._toast(`Could not save skins (${saveRes.error})`, 6000);
+      return;
+    }
+    this.ubStateManager?.saveAll?.();
+    if (!this.isContextualMode && this.entityCategory !== 'buildings') {
+      this._switchEntityCategory('buildings');
+    }
+    this._buildingsStudioView = buildBuildingsStudioViewData(
+      this.ubStateManager?.buildingsData,
+      this.ubStateManager?.buildingVisualsData,
+      this.unitStateManager?.data
+    );
+    if (this._buildingsStateAdapter) this._buildingsStateAdapter._view = this._buildingsStudioView;
+    if (this.entityCategory === 'buildings') {
+      this.currentUnitId = bid;
+      this._refreshUnitList();
+      const sel = this.rootContainer.querySelector('#st-unit-select');
+      if (sel) sel.value = bid;
+    } else if (data.units?.[bid]) {
+      this.currentUnitId = bid;
+      const sel = this.rootContainer.querySelector('#st-unit-select');
+      if (sel) sel.value = bid;
+    }
     this._spawnStudioUnit();
+    this._renderGearPanel();
     this._toast(`Skin "${name}" for ${bid}: ${mesh.info.originalTriangles.toLocaleString()} → ${mesh.info.triangles.toLocaleString()} triangles. Pick skins in the Skins tab.`, 9000);
   },
 
@@ -311,14 +346,13 @@ export const studioImportMethods = {
     if (!bData?.buildings) throw new Error('Buildings data is not available.');
     const radius = Math.max(1.5, Math.min(14, Number(st.radius) || 4));
     const id = this._uniqueId(slug(name), bData.buildings);
-    bData.buildings[id] = {
+    const newBDef = {
       id, name, isCustom: true, buildableByWorker: true, isResourceDropoff: false,
       cost: { coins: 100, wood: 60, stone: 0, iron: 0 }, description: '',
       footprintRadiusMeters: radius, buildTimeTicks: 900, maxHp: 650, canAutoLevel: false, maxLevel: 3,
       hasWatchtowerSupport: false, watchtowerLevel: 0, trainSpeedBonusPctPerLevel: 0, hpPerLevelBonus: 200,
       turretOffset: [0, 6.5, 0], damageStages: [70, 35], options: [], arrowProtectionPermille: 700, meleeProtectionPermille: 350
     };
-    const root = loadBuildingSkins();
     const entry = { active: 'default', items: {} };
     if (scene) {
       const mesh = conv.buildStaticMeshFromScene(scene, { rotateYDeg, budget, smoothNormals: false, fit: { mode: 'footprint', radius, anchor: 'base', scale: 1 } });
@@ -332,9 +366,20 @@ export const studioImportMethods = {
         mesh: { vertices: vs, faces, colors: vs.map(() => [170, 160, 150]) }, importInfo: { source: 'built-in cube', triangles: 12 } };
     }
     entry.active = Object.keys(entry.items)[0];
-    root[id] = entry;
-    this._persistBuildingSkins();
+    const txRes = dataRegistry.transaction((bundle) => {
+      bundle.buildings.buildings[id] = JSON.parse(JSON.stringify(newBDef));
+      bundle.buildingSkins[id] = JSON.parse(JSON.stringify(entry));
+    }, { reason: 'createBuilding' });
+    if (!txRes.ok) {
+      this._toast(`Could not create building (${txRes.error})`, 6000);
+      return;
+    }
+    bData.buildings[id] = newBDef;
+    this._lastBuildingId = id;
     this.ubStateManager.saveAll();
+    if (!this.isContextualMode && this.entityCategory !== 'buildings') {
+      this._switchEntityCategory('buildings');
+    }
     // refresh the Studio's building list
     this._buildingsStudioView = buildBuildingsStudioViewData(bData, this.ubStateManager.buildingVisualsData, this.unitStateManager.data);
     if (this._buildingsStateAdapter) this._buildingsStateAdapter._view = this._buildingsStudioView;
@@ -342,14 +387,9 @@ export const studioImportMethods = {
       this.currentUnitId = id;
       this._refreshUnitList();
       this._spawnStudioUnit();
+      this._renderGearPanel();
     }
     this._toast(`Building "${name}" created (${scene ? 'from your model' : 'placeholder cube'}). Set its stats in the buildings lab.`, 8000);
-  },
-
-  _persistBuildingSkins() {
-    const r = saveBuildingSkins();
-    if (!r.ok) this._toast(`Could not save skins (${r.error}) - browser storage is full. Delete old skins or export JSON.`, 9000);
-    return r;
   },
 
   // ------------------------------------------------------------------------------------------------ delete
@@ -357,9 +397,12 @@ export const studioImportMethods = {
     const bData = this.ubStateManager?.buildingsData;
     const b = bData?.buildings?.[id];
     if (!b || !confirm(`Delete the building "${b.name || id}" and all its skins?`)) return;
+    const res = dataRegistry.deleteBuilding(id);
+    if (!res.ok) {
+      this._toast(`Could not delete building (${res.error})`, 6000);
+      return;
+    }
     delete bData.buildings[id];
-    delete loadBuildingSkins()[id];
-    this._persistBuildingSkins();
     this.ubStateManager.saveAll();
     this._buildingsStudioView = buildBuildingsStudioViewData(bData, this.ubStateManager.buildingVisualsData, this.unitStateManager.data);
     if (this._buildingsStateAdapter) this._buildingsStateAdapter._view = this._buildingsStudioView;
@@ -372,7 +415,11 @@ export const studioImportMethods = {
     const u = this.unitsData.units[id];
     if (!u || !confirm(`Delete the imported unit "${u.displayName || id}"? This cannot be undone (Ctrl+Z may not bring it back).`)) return;
     this._beginEdit('delete-unit');
-    delete this.unitsData.units[id];
+    removeUnitAcrossLabs(this.ubStateManager?.unitStatsData, this.unitsData, this.ubStateManager?.buildingsData, id);
+    if (this.ubStateManager) {
+      this.ubStateManager.unitsVisualsData = this.unitsData;
+      this.ubStateManager.saveAll();
+    }
     if (this.currentUnitId === id) this.currentUnitId = this._unitsOfPeople(this.currentFaction)[0] || Object.keys(this.unitsData.units)[0];
     this.stateManager.scheduleSave();
     this._rebindData();
@@ -396,14 +443,16 @@ export const studioImportMethods = {
   },
 
   _deleteBuildingSkin(bid, sid) {
-    const e = loadBuildingSkins()[bid];
+    const e = dataRegistry.getBuildingSkin(bid);
     const it = e?.items?.[sid];
     if (!it || !confirm(`Delete the skin "${it.name || sid}"?`)) return;
     this._beginEdit('delete-skin');
-    delete e.items[sid];
-    if (e.active === sid) e.active = 'default';
-    if (!Object.keys(e.items).length) delete loadBuildingSkins()[bid];
-    this._persistBuildingSkins();
+    const res = dataRegistry.deleteBuildingSkin(bid, sid);
+    if (!res.ok) {
+      this._toast(`Could not delete skin (${res.error})`, 6000);
+      return;
+    }
+    this.ubStateManager?.saveAll?.();
     this.stateManager.scheduleSave();
     this._spawnStudioUnit();
     this._renderImportPanel();
@@ -449,10 +498,11 @@ export const studioImportMethods = {
   /** HTML of the skins grid for the building being edited (scrolls like the map editor palettes). */
   _skinsGridHtml() {
     const bid = this.unitsData.units?.[this.currentUnitId]?.buildingId || this.currentUnitId;
-    const entry = loadBuildingSkins()[bid];
+    const entry = dataRegistry.getBuildingSkin(bid);
     const active = entry?.active || 'default';
     const sq = (id, label, inner, on, del) => `<div class="relative group">
-      <button type="button" data-skin-pick="${esc(id)}" title="${esc(label)}" class="w-full aspect-square rounded-lg overflow-hidden border-2 ${on ? 'border-emerald-400 ring-2 ring-emerald-400/40' : 'border-slate-700 hover:border-slate-400'} bg-slate-950 flex flex-col">
+      <button type="button" data-skin-pick="${esc(id)}" title="${esc(label)}" class="relative w-full aspect-square rounded-lg overflow-hidden border-2 ${on ? 'border-emerald-400 ring-2 ring-emerald-400/40' : 'border-slate-700 hover:border-slate-400'} bg-slate-950 flex flex-col cursor-pointer">
+        ${on ? `<span data-skin-check="true" class="pointer-events-none absolute top-1 left-1 z-10 flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 text-slate-950 text-[11px] font-black shadow ring-2 ring-slate-950">✓</span>` : ''}
         <div class="flex-1 min-h-0 w-full flex items-center justify-center">${inner}</div>
         <div class="truncate px-1 py-0.5 text-[10px] ${on ? 'bg-emerald-500 text-slate-950 font-bold' : 'bg-slate-800 text-slate-200'}">${esc(label)}</div>
       </button>${del ? `<button type="button" data-skin-del="${esc(id)}" title="Delete this skin" class="absolute top-0.5 right-0.5 hidden group-hover:flex h-5 w-5 items-center justify-center rounded bg-rose-700 text-white text-[11px] font-bold">✕</button>` : ''}</div>`;
@@ -469,25 +519,20 @@ export const studioImportMethods = {
 
   _bindSkinsGrid(host) {
     const bid = this.unitsData.units?.[this.currentUnitId]?.buildingId || this.currentUnitId;
-    // click = preview, double-click = choose it (saved, shown in the game for every people for now)
     host.querySelectorAll('[data-skin-pick]').forEach((b) => {
       const id = b.dataset.skinPick;
-      const apply = (commit) => {
-        const e = loadBuildingSkins()[bid];
+      const apply = () => {
+        const e = dataRegistry.getBuildingSkin(bid);
         if (id !== 'default' && !e?.items?.[id]) return;
         this._beginEdit('pick-skin');
-        if (e) e.active = id;
-        if (commit) {
-          const r = this._persistBuildingSkins();
-          if (r.ok) this._toast(id === 'default' ? 'Default look selected' : 'Skin selected - shown for all peoples');
-        }
+        const r = dataRegistry.setActiveBuildingSkin(bid, id);
+        if (r.ok) this._toast(id === 'default' ? 'Default look selected' : 'Skin selected - shown for all peoples');
+        else this._toast(`Could not save skins (${r.error})`, 6000);
         this.stateManager.scheduleSave();
         this._spawnStudioUnit();
         this._renderGearPanel();
       };
-      let timer = null;
-      b.addEventListener('click', () => { clearTimeout(timer); timer = setTimeout(() => apply(false), 220); });
-      b.addEventListener('dblclick', () => { clearTimeout(timer); apply(true); });
+      b.addEventListener('click', apply);
     });
     host.querySelectorAll('[data-skin-del]').forEach((b) => b.addEventListener('click', (ev) => { ev.stopPropagation(); this._deleteBuildingSkin(bid, b.dataset.skinDel); }));
     host.querySelector('#skin-import')?.addEventListener('click', () => {

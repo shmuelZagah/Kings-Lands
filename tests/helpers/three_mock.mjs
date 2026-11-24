@@ -257,6 +257,7 @@ export class Material {
     this.opacity = opts.opacity ?? 1;
     this.transparent = Boolean(opts.transparent);
     this.map = opts.map || null;
+    this.userData = {};
   }
   clone() { const c = new this.constructor(this); c.userData = { ...(this.userData || {}) }; return c; }
   dispose() {}

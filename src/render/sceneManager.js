@@ -4,8 +4,7 @@ import { sampleTerrainHeightFx, sampleTerrainMeshHeightMeters } from '../sim/gam
 import { FowState, FOW_GRID_SIZE } from '../sim/systems/moraleStaminaSystem.js';
 import { TerrainRenderer } from './terrainRenderer.js';
 import { CameraController } from './cameraController.js';
-import { ModelFactory } from './modelFactory.js';
-import { BuildingModelFactory } from './buildingModelFactory.js';
+import { modelProvider } from './modelProvider.js';
 import { UnitRenderer } from './unitRenderer.js';
 import { WorldEffectsRenderer } from './worldEffectsRenderer.js';
 import { InputRouter } from '../ui/input/inputRouter.js';
@@ -14,9 +13,6 @@ import { BuildingRadialMenu } from '../ui/hud/buildingRadialMenu.js';
 import { WorkerPlacementController } from '../ui/input/workerPlacementController.js';
 import { DevConsole } from '../ui/hud/devConsole.js';
 import { MinimapHud, SquadCommandBar, VictoryScreenModal } from '../ui/hud/rtsCursorManager.js';
-import unitsVisualsData from '../data/visuals/units.json';
-import { sanitizeUnitsData } from '../tools/studio/clipEditing.js';
-import { buildCombinedVisualsData, loadActiveUnitsVisualsData } from '../tools/heroes/heroStateManager.js';
 
 export class SceneManager {
   constructor({ container, config, simBridge, commandBus, eventBus, synthAudio }) {
@@ -27,27 +23,20 @@ export class SceneManager {
     this.eventBus = eventBus;
     this.synthAudio = synthAudio;
 
-    const activeVisualsData = loadActiveUnitsVisualsData(unitsVisualsData);
-    try {
-      sanitizeUnitsData(activeVisualsData);
-    } catch (_) {}
     this.pausedForLab = false;
-    this._baseUnitsVisualsData = activeVisualsData;
-    const combinedVisualsData = buildCombinedVisualsData(activeVisualsData);
-    this.activeVisualsData = combinedVisualsData;
-    this.modelFactory = new ModelFactory(combinedVisualsData);
-    this.buildingModelFactory = new BuildingModelFactory();
-    if (typeof window !== 'undefined') {
-      this._onUnitsBuildingsUpdated = () => {
-        const nextVis = loadActiveUnitsVisualsData(unitsVisualsData);
-        try { sanitizeUnitsData(nextVis); } catch (_) {}
-        this._baseUnitsVisualsData = nextVis;
-        this.activeVisualsData = buildCombinedVisualsData(nextVis);
-        if (this.modelFactory) this.modelFactory.visualsData = this.activeVisualsData;
-        this.unitRenderer?.clearVisualCaches?.(this.activeVisualsData.animations);
-      };
-      window.addEventListener('kings_lands_units_buildings_updated', this._onUnitsBuildingsUpdated);
-    }
+    this.activeVisualsData = modelProvider.getCombinedVisuals();
+    this.modelFactory = modelProvider.getModelFactory();
+    this.buildingModelFactory = modelProvider.getBuildingModelFactory();
+    this._unsubModelProvider = modelProvider.subscribe(({ combinedVisuals }) => {
+      this.activeVisualsData = combinedVisuals;
+      this.unitRenderer?.clearVisualCaches?.(this.activeVisualsData.animations);
+      if (this.buildingsGroup && this.buildingActors) {
+        for (const actor of this.buildingActors.values()) {
+          this.buildingsGroup.remove(actor.group);
+        }
+        this.buildingActors.clear();
+      }
+    });
 
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0x0f172a);
@@ -134,7 +123,7 @@ export class SceneManager {
       scene: this.scene,
       camera: this.camera,
       modelFactory: this.modelFactory,
-      animationsData: this.activeVisualsData?.animations || unitsVisualsData.animations,
+      animationsData: this.activeVisualsData?.animations || { keyframes: {}, procedural: {} },
       onAnimatorEvent: (evt) => this._handleAnimatorEvent(evt),
       simBridge: this.simBridge
     });
@@ -634,6 +623,10 @@ export class SceneManager {
   destroy() {
     this.isDestroyed = true;
     this.pausedForLab = true;
+    if (this._unsubModelProvider) {
+      this._unsubModelProvider();
+      this._unsubModelProvider = null;
+    }
     if (this._rafId) {
       cancelAnimationFrame(this._rafId);
       this._rafId = null;

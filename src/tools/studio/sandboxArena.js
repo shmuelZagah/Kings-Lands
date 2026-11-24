@@ -12,9 +12,9 @@
 
 import * as THREE from 'three';
 import { Animator3D, AnimEventTypes } from '../../render/animator3d.js';
-import defaultUnitStatsJson from '../../data/unitStats.json';
+import { dataRegistry } from '../../data/dataRegistry.js';
 import { resolveClip, resolveCombatClip, resolveIdleClip, resolveLocomotionClip } from './clipResolver.js';
-import { FACTION_TEAM_COLORS, applySkinColors, disposeVisual } from './skinUtils.js';
+import { FACTION_TEAM_COLORS, applySkinColors, disposeVisual, getFactionColors } from './skinUtils.js';
 
 const UNIT_COMBAT_STATS = Object.freeze({
   worker: { maxHp: 85, damage: 9, range: 2.1, moveSpeed: 3.8, attackInterval: 1.35 },
@@ -148,7 +148,7 @@ export class SandboxArena {
 
   _statsFor(unitType) {
     const base = UNIT_COMBAT_STATS[unitType] || UNIT_COMBAT_STATS.swordsman;
-    const liveStat = defaultUnitStatsJson?.units?.[unitType];
+    const liveStat = dataRegistry.getUnitStats(unitType);
     if (liveStat) {
       const isRanged = Boolean(liveStat.isRanged);
       const reloadTicks = Math.max(8, ((Number(liveStat.reloadMinTicks) || 20) + (Number(liveStat.reloadMaxTicks) || 28)) * 0.5);
@@ -204,7 +204,8 @@ export class SandboxArena {
       const mine = list.map((g, i) => ({ g, i })).filter(({ g }) => ok(g) && g.side === teamId);
       const laid = mine.map(({ g, i }) => {
         const unitDef = data.units[g.unit];
-        const spacing = (g.unit === 'cavalry' || unitDef?.isMounted || defaultUnitStatsJson?.units?.[g.unit]?.isMounted) ? 3.2 : 2.2;
+        const liveStat = dataRegistry.getUnitStats(g.unit);
+        const spacing = (g.unit === 'cavalry' || unitDef?.isMounted || liveStat?.isMounted) ? 3.2 : 2.2;
         return { g, i, unitDef, spacing, layout: this._blockLayout(Math.floor(g.count), spacing) };
       });
       const gap = 3;
@@ -233,7 +234,7 @@ export class SandboxArena {
           const group = this.modelFactory.createVisual(g.unit, {
             teamId,
             isBannerCarrier: count > 1 && k === 0,
-            customTeamColors: FACTION_TEAM_COLORS[g.faction]
+            customTeamColors: FACTION_TEAM_COLORS[g.faction] || getFactionColors(data, g.faction)
           });
           applySkinColors(group, unitDef, g.faction);
 

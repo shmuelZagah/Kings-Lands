@@ -5,7 +5,6 @@
 import * as THREE from 'three';
 import { CommandTypes } from '../../core/commandBus.js';
 import { OPTION_SVG_ICONS, buildOrbDecorationsSvg } from './hudIcons.js';
-import buildingsData from '../../data/buildings.json';
 import { loadHeroesDataFromStorage, getOrRenderHeroPortraitUrl } from '../../tools/heroes/heroStateManager.js';
 
 

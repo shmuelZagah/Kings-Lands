@@ -5,6 +5,7 @@ import { SceneManager } from './render/sceneManager.js';
 import { SynthAudio } from './audio/synthAudio.js';
 import { StudioApp } from './tools/studio/studioApp.js';
 import { HallOfHeroesApp } from './tools/heroes/hallOfHeroesApp.js';
+import { HeroStateManager } from './tools/heroes/heroStateManager.js';
 import { UnitsBuildingsLabApp } from './tools/units_buildings/unitsBuildingsLabApp.js';
 import { UnitsBuildingsStateManager } from './tools/units_buildings/unitsBuildingsStateManager.js';
 import { MapEditorApp } from './tools/map_editor/mapEditorApp.js';
@@ -20,6 +21,7 @@ import { loadLearnedAiModel } from './sim/ai/aiLearningModel.js';
 import { loadGameSettings, applySettingsToRuntime, saveGameSnapshot } from './core/gameSettingsAndSaves.js';
 
 const sharedUbStateManager = new UnitsBuildingsStateManager();
+const sharedHeroStateManager = new HeroStateManager();
 import { clearAndHideGameHud, restoreGameHud } from './ui/hud/hudVisibilityManager.js';
 import engineConfig from './data/engineConfig.json';
 
@@ -165,10 +167,12 @@ function launchStudio(options = {}) {
 
   activeStudio = new StudioApp(studioContainer, {
     ubStateManager: sharedUbStateManager,
+    heroStateManager: sharedHeroStateManager,
     contextualHeroId,
     contextualUnitId,
     contextualBuildingId,
     initialAnim: options.initialAnim || null,
+    initialFaction: options.initialFaction || null,
     initialLoadoutIdx: options.initialLoadoutIdx || 0,
     initialInspectorTab: options.initialInspectorTab || null,
     initialCategory:
@@ -176,10 +180,10 @@ function launchStudio(options = {}) {
       (contextualHeroId ? 'heroes' : contextualBuildingId ? 'buildings' : 'units'),
     initialUnitId: options.initialUnitId || contextualUnitId || contextualBuildingId || null,
     onOpenHallOfHeroes: () => {
-      launchHallOfHeroes();
+      launchHallOfHeroes({ returnToLobby: Boolean(options.returnToLobby) });
     },
     onOpenUnitsBuildingsLab: (labOpts = {}) => {
-      launchUnitsBuildingsLab(labOpts);
+      launchUnitsBuildingsLab({ returnToLobby: Boolean(options.returnToLobby), ...labOpts });
     },
     onExitStudio: (exitPayload = null) => {
       const lastBaseAnim = exitPayload?.anim || activeStudio?.timelineEditor?.activeBaseName || options.initialAnim || 'idle';
@@ -210,18 +214,28 @@ function launchStudio(options = {}) {
         return;
       }
       if (contextualUnitId) {
+        const returnUnitId =
+          exitPayload?.unitId && sharedUbStateManager.unitStatsData.units?.[exitPayload.unitId]
+            ? exitPayload.unitId
+            : contextualUnitId;
         launchUnitsBuildingsLab({
+          returnToLobby: Boolean(options.returnToLobby),
           initialTab: 'units',
-          initialUnitId: contextualUnitId,
+          initialUnitId: returnUnitId,
           initialAnim: returnAnim,
           initialLoadoutIdx: returnLoadoutIdx
         });
         return;
       }
       if (contextualBuildingId) {
+        const returnBldId =
+          exitPayload?.unitId && sharedUbStateManager.buildingsData.buildings?.[exitPayload.unitId]
+            ? exitPayload.unitId
+            : contextualBuildingId;
         launchUnitsBuildingsLab({
+          returnToLobby: Boolean(options.returnToLobby),
           initialTab: 'buildings',
-          initialBuildingId: contextualBuildingId
+          initialBuildingId: returnBldId
         });
         return;
       }
@@ -250,6 +264,8 @@ function launchHallOfHeroes(options = {}) {
 
   const hallContainer = getOrCreateRootContainer('heroes-hall-root');
   activeHallOfHeroes = new HallOfHeroesApp(hallContainer, {
+    heroStateManager: sharedHeroStateManager,
+    ubStateManager: sharedUbStateManager,
     initialHeroId: options.initialHeroId || 'wizard',
     initialAnim: options.initialAnim || 'idle',
     initialLoadoutIdx: options.initialLoadoutIdx || 0,
@@ -296,10 +312,10 @@ function launchUnitsBuildingsLab(options = {}) {
     initialAnim: options.initialAnim || 'idle',
     initialLoadoutIdx: options.initialLoadoutIdx || 0,
     onOpenAnimationLab: (studioOpts = {}) => {
-      launchStudio(studioOpts);
+      launchStudio({ returnToLobby: Boolean(options.returnToLobby), ...studioOpts });
     },
     onOpenHallOfHeroes: () => {
-      launchHallOfHeroes();
+      launchHallOfHeroes({ returnToLobby: Boolean(options.returnToLobby) });
     },
     onExitLab: () => {
       destroyActiveLabs();

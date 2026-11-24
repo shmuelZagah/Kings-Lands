@@ -7,7 +7,7 @@
  */
 
 import * as THREE from 'three';
-import buildingsData from '../data/buildings.json';
+import { dataRegistry } from '../data/dataRegistry.js';
 
 export const BUILDINGS_WITH_DOORS = new Set([
   'citadel',
@@ -446,7 +446,7 @@ export function populateArchitectureByType(type, r, mats, body, doorSign) {
     }
 
     case 'watchtower': {
-      const wtMaxGar = (buildingsData?.buildings?.watchtower?.maxGarrison ?? 2) | 0;
+      const wtMaxGar = (dataRegistry.getBuilding('watchtower')?.maxGarrison ?? 2) | 0;
       const baseBlock = new THREE.Mesh(
         new THREE.BoxGeometry(r * 1.35, 0.5, r * 1.35),
         mats.darkStone
@@ -486,7 +486,7 @@ export function populateArchitectureByType(type, r, mats, body, doorSign) {
     }
 
     case 'ballista_tower': {
-      const btMaxGar = (buildingsData?.buildings?.ballista_tower?.maxGarrison ?? 0) | 0;
+      const btMaxGar = (dataRegistry.getBuilding('ballista_tower')?.maxGarrison ?? 0) | 0;
       const baseBlock = new THREE.Mesh(
         new THREE.BoxGeometry(r * 1.4, 0.5, r * 1.4),
         mats.darkStone

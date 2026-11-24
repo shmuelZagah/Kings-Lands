@@ -17,10 +17,10 @@
  */
 
 import * as THREE from 'three';
-import { ModelFactory } from '../../render/modelFactory.js';
+import { modelProvider } from '../../render/modelProvider.js';
 import { spawn3DSpellEffect, inferDefaultVfxStyle } from '../../render/worldEffectsRenderer.js';
 import { Animator3D } from '../../render/animator3d.js';
-import { applySkinColors, disposeVisual, getFactionColors } from '../studio/skinUtils.js';
+import { disposeVisual, getFactionColors } from '../studio/skinUtils.js';
 import { createPortraitStudio } from '../studio/portraitRenderer.js';
 import { resolveClip, getCombatBase, getLocomotionBase } from '../studio/clipResolver.js';
 import {
@@ -34,7 +34,7 @@ import {
   normalizeSpellId
 } from './heroStateManager.js';
 import { HERO_SPELL_SVG_ICONS } from '../../ui/hud/hudIcons.js';
-import defaultUnitsJson from '../../data/visuals/units.json';
+import { dataRegistry } from '../../data/dataRegistry.js';
 
 export class HallOfHeroesApp {
   constructor(rootContainer, options = {}) {
@@ -42,6 +42,8 @@ export class HallOfHeroesApp {
     this.onExitHall = options.onExitHall || null;
     this.onOpenAnimationLabForHero = options.onOpenAnimationLabForHero || null;
 
+    this._ownsHeroStateManager = !options.heroStateManager;
+    this._getBaseUnitsData = () => options.ubStateManager?.unitsVisualsData || options.baseUnitsData || dataRegistry.getUnitsVisuals();
     this.heroStateManager =
       options.heroStateManager ||
       new HeroStateManager({
@@ -135,9 +137,6 @@ export class HallOfHeroesApp {
             <h1 class="text-sm font-extrabold uppercase tracking-wider text-amber-400">
               Hall of Heroes
             </h1>
-            <span id="hh-save-chip" class="rounded-full border border-emerald-500/40 bg-emerald-500/10 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-300">
-              Saved
-            </span>
           </div>
 
           <div class="flex items-center gap-1.5">
@@ -152,7 +151,7 @@ export class HallOfHeroesApp {
               Reset
             </button>
             <button type="button" id="hh-btn-exit" class="rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700 px-3 py-1 text-xs font-semibold text-slate-200 cursor-pointer">
-              Back to Game
+              Back
             </button>
           </div>
         </header>
@@ -576,23 +575,19 @@ export class HallOfHeroesApp {
     if (!hero) return;
 
     this.heroStateManager.ensureSpellAnimationSlotsForHero(hero);
-    const combinedVisuals = buildCombinedVisualsData(defaultUnitsJson, this.heroesData);
-    const factory = new ModelFactory(combinedVisuals);
+    const combinedVisuals = buildCombinedVisualsData(this._getBaseUnitsData(), this.heroesData);
     const faction = hero.race || 'human';
     const hasSet2 = heroHasSecondaryLoadout(hero);
     if (!hasSet2) this.previewLoadoutIdx = 0;
 
-    const visualKey =
-      this.previewLoadoutIdx === 1 && combinedVisuals.units[`${hero.id}__loadout2`]
-        ? `${hero.id}__loadout2`
-        : hero.id;
-
-    this.heroMeshGroup = factory.createVisual(visualKey, {
-      teamId: 1,
+    this.heroMeshGroup = modelProvider.createHeroModel(hero.id, {
+      visualsOverride: combinedVisuals,
+      skin: faction,
+      team: 1,
+      loadoutId: this.previewLoadoutIdx === 1 ? 'loadout2' : null,
       isBannerCarrier: false,
       customTeamColors: getFactionColors(combinedVisuals, faction)
     });
-    applySkinColors(this.heroMeshGroup, hero, faction);
     this.pedestalGroup.add(this.heroMeshGroup);
 
     this.heroAnimator = new Animator3D(this.heroMeshGroup, combinedVisuals.animations);
@@ -604,7 +599,7 @@ export class HallOfHeroesApp {
     if (!this.heroAnimator || !this.currentHero) return;
     const hero = this.currentHero;
     const faction = hero.race || 'human';
-    const combinedVisuals = buildCombinedVisualsData(defaultUnitsJson, this.heroesData);
+    const combinedVisuals = buildCombinedVisualsData(this._getBaseUnitsData(), this.heroesData);
     const visualKey =
       this.previewLoadoutIdx === 1 && combinedVisuals.units[`${hero.id}__loadout2`]
         ? `${hero.id}__loadout2`

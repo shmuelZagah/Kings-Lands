@@ -1,38 +1,23 @@
-import { computeCapabilitiesForLoadout } from '../../sim/combatCapabilitiesRegistry.js';
 /**
  * Kings Lands — Units & Buildings Lab State Manager
  * (src/tools/units_buildings/unitsBuildingsStateManager.js)
  *
- * Centralizes data management and 100% live synchronization across:
- * 1. Warriors / Units Lab (`src/data/unitStats.json` + `src/data/visuals/units.json` via `StudioStateManager`)
- * 2. Buildings Lab (`src/data/buildings.json` + `src/data/buildingVisuals.json`)
- * 3. Animation Lab (`StudioApp`) & Battlefield Simulation (`GameState`, `MovementSystem`, `ConstructionSystem`, `EconomySystem`, `VisionSystem`)
+ * Thin state manager backed 100% by `dataRegistry` (`src/data/dataRegistry.js`):
+ *  - Zero direct `.json` imports and zero `localStorage` reads/writes.
+ *  - Base character templates are derived dynamically from `dataRegistry.getBases()`.
+ *  - All saves validate cross-references inside `dataRegistry` before committing.
  */
 
-import defaultUnitStats from '../../data/unitStats.json';
-import defaultBuildingsData from '../../data/buildings.json';
-import defaultUnitsVisuals from '../../data/visuals/units.json';
-import defaultHeroesData from '../../data/heroes.json';
-import defaultBuildingVisuals from '../../data/buildingVisuals.json';
+import { dataRegistry, DEFAULT_BASE_CHAR_ID, resolveBaseCharId } from '../../data/dataRegistry.js';
+import { computeCapabilitiesForLoadout } from '../../sim/combatCapabilitiesRegistry.js';
 import { StudioStateManager } from '../studio/studioStateManager.js';
 import { MAIN_LOADOUT, heldItems, loadoutsOf, asLoadout, restow, weaponTypeOf } from '../studio/weaponRules.js';
 import { downloadBytes } from '../studio/portraitRenderer.js';
-import { DEFAULT_BASE_CHAR_ID, resolveBaseCharId, pruneDraftForRuntime } from '../studio/baseUnitsMigration.js';
+import { listStudioBaseChoices, removeUnitAcrossLabs } from '../labSync.js';
 
-export const UNIT_STATS_STORAGE_KEY = 'kings_lands_unit_stats_v2';
-export const BUILDINGS_DATA_STORAGE_KEY = 'kings_lands_buildings_data_v2';
-export const BUILDING_VISUALS_STORAGE_KEY = 'kings_lands_building_visuals_v2';
-export const UNITS_VISUALS_STORAGE_KEY = 'kings_lands_studio_draft_v3';
-
-export const BASE_CHARACTER_TEMPLATES = Object.freeze([
-  { id: 'human_base_1', race: 'human', label: 'Human Base 1 (classic)' },
-  { id: 'human_base_2', race: 'human', label: 'Human Base 2 (detailed)', bare: true }, // bare: a pure body, no clothing baked into its meshes
-  { id: 'katiler_base', race: 'katiler', label: 'Katiler Base Character' },
-  { id: 'mirukenkay_base', race: 'mirukenkay', label: 'Mirukenkay Base Character' },
-  { id: 'almasir_base', race: 'almasir', label: 'Almasir Base Character' },
-  { id: 'takdik_base', race: 'takdik', label: 'Takdik Base Character' },
-  { id: 'nefrolai_base', race: 'nefrolai', label: 'Nefrolai Base Character' }
-]);
+export function getBaseCharacterTemplates(race = null) {
+  return dataRegistry.getBases(race);
+}
 
 export const MOUNT_TYPES = Object.freeze([
   { id: 'none', label: 'None (On Foot)' },
@@ -45,18 +30,9 @@ function deepClone(obj) {
   return JSON.parse(JSON.stringify(obj));
 }
 
-/**
- * Worn-gear prefabs (tunics, armour, helmets ...) are authored in bone-local coordinates of the REFERENCE skeleton of their race.
- * Another base of the same race has other bone pivots / proportions, so when a unit uses it the gear gets a `gripOffset` that makes it fit:
- *   - limbs, hands, head: the gear follows its bone (the pivot sits at the same joint on every base) -> no shift;
- *   - torso / pelvis: the belt line keeps its place and the collar is moved half-way onto the new neck base (see gearShift);
- *   - feet: only the height is kept, so the soles stay on the ground.
- */
 const GEAR_REFERENCE_BASE = Object.freeze({ human: 'human_base_1' });
-/** sockets that follow the base's own geometry (hands, stow points, cape / quiver anchors): never shifted */
 const NON_BODY_SOCKET_RE = /^(weapon_socket|stow_|cape_|quiver_|arrow_|bowstring)/;
 
-/** rest position of bone `name` in unit space (sum of the bones' local `pos` down the tree; rest rotations of body bones are zero) */
 function restWorldPos(tree, name, acc = [0, 0, 0]) {
   for (const [k, n] of Object.entries(tree || {})) {
     const p = Array.isArray(n?.pos) ? n.pos : [0, 0, 0];
@@ -85,27 +61,25 @@ function findHierarchyNode(tree, name) {
   return null;
 }
 
-/** shift [x,y,z] to add to the gripOffset of the gear on `slot` when it moves from skeleton `fromHier` to `toHier` (null = nothing to do) */
 function gearShift(fromHier, toHier, slot) {
   const a = restWorldPos(fromHier, slot);
   const b = restWorldPos(toHier, slot);
   if (!a || !b) return null;
   const sub = (p, q) => [p[0] - q[0], p[1] - q[1], p[2] - q[2]];
   if (slot === 'torso' || slot === 'pelvis') {
-    const d = sub(a, b); // belt / hem keep their place in space
+    const d = sub(a, b);
     const ha = restWorldPos(fromHier, 'head');
     const hb = restWorldPos(toHier, 'head');
     if (slot === 'torso' && ha && hb) {
-      const neckAligned = (hb[1] - b[1]) - (ha[1] - a[1]); // shift that puts the collar on the new neck base
+      const neckAligned = (hb[1] - b[1]) - (ha[1] - a[1]);
       d[1] = (d[1] + neckAligned) / 2;
     }
     return d;
   }
-  if (/^foot_/.test(slot)) return [0, a[1] - b[1], 0]; // soles stay on the ground
+  if (/^foot_/.test(slot)) return [0, a[1] - b[1], 0];
   return [0, 0, 0];
 }
 
-/** fit worn gear (main equipment and every loadout) to another skeleton of the same race */
 function realignWornGear(unitVis, fromHier, toHier) {
   if (!unitVis || !fromHier || !toHier) return 0;
   const maps = [unitVis.equipment, ...Object.values(unitVis.loadouts || {}).map((l) => l?.equipment)];
@@ -123,11 +97,6 @@ function realignWornGear(unitVis, fromHier, toHier) {
   return moved;
 }
 
-const INITIAL_UNIT_STATS_SNAPSHOT = deepClone(defaultUnitStats);
-const INITIAL_BUILDINGS_DATA_SNAPSHOT = deepClone(defaultBuildingsData);
-const INITIAL_BUILDING_VISUALS_SNAPSHOT = deepClone(defaultBuildingVisuals);
-const INITIAL_UNITS_VISUALS_SNAPSHOT = deepClone(defaultUnitsVisuals);
-
 /**
  * Determines which formations are naturally eligible for a unit given its mount state and equipped weapons
  * across its loadouts, and returns both the eligible list and the user-enabled `allowedFormations`.
@@ -136,7 +105,7 @@ export function computeEligibleFormationsForUnit(
   unitStatDef,
   unitVisualDef,
   visualsData,
-  formationRules = defaultUnitStats.formationRules
+  formationRules = null
 ) {
   const isMounted = Boolean(
     unitStatDef?.isMounted ||
@@ -167,7 +136,7 @@ export function computeEligibleFormationsForUnit(
     }
   }
 
-  const rules = formationRules || defaultUnitStats.formationRules || {};
+  const rules = formationRules || dataRegistry.getUnitStats()?.formationRules || {};
   const result = [];
 
   for (const [fId, rule] of Object.entries(rules)) {
@@ -199,123 +168,31 @@ export function computeEligibleFormationsForUnit(
 }
 
 /**
- * Syncs live in-memory `defaultUnitStats`, `defaultBuildingsData`, and `defaultUnitsVisuals` references
- * so all running systems and `StudioApp` immediately see the updated parameters and equipped weapons!
+ * Syncs live in-memory module exports through `dataRegistry` so untouched sim code
+ * sees updated unit stats, buildings, and unit visuals immediately.
  */
-export function syncLiveConfigObjectsInMemory(unitStatsObj, buildingsDataObj, unitsVisualsObj = null) {
-  if (unitStatsObj && unitStatsObj !== defaultUnitStats) {
-    if (unitStatsObj.formationRules) {
-      defaultUnitStats.formationRules = deepClone(unitStatsObj.formationRules);
-    }
-    if (unitStatsObj.units) {
-      for (const k of Object.keys(defaultUnitStats.units)) {
-        if (!unitStatsObj.units[k]) delete defaultUnitStats.units[k];
-      }
-      for (const [k, v] of Object.entries(unitStatsObj.units)) {
-        defaultUnitStats.units[k] = deepClone(v);
-      }
-    }
-  }
-
-  if (buildingsDataObj && buildingsDataObj !== defaultBuildingsData) {
-    if (buildingsDataObj.economy) {
-      Object.assign(defaultBuildingsData.economy, deepClone(buildingsDataObj.economy));
-    }
-    if (buildingsDataObj.sharedBuildingWatchtower) {
-      defaultBuildingsData.sharedBuildingWatchtower = deepClone(buildingsDataObj.sharedBuildingWatchtower);
-    }
-    if (buildingsDataObj.buildings) {
-      for (const k of Object.keys(defaultBuildingsData.buildings)) {
-        if (!buildingsDataObj.buildings[k]) delete defaultBuildingsData.buildings[k];
-      }
-      for (const [k, v] of Object.entries(buildingsDataObj.buildings)) {
-        defaultBuildingsData.buildings[k] = deepClone(v);
-      }
-    }
-  }
-
-  if (unitsVisualsObj && unitsVisualsObj !== defaultUnitsVisuals) {
-    if (unitsVisualsObj.units) {
-      for (const [k, v] of Object.entries(unitsVisualsObj.units)) {
-        defaultUnitsVisuals.units[k] = deepClone(v);
-      }
-    }
-    if (unitsVisualsObj.animations?.keyframes) {
-      defaultUnitsVisuals.animations.keyframes = {
-        ...(defaultUnitsVisuals.animations.keyframes || {}),
-        ...deepClone(unitsVisualsObj.animations.keyframes)
-      };
-    }
-  }
+export function syncLiveConfigObjectsInMemory(
+  unitStatsObj,
+  buildingsDataObj,
+  unitsVisualsObj = null,
+  buildingVisualsObj = null
+) {
+  dataRegistry.syncRuntimeData({
+    unitStats: unitStatsObj,
+    buildings: buildingsDataObj,
+    unitsVisuals: unitsVisualsObj,
+    buildingVisuals: buildingVisualsObj
+  });
 }
 
-
 export function loadUnitsBuildingsConfigFromStorage() {
-  const uBase = deepClone(defaultUnitStats);
-  const bBase = deepClone(defaultBuildingsData);
-  const vBase = deepClone(defaultUnitsVisuals);
-  try {
-    const rawU = globalThis.localStorage?.getItem(UNIT_STATS_STORAGE_KEY);
-    if (rawU) {
-      const parsedU = JSON.parse(rawU);
-      if (parsedU && typeof parsedU.units === 'object') {
-        for (const k of Object.keys(uBase.units)) {
-          if (parsedU._deletedUnits?.includes?.(k)) delete uBase.units[k];
-        }
-        for (const [uid, uDef] of Object.entries(parsedU.units)) {
-          uBase.units[uid] = { ...(uBase.units[uid] || {}), ...uDef };
-        }
-      }
-      if (parsedU?.formationRules) {
-        uBase.formationRules = { ...uBase.formationRules, ...parsedU.formationRules };
-      }
-      if (Array.isArray(parsedU?.customPlaceholderIcons)) {
-        uBase.customPlaceholderIcons = parsedU.customPlaceholderIcons;
-      }
-    }
-  } catch (_) {}
-  try {
-    const rawB = globalThis.localStorage?.getItem(BUILDINGS_DATA_STORAGE_KEY);
-    if (rawB) {
-      const parsedB = JSON.parse(rawB);
-      if (parsedB?.sharedBuildingWatchtower) {
-        bBase.sharedBuildingWatchtower = {
-          ...bBase.sharedBuildingWatchtower,
-          ...parsedB.sharedBuildingWatchtower
-        };
-      }
-      if (parsedB?.economy) {
-        bBase.economy = { ...bBase.economy, ...parsedB.economy };
-      }
-      if (parsedB && typeof parsedB.buildings === 'object') {
-        for (const [bid, bDef] of Object.entries(parsedB.buildings)) {
-          bBase.buildings[bid] = { ...(bBase.buildings[bid] || {}), ...bDef };
-        }
-      }
-    }
-  } catch (_) {}
-  try {
-    const rawV = globalThis.localStorage?.getItem(UNITS_VISUALS_STORAGE_KEY);
-    if (rawV) {
-      const parsedV = JSON.parse(rawV);
-      const draftData = parsedV?.data || parsedV;
-      if (draftData && typeof draftData.units === 'object') {
-        // skip what an old draft still carries of the replaced base characters (human_base, retired units, outdated human_base_1/2)
-        const live = pruneDraftForRuntime(draftData, defaultUnitsVisuals, parsedV?.managedHashes || null);
-        for (const [uid, uVis] of Object.entries(live.units)) {
-          vBase.units[uid] = { ...(vBase.units[uid] || {}), ...uVis };
-        }
-      }
-      if (draftData?.animations?.keyframes) {
-        vBase.animations.keyframes = {
-          ...(vBase.animations?.keyframes || {}),
-          ...draftData.animations.keyframes
-        };
-      }
-    }
-  } catch (_) {}
-  syncLiveConfigObjectsInMemory(uBase, bBase, vBase);
-  return { unitStatsData: uBase, buildingsData: bBase, unitsVisualsData: vBase };
+  const { stats, visuals } = dataRegistry.getUnits();
+  const buildings = dataRegistry.getBuildings();
+  return {
+    unitStatsData: stats,
+    buildingsData: buildings,
+    unitsVisualsData: visuals
+  };
 }
 
 export class UnitsBuildingsStateManager {
@@ -327,99 +204,43 @@ export class UnitsBuildingsStateManager {
         onStatus: (s, m) => this.onStatus?.(s, m)
       });
     this._saveTimer = null;
+    this._isSavingAll = false;
 
-    this.unitStatsData = this._loadUnitStats();
-    this.buildingsData = this._loadBuildingsData();
-    this.buildingVisualsData = this._loadBuildingVisuals();
-    this.unitsVisualsData = this.studioStateManager.data;
+    this._reloadFromRegistry();
 
-    // Ensure hero prefabs are also available in unitsVisualsData.prefabs
-    if (defaultHeroesData?.prefabs && this.unitsVisualsData?.prefabs) {
+    this._unsubRegistry = dataRegistry.subscribe(() => {
+      if (this._isSavingAll) return;
+      this._reloadFromRegistry();
+    });
+  }
+
+  _reloadFromRegistry() {
+    this.unitStatsData = dataRegistry.getUnitStats();
+    this.buildingsData = dataRegistry.getBuildings();
+    this.buildingVisualsData = dataRegistry.getBuildingVisuals();
+    this.unitsVisualsData = dataRegistry.getUnitsVisuals();
+
+    const heroPrefabs = dataRegistry.getHeroesData()?.prefabs;
+    if (heroPrefabs && this.unitsVisualsData?.prefabs) {
       this.unitsVisualsData.prefabs = {
-        ...defaultHeroesData.prefabs,
+        ...heroPrefabs,
         ...this.unitsVisualsData.prefabs
       };
     }
 
-    this._syncUnitsAndBuildingsCrossReferences();
-    syncLiveConfigObjectsInMemory(this.unitStatsData, this.buildingsData, this.unitsVisualsData, this.buildingVisualsData);
+    if (this.studioStateManager && !this.studioStateManager._dirty) {
+      this.studioStateManager.data = this.unitsVisualsData;
+    }
   }
 
-  _loadUnitStats() {
-    const base = deepClone(defaultUnitStats);
-    try {
-      const raw = globalThis.localStorage?.getItem(UNIT_STATS_STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (parsed && typeof parsed.units === 'object') {
-          for (const [uid, uDef] of Object.entries(parsed.units)) {
-            base.units[uid] = { ...(base.units[uid] || {}), ...uDef };
-          }
-        }
-        if (parsed?.formationRules) {
-          base.formationRules = { ...base.formationRules, ...parsed.formationRules };
-        }
-        if (Array.isArray(parsed?.customPlaceholderIcons)) {
-          base.customPlaceholderIcons = parsed.customPlaceholderIcons;
-        }
-      }
-    } catch (_) {}
-    return base;
-  }
-
-  _loadBuildingsData() {
-    const base = deepClone(defaultBuildingsData);
-    try {
-      const raw = globalThis.localStorage?.getItem(BUILDINGS_DATA_STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (parsed?.sharedBuildingWatchtower) {
-          base.sharedBuildingWatchtower = {
-            ...base.sharedBuildingWatchtower,
-            ...parsed.sharedBuildingWatchtower
-          };
-        }
-        if (parsed?.economy) {
-          base.economy = { ...base.economy, ...parsed.economy };
-        }
-        if (parsed && typeof parsed.buildings === 'object') {
-          for (const [bid, bDef] of Object.entries(parsed.buildings)) {
-            base.buildings[bid] = { ...(base.buildings[bid] || {}), ...bDef };
-          }
-        }
-      }
-    } catch (_) {}
-    return base;
-  }
-
-  _loadBuildingVisuals() {
-    const base = deepClone(defaultBuildingVisuals);
-    try {
-      const raw = globalThis.localStorage?.getItem(BUILDING_VISUALS_STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (parsed?.animations?.keyframes) {
-          base.animations.keyframes = {
-            ...base.animations.keyframes,
-            ...parsed.animations.keyframes
-          };
-        }
-      }
-    } catch (_) {}
-    return base;
-  }
-
-  /**
-   * Attaches or removes a 3D mount (`none`, `human_horse`, `katiler_wolf`, `war_chameleon`) on a unit
-   * in `unitsVisualsData.units[unitId]` and updates its sitting leg poses and locomotion animation (Fix 5).
-   */
   _buildDireWolfMountHierarchy() {
+    const baselineUnits = dataRegistry.getBaselineSnapshot().unitsVisuals;
     const wolfTorso = deepClone(
-      INITIAL_UNITS_VISUALS_SNAPSHOT.units?.katiler_wolf?.hierarchy?.torso ||
-      defaultUnitsVisuals.units?.katiler_wolf?.hierarchy?.torso
+      baselineUnits?.units?.katiler_wolf?.hierarchy?.torso ||
+      this.unitsVisualsData?.units?.katiler_wolf?.hierarchy?.torso
     );
     if (!wolfTorso) {
-      return deepClone(INITIAL_UNITS_VISUALS_SNAPSHOT.units.cavalry.mountHierarchy);
+      return deepClone(baselineUnits.units.cavalry.mountHierarchy);
     }
     const ch = wolfTorso.children || {};
     const mountChildren = {};
@@ -465,10 +286,14 @@ export class UnitsBuildingsStateManager {
     };
   }
 
-  setUnitMount(unitId, mountType = 'none') {
+  setUnitMount(unitId, mountType = 'none', { save = true } = {}) {
     const uStat = this.unitStatsData.units?.[unitId];
     const uVis = this.unitsVisualsData.units?.[unitId];
     if (!uStat || !uVis) return false;
+
+    const baseline = dataRegistry.getBaselineSnapshot();
+    const baselineUnits = baseline.unitsVisuals;
+    const baselineHeroes = baseline.heroes;
 
     const cleanMount = MOUNT_TYPES.some((m) => m.id === mountType) ? mountType : 'none';
     uStat.mountType = cleanMount;
@@ -484,12 +309,11 @@ export class UnitsBuildingsStateManager {
           if (sk && typeof sk === 'object') delete sk.locomotionAnim;
         }
       }
-      // Restore standing pelvis height and standing legs (of the unit's own human base; other races keep using the classic human skeleton as before)
       const standId = this._standSkeletonId(unitId);
       const standPelvis =
-        INITIAL_UNITS_VISUALS_SNAPSHOT.units?.[standId]?.hierarchy?.pelvis ||
-        defaultUnitsVisuals.units?.[standId]?.hierarchy?.pelvis ||
-        INITIAL_UNITS_VISUALS_SNAPSHOT.units?.[DEFAULT_BASE_CHAR_ID]?.hierarchy?.pelvis;
+        baselineUnits.units?.[standId]?.hierarchy?.pelvis ||
+        this.unitsVisualsData.units?.[standId]?.hierarchy?.pelvis ||
+        baselineUnits.units?.[DEFAULT_BASE_CHAR_ID]?.hierarchy?.pelvis;
       if (uVis.hierarchy?.pelvis) {
         uVis.hierarchy.pelvis.pos = standPelvis?.pos ? deepClone(standPelvis.pos) : [0, 0.92, 0];
       }
@@ -522,8 +346,10 @@ export class UnitsBuildingsStateManager {
           if (sk && typeof sk === 'object') sk.locomotionAnim = 'gallop';
         }
       }
-      if (cleanMount === 'war_chameleon' && defaultHeroesData?.heroes?.sisnat?.mountHierarchy) {
-        uVis.mountHierarchy = deepClone(defaultHeroesData.heroes.sisnat.mountHierarchy);
+      if (cleanMount === 'war_chameleon' && (dataRegistry.getHero('sisnat')?.mountHierarchy || baselineHeroes?.heroes?.sisnat?.mountHierarchy)) {
+        uVis.mountHierarchy = deepClone(
+          dataRegistry.getHero('sisnat')?.mountHierarchy || baselineHeroes.heroes.sisnat.mountHierarchy
+        );
         if (uVis.hierarchy?.pelvis) {
           uVis.hierarchy.pelvis.pos = [0, 1.62, 0.05];
         }
@@ -534,22 +360,20 @@ export class UnitsBuildingsStateManager {
         }
       } else {
         uVis.mountHierarchy = deepClone(
-          INITIAL_UNITS_VISUALS_SNAPSHOT.units?.cavalry?.mountHierarchy ||
-          defaultUnitsVisuals.units.cavalry.mountHierarchy
+          baselineUnits.units?.cavalry?.mountHierarchy ||
+          this.unitsVisualsData.units?.cavalry?.mountHierarchy
         );
         if (uVis.hierarchy?.pelvis) {
           uVis.hierarchy.pelvis.pos = [0, 1.44, 0.02];
         }
       }
 
-      // Apply cavalry riding leg angles so the rider sits naturally on the mount saddle
       const cavPelvis =
-        INITIAL_UNITS_VISUALS_SNAPSHOT.units?.cavalry?.hierarchy?.pelvis ||
-        defaultUnitsVisuals.units?.cavalry?.hierarchy?.pelvis;
-      // The riding stance was authored on the classic skeleton: on another human base keep its OFFSET from the classic standing legs
+        baselineUnits.units?.cavalry?.hierarchy?.pelvis ||
+        this.unitsVisualsData.units?.cavalry?.hierarchy?.pelvis;
       const standId = this._standSkeletonId(unitId);
-      const refStand = INITIAL_UNITS_VISUALS_SNAPSHOT.units?.[DEFAULT_BASE_CHAR_ID]?.hierarchy?.pelvis;
-      const ownStand = standId === DEFAULT_BASE_CHAR_ID ? null : INITIAL_UNITS_VISUALS_SNAPSHOT.units?.[standId]?.hierarchy?.pelvis;
+      const refStand = baselineUnits.units?.[DEFAULT_BASE_CHAR_ID]?.hierarchy?.pelvis;
+      const ownStand = standId === DEFAULT_BASE_CHAR_ID ? null : baselineUnits.units?.[standId]?.hierarchy?.pelvis;
       const ridePos = (side) => {
         const ride = cavPelvis?.children?.[`leg_${side}`]?.pos;
         const own = ownStand?.children?.[`leg_${side}`]?.pos;
@@ -580,7 +404,6 @@ export class UnitsBuildingsStateManager {
       }
     }
 
-    // Recompute eligible formations & modes per loadout when mount changes
     delete uStat.loadoutCapabilities;
     delete uStat.allowedFormations;
     delete uStat.allowedModes;
@@ -593,157 +416,57 @@ export class UnitsBuildingsStateManager {
     uStat.allowedFormations = elig.filter((f) => f.eligible && f.enabled).map((f) => f.id);
     if (!uStat.allowedFormations.includes('square')) uStat.allowedFormations.unshift('square');
 
-    this.saveAll();
+    if (save) this.saveAll();
     return true;
   }
 
-  /**
-   * Ensures every unit in `unitStatsData.units` exists in `unitsVisualsData.units` (with its mount & gear)
-   * and syncs unit costs into any building option that references that unit.
-   * Note (Fix 11): Units do NOT dictate which building recruits them, unlockLevel, trainTimeSec, or xpReward!
-   * Buildings own their `options` list, `unlockLevel`, `trainTicks`, and `xpReward`.
-   */
-  _syncUnitsAndBuildingsCrossReferences() {
-    for (const [uid, uStat] of Object.entries(this.unitStatsData.units || {})) {
-      if (!uStat.mountType) {
-        uStat.mountType = uStat.isMounted ? 'human_horse' : 'none';
-      }
-      if (!uStat.visionRangeMeters) {
-        uStat.visionRangeMeters = uStat.isRanged ? 112 : uStat.isMounted ? 118 : 96;
-      }
-      if (!uStat.blacksmithBonuses) {
-        uStat.blacksmithBonuses = {
-          forged_blades: 20,
-          heavy_plate: 20,
-          bodkin_arrows: uStat.isRanged ? 25 : 0,
-          barding: uStat.isMounted ? 25 : 0
-        };
-      }
-
-      if (uStat.baseCharId) uStat.baseCharId = resolveBaseCharId(uStat.baseCharId); // `human_base` was renamed to `human_base_1`
-      if (!this.unitsVisualsData.units[uid]) {
-        const baseCharId = resolveBaseCharId(uStat.baseCharId || uStat.baseModel);
-        const templateVis =
-          this.unitsVisualsData.units[baseCharId] ||
-          defaultUnitsVisuals.units[baseCharId] ||
-          this.unitsVisualsData.units[DEFAULT_BASE_CHAR_ID] ||
-          this.unitsVisualsData.units.swordsman;
-        if (templateVis) {
-          this.unitsVisualsData.units[uid] = deepClone(templateVis);
-          this.unitsVisualsData.units[uid].displayName = uStat.name || uid;
-          if (uStat.race) {
-            this.unitsVisualsData.units[uid].race = uStat.race;
-          }
-          if (uStat.mountType && uStat.mountType !== 'none') {
-            this.unitsVisualsData.units[uid].mountHierarchy = deepClone(
-              defaultUnitsVisuals.units.cavalry.mountHierarchy
-            );
-            this.unitsVisualsData.units[uid].locomotionAnim = 'gallop';
-          }
-        }
-      } else {
-        this.unitsVisualsData.units[uid].displayName = uStat.name || uid;
-      }
-
-      const visDef = this.unitsVisualsData.units[uid];
-      if (visDef) {
-        if (uStat.isMounted || (uStat.mountType && uStat.mountType !== 'none')) {
-          visDef.isMounted = true;
-          if (!visDef.mountHierarchy) {
-            this.setUnitMount(uid, uStat.mountType || 'human_horse');
-          }
-        }
-        restow(this.unitsVisualsData, visDef);
-        if (!uStat.loadoutCapabilities) uStat.loadoutCapabilities = {};
-        for (const ld of loadoutsOf(visDef)) {
-          const caps = computeCapabilitiesForLoadout(uStat, visDef, this.unitsVisualsData, ld.id);
-          uStat.loadoutCapabilities[ld.id] = {
-            allowedFormations: caps.allowedFormations,
-            allowedModes: caps.allowedModes
-          };
-          if (ld.id === MAIN_LOADOUT) {
-            uStat.allowedFormations = caps.allowedFormations;
-            uStat.allowedModes = caps.allowedModes;
-          }
-        }
-      }
-    }
-
-    // Sync unit intrinsic cost into building options that recruit that unit directly by id
-    for (const bDef of Object.values(this.buildingsData.buildings || {})) {
-      if (bDef.hasWatchtowerSupport === undefined) {
-        bDef.hasWatchtowerSupport = (bDef.watchtowerLevel | 0) > 0 || Boolean(bDef.hasBuiltInTurret);
-      }
-      if (!Array.isArray(bDef.turretOffset)) {
-        bDef.turretOffset = [0, 8.0, 0];
-      }
-      if (!Array.isArray(bDef.options)) continue;
-      for (const opt of bDef.options) {
-        if (opt.kind === 'unit' && this.unitStatsData.units[opt.id]) {
-          const uStat = this.unitStatsData.units[opt.id];
-          opt.name = uStat.name || opt.name;
-          if (uStat.cost) {
-            opt.cost = deepClone(uStat.cost);
-          }
-        }
-      }
-    }
-  }
-
-  // ------------------------------------------------------------------ base characters
-
-  /** the base character a unit was built on (`human_base_1`, `human_base_2`, `katiler_base` ...); old ids are mapped to the current ones */
   getUnitBaseId(unitId) {
     const uStat = this.unitStatsData.units?.[unitId];
     const uVis = this.unitsVisualsData.units?.[unitId];
     const raw = uStat?.baseCharId || uStat?.baseModel;
-    if (raw) return resolveBaseCharId(raw);
+    if (raw) return resolveBaseCharId(raw, raw);
     const race = uVis?.race || uStat?.race || 'human';
-    return BASE_CHARACTER_TEMPLATES.find((b) => b.race === race)?.id || DEFAULT_BASE_CHAR_ID;
+    return getBaseCharacterTemplates().find((b) => b.race === race)?.id || DEFAULT_BASE_CHAR_ID;
   }
 
-  /** skeleton used to restore the standing pose: the unit's own human base, the classic human skeleton for every other race (as before) */
   _standSkeletonId(unitId) {
     const id = this.getUnitBaseId(unitId);
-    return BASE_CHARACTER_TEMPLATES.find((b) => b.id === id)?.race === 'human' ? id : DEFAULT_BASE_CHAR_ID;
+    return getBaseCharacterTemplates().find((b) => b.id === id)?.race === 'human' ? id : DEFAULT_BASE_CHAR_ID;
   }
 
   _baseVisual(baseId) {
+    const baselineUnits = dataRegistry.getBaselineSnapshot().unitsVisuals;
     return (
       this.unitsVisualsData.units?.[baseId] ||
-      INITIAL_UNITS_VISUALS_SNAPSHOT.units?.[baseId] ||
-      defaultUnitsVisuals.units?.[baseId] ||
+      baselineUnits?.units?.[baseId] ||
       null
     );
   }
 
-  /** base characters the unit can be switched to (same race, so its race-specific gear prefabs keep fitting) */
   listBasesForUnit(unitId) {
-    const cur = this.getUnitBaseId(unitId);
-    const race = BASE_CHARACTER_TEMPLATES.find((b) => b.id === cur)?.race;
-    if (!race) return []; // siege machines and other units that are not built on a base character
-    return BASE_CHARACTER_TEMPLATES.filter((b) => b.race === race && this._baseVisual(b.id)?.hierarchy).map((b) => ({
-      ...b,
-      current: b.id === cur
-    }));
+    return listStudioBaseChoices(
+      this.unitsVisualsData,
+      this.unitStatsData,
+      unitId,
+      getBaseCharacterTemplates()
+    );
   }
 
-  /**
-   * Moves an existing unit onto another base character of its race (e.g. human_base_1 -> human_base_2).
-   * Replaced: the body (bones + meshes + limits), `scale` (keeps the unit's size relative to its base).
-   * Kept: stats, equipment / weapons / loadouts (worn gear is re-fitted to the new skeleton), mount, animations, skins, extra bones the author added.
-   * Moving from a clothed base to a bare one (human_base_2) adds basic clothing to the empty clothing slots.
-   */
   rebaseUnit(unitId, newBaseId) {
     const uStat = this.unitStatsData.units?.[unitId];
     const uVis = this.unitsVisualsData.units?.[unitId];
-    const target = BASE_CHARACTER_TEMPLATES.find((b) => b.id === resolveBaseCharId(newBaseId, ''));
+    const resolvedNewId = resolveBaseCharId(newBaseId, newBaseId);
+    const bases = getBaseCharacterTemplates();
+    const target = bases.find((b) => b.id === resolvedNewId) || null;
     if (!uStat || !uVis || !target) return { ok: false, reason: 'unknown unit or base character' };
+
     const oldId = this.getUnitBaseId(unitId);
     if (oldId === target.id) return { ok: true, unchanged: true, from: oldId, to: oldId };
-    const oldMeta = BASE_CHARACTER_TEMPLATES.find((b) => b.id === oldId);
+    const oldMeta = bases.find((b) => b.id === oldId) || null;
     if (!oldMeta) return { ok: false, reason: 'this unit is not built on a base character' };
-    if (oldMeta.race !== target.race) return { ok: false, reason: 'a unit can only switch between base characters of its own race' };
+    if (oldMeta.race && target.race && oldMeta.race !== target.race) {
+      return { ok: false, reason: 'a unit can only switch between base characters of its own race' };
+    }
     const oldBase = this._baseVisual(oldId);
     const newBase = this._baseVisual(target.id);
     if (!oldBase?.hierarchy || !newBase?.hierarchy) return { ok: false, reason: 'base character data is missing' };
@@ -756,7 +479,6 @@ export class UnitsBuildingsStateManager {
       return a && b ? [a[0] - b[0], a[1] - b[1], a[2] - b[2]] : [0, 0, 0];
     };
 
-    // bones / sockets the author added on top of the old base keep their place in space
     const carried = [];
     const visit = (tree, parentName) => {
       for (const [k, n] of Object.entries(tree || {})) {
@@ -773,8 +495,6 @@ export class UnitsBuildingsStateManager {
     };
     visit(uVis.hierarchy, null);
 
-    // a bare base (human_base_2) has no clothing baked into its body: a unit that relied on the classic base's built-in clothes gets basic
-    // worn clothing in its EMPTY slots (flagged `baseDress`, removed again when the unit returns to a clothed base)
     const dressed = [];
     uVis.equipment = uVis.equipment || {};
     if (target.bare && !oldMeta.bare) {
@@ -800,7 +520,7 @@ export class UnitsBuildingsStateManager {
     uVis._gearConfiguredInLab = true;
 
     if (uStat.mountType && uStat.mountType !== 'none') {
-      this.setUnitMount(unitId, uStat.mountType); // standing pelvis / riding legs of the new skeleton
+      this.setUnitMount(unitId, uStat.mountType, { save: false });
       if (keepMount) uVis.mountHierarchy = keepMount;
     }
     restow(this.unitsVisualsData, uVis);
@@ -808,10 +528,6 @@ export class UnitsBuildingsStateManager {
     return { ok: true, from: oldId, to: target.id, carried, movedGear, dressed };
   }
 
-  /**
-   * Fix 1 (Part A): Creates a brand-new Warrior unit starting from a clean Base Character (`human_base_1`, `human_base_2`, `katiler_base`, etc.)
-   * with empty hands and basic clothing so the user builds it up from a base character.
-   */
   createNewUnit({
     id,
     name,
@@ -826,64 +542,40 @@ export class UnitsBuildingsStateManager {
         .toLowerCase()
         .replace(/[^a-z0-9_]/g, '_') || `unit_${Date.now()}`;
 
+    const bases = getBaseCharacterTemplates();
     const wantedBaseId = resolveBaseCharId(baseCharId);
     const baseTemplateMeta =
-      BASE_CHARACTER_TEMPLATES.find((b) => b.id === wantedBaseId) || BASE_CHARACTER_TEMPLATES[0];
+      bases.find((b) => b.id === wantedBaseId) ||
+      bases[0] || { id: DEFAULT_BASE_CHAR_ID, race: 'human' };
+    const baselineUnits = dataRegistry.getBaselineSnapshot().unitsVisuals;
     const baseVis =
       this.unitsVisualsData.units[baseTemplateMeta.id] ||
-      defaultUnitsVisuals.units[baseTemplateMeta.id] ||
-      defaultUnitsVisuals.units[DEFAULT_BASE_CHAR_ID];
+      baselineUnits.units[baseTemplateMeta.id] ||
+      baselineUnits.units[DEFAULT_BASE_CHAR_ID];
 
     const newVis = deepClone(baseVis);
     newVis.displayName = name || cleanId;
     newVis.race = baseTemplateMeta.race || 'human';
+    delete newVis.isBaseTemplate;
+    delete newVis.bare;
     newVis.equipment = {
-      torso: {
-        prefab: `${newVis.race}_worn_tunic`,
-        gripOffset: [0, 0, 0],
-        gripRotation: [0, 0, 0]
-      },
-      leg_R: {
-        prefab: `${newVis.race}_worn_trousers_R`,
-        gripOffset: [0, 0, 0],
-        gripRotation: [0, 0, 0]
-      },
-      leg_L: {
-        prefab: `${newVis.race}_worn_trousers_L`,
-        gripOffset: [0, 0, 0],
-        gripRotation: [0, 0, 0]
-      },
-      foot_R: {
-        prefab: `${newVis.race}_worn_shoes_R`,
-        gripOffset: [0, 0, 0],
-        gripRotation: [0, 0, 0]
-      },
-      foot_L: {
-        prefab: `${newVis.race}_worn_shoes_L`,
-        gripOffset: [0, 0, 0],
-        gripRotation: [0, 0, 0]
-      }
+      torso: { prefab: `${newVis.race}_worn_tunic`, gripOffset: [0, 0, 0], gripRotation: [0, 0, 0] },
+      leg_R: { prefab: `${newVis.race}_worn_trousers_R`, gripOffset: [0, 0, 0], gripRotation: [0, 0, 0] },
+      leg_L: { prefab: `${newVis.race}_worn_trousers_L`, gripOffset: [0, 0, 0], gripRotation: [0, 0, 0] },
+      foot_R: { prefab: `${newVis.race}_worn_shoes_R`, gripOffset: [0, 0, 0], gripRotation: [0, 0, 0] },
+      foot_L: { prefab: `${newVis.race}_worn_shoes_L`, gripOffset: [0, 0, 0], gripRotation: [0, 0, 0] }
     };
 
-    // the worn-gear prefabs above were authored for the race's reference skeleton: add the pivot difference of the chosen base
     const refBaseId = GEAR_REFERENCE_BASE[newVis.race];
     if (refBaseId && refBaseId !== baseTemplateMeta.id) {
       realignWornGear(newVis, this._baseVisual(refBaseId)?.hierarchy, newVis.hierarchy);
     }
 
     if (weaponR && weaponR !== 'none' && this.unitsVisualsData.prefabs?.[weaponR]) {
-      newVis.equipment.weapon_socket_R = {
-        prefab: weaponR,
-        gripOffset: [0, 0, 0],
-        gripRotation: [0, 0, 0]
-      };
+      newVis.equipment.weapon_socket_R = { prefab: weaponR, gripOffset: [0, 0, 0], gripRotation: [0, 0, 0] };
     }
     if (weaponL && weaponL !== 'none' && this.unitsVisualsData.prefabs?.[weaponL]) {
-      newVis.equipment.weapon_socket_L = {
-        prefab: weaponL,
-        gripOffset: [0, 0, 0],
-        gripRotation: [0, 0, 0]
-      };
+      newVis.equipment.weapon_socket_L = { prefab: weaponL, gripOffset: [0, 0, 0], gripRotation: [0, 0, 0] };
     }
 
     restow(this.unitsVisualsData, newVis);
@@ -946,10 +638,6 @@ export class UnitsBuildingsStateManager {
     return cleanId;
   }
 
-  /**
-   * Fix 1 (Part B): Duplicates an existing unit (`sourceUnitId`, e.g. `swordsman`) with all its equipped
-   * weapons, armor, mount, loadouts, and combat stats!
-   */
   duplicateUnit(sourceUnitId, customName = '') {
     const srcStat = this.unitStatsData.units?.[sourceUnitId];
     const srcVis = this.unitsVisualsData.units?.[sourceUnitId];
@@ -982,10 +670,6 @@ export class UnitsBuildingsStateManager {
     return cleanId;
   }
 
-  /**
-   * Built-in 1v1 / Full-Squad DPS Duel Simulator for the Units Lab viewport!
-   * Calculates exact DPS, effective armor reduction, Time-To-Kill (TTK), winner, and surviving units/HP %.
-   */
   simulateUnitDuel(unitAId, unitBId, mode = 'squad') {
     const uA = this.unitStatsData.units?.[unitAId];
     const uB = this.unitStatsData.units?.[unitBId];
@@ -1041,7 +725,6 @@ export class UnitsBuildingsStateManager {
     };
   }
 
-
   setUnitPortraits(
     unitId,
     {
@@ -1094,7 +777,7 @@ export class UnitsBuildingsStateManager {
   }
 
   addCustomPlaceholderIcon(arg1 = {}, maybeDataUrl = null) {
-    const opts = typeof arg1 === "string" ? { label: arg1, dataUrl: maybeDataUrl } : (arg1 || {});
+    const opts = typeof arg1 === 'string' ? { label: arg1, dataUrl: maybeDataUrl } : (arg1 || {});
     const { id, label, dataUrl } = opts;
     if (!dataUrl) return null;
     if (!Array.isArray(this.unitStatsData.customPlaceholderIcons)) {
@@ -1150,46 +833,43 @@ export class UnitsBuildingsStateManager {
     if (!uStat || uStat.isWorker || unitId === 'worker' || Object.keys(unitsObj).length <= 1) {
       return false;
     }
-    delete this.unitStatsData.units[unitId];
-    delete this.unitsVisualsData.units[unitId];
-    if (!Array.isArray(this.unitStatsData._deletedUnits)) {
-      this.unitStatsData._deletedUnits = [];
-    }
-    if (!this.unitStatsData._deletedUnits.includes(unitId)) {
-      this.unitStatsData._deletedUnits.push(unitId);
-    }
-    for (const bDef of Object.values(this.buildingsData.buildings || {})) {
-      if (Array.isArray(bDef.options)) {
-        bDef.options = bDef.options.filter((o) => o.id !== unitId && o.unitType !== unitId);
+    this._isSavingAll = true;
+    try {
+      const res = dataRegistry.deleteUnit(unitId);
+      if (!res.ok) {
+        this.onStatus?.('error', res.error || 'Delete rejected');
+        return false;
       }
+      this._reloadFromRegistry();
+      this.onStatus?.('saved', 'Saved');
+      return true;
+    } finally {
+      this._isSavingAll = false;
     }
-    this.saveAll();
-    return true;
   }
 
   saveAll() {
-    if (this._isSavingAll) return;
+    if (this._isSavingAll) return { ok: true };
     this._isSavingAll = true;
     try {
-      this._syncUnitsAndBuildingsCrossReferences();
-    syncLiveConfigObjectsInMemory(this.unitStatsData, this.buildingsData, this.unitsVisualsData);
-    try {
-      globalThis.localStorage?.setItem(UNIT_STATS_STORAGE_KEY, JSON.stringify(this.unitStatsData));
-      globalThis.localStorage?.setItem(BUILDINGS_DATA_STORAGE_KEY, JSON.stringify(this.buildingsData));
-      globalThis.localStorage?.setItem(BUILDING_VISUALS_STORAGE_KEY, JSON.stringify(this.buildingVisualsData));
-    } catch (_) {}
+      const res = dataRegistry.transaction((next) => {
+        next.unitStats = deepClone(this.unitStatsData);
+        next.buildings = deepClone(this.buildingsData);
+        next.buildingVisuals = deepClone(this.buildingVisualsData);
+        next.unitsVisuals = deepClone(this.unitsVisualsData);
+      }, { reason: 'unitsBuildingsSaveAll' });
 
-    if (this.studioStateManager) {
-      this.studioStateManager.data = this.unitsVisualsData;
-      this.studioStateManager.saveDraft();
-    }
+      if (!res.ok) {
+        this.onStatus?.('error', res.error || 'Validation failed');
+        return res;
+      }
 
-    if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function') {
-      try {
-        window.dispatchEvent(new CustomEvent('kings_lands_units_buildings_updated'));
-      } catch (_) {}
-    }
-    this.onStatus?.('saved', 'Saved');
+      this._reloadFromRegistry();
+      if (this.studioStateManager) {
+        this.studioStateManager._dirty = false;
+      }
+      this.onStatus?.('saved', 'Saved');
+      return res;
     } finally {
       this._isSavingAll = false;
     }
@@ -1202,30 +882,20 @@ export class UnitsBuildingsStateManager {
   }
 
   resetAllToDefaults() {
-    this.unitStatsData = deepClone(INITIAL_UNIT_STATS_SNAPSHOT);
-    this.buildingsData = deepClone(INITIAL_BUILDINGS_DATA_SNAPSHOT);
-    this.buildingVisualsData = deepClone(INITIAL_BUILDING_VISUALS_SNAPSHOT);
-    this.unitsVisualsData = deepClone(INITIAL_UNITS_VISUALS_SNAPSHOT);
-    if (defaultHeroesData?.prefabs && this.unitsVisualsData?.prefabs) {
-      this.unitsVisualsData.prefabs = {
-        ...defaultHeroesData.prefabs,
-        ...this.unitsVisualsData.prefabs
-      };
-    }
-    if (this.studioStateManager) {
-      this.studioStateManager.data = this.unitsVisualsData;
-      try {
-        globalThis.localStorage?.removeItem(UNITS_VISUALS_STORAGE_KEY);
-      } catch (_) {}
-    }
+    clearTimeout(this._saveTimer);
+    this._isSavingAll = true;
     try {
-      globalThis.localStorage?.removeItem(UNIT_STATS_STORAGE_KEY);
-      globalThis.localStorage?.removeItem(BUILDINGS_DATA_STORAGE_KEY);
-      globalThis.localStorage?.removeItem(BUILDING_VISUALS_STORAGE_KEY);
-    } catch (_) {}
-    this._syncUnitsAndBuildingsCrossReferences();
-    syncLiveConfigObjectsInMemory(this.unitStatsData, this.buildingsData, this.unitsVisualsData);
-    this.onStatus?.('saved', 'Reset to defaults');
+      const res = dataRegistry.resetToDefaults();
+      this._reloadFromRegistry();
+      if (this.studioStateManager) {
+        this.studioStateManager._dirty = false;
+        this.studioStateManager.data = this.unitsVisualsData;
+      }
+      this.onStatus?.('saved', 'Reset to defaults');
+      return res.ok;
+    } finally {
+      this._isSavingAll = false;
+    }
   }
 
   exportCombinedBundleJson(filename = 'units_and_buildings_config.json') {
@@ -1255,15 +925,14 @@ export class UnitsBuildingsStateManager {
   importCombinedBundleText(jsonText) {
     try {
       const parsed = JSON.parse(jsonText);
-      if (parsed.unitStats?.units) {
-        this.unitStatsData = parsed.unitStats;
-      }
-      if (parsed.buildings?.buildings) {
-        this.buildingsData = parsed.buildings;
-      }
-      if (parsed.buildingVisuals?.animations) {
-        this.buildingVisualsData = parsed.buildingVisuals;
-      }
+      const prevU = deepClone(this.unitStatsData);
+      const prevB = deepClone(this.buildingsData);
+      const prevBV = deepClone(this.buildingVisualsData);
+      const prevUV = deepClone(this.unitsVisualsData);
+
+      if (parsed.unitStats?.units) this.unitStatsData = parsed.unitStats;
+      if (parsed.buildings?.buildings) this.buildingsData = parsed.buildings;
+      if (parsed.buildingVisuals?.animations) this.buildingVisualsData = parsed.buildingVisuals;
       if (parsed.unitEquipment) {
         for (const [uid, eqObj] of Object.entries(parsed.unitEquipment)) {
           if (this.unitsVisualsData.units[uid]) {
@@ -1273,10 +942,25 @@ export class UnitsBuildingsStateManager {
           }
         }
       }
-      this.saveAll();
+      const res = this.saveAll();
+      if (!res?.ok) {
+        this.unitStatsData = prevU;
+        this.buildingsData = prevB;
+        this.buildingVisualsData = prevBV;
+        this.unitsVisualsData = prevUV;
+        return { ok: false, error: res?.error || 'Validation failed' };
+      }
       return { ok: true };
     } catch (err) {
       return { ok: false, error: err?.message || 'Invalid JSON' };
+    }
+  }
+
+  destroy() {
+    clearTimeout(this._saveTimer);
+    if (this._unsubRegistry) {
+      this._unsubRegistry();
+      this._unsubRegistry = null;
     }
   }
 }

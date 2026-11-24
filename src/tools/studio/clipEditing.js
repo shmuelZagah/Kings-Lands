@@ -25,7 +25,12 @@ import {
   withVariantIndex
 } from './clipResolver.js';
 import { migrateLegacyTrack } from './keyTracks.js';
-import defaultUnitsJson from '../../data/visuals/units.json';
+
+let _defaultUnitsVisuals = null;
+
+export function registerDefaultUnitsVisuals(unitsData) {
+  _defaultUnitsVisuals = unitsData || null;
+}
 
 const clone = (o) => JSON.parse(JSON.stringify(o));
 
@@ -70,11 +75,11 @@ const DEFAULT_SWITCH_WEAPON_CLIP = Object.freeze({
   events: []
 });
 
-export function defaultKeyframeClip(base) {
+export function defaultKeyframeClip(base, shippedDefaults = _defaultUnitsVisuals) {
   if (base === 'switch_weapon') {
-    return clone(defaultUnitsJson?.animations?.keyframes?.switch_weapon || DEFAULT_SWITCH_WEAPON_CLIP);
+    return clone(shippedDefaults?.animations?.keyframes?.switch_weapon || DEFAULT_SWITCH_WEAPON_CLIP);
   }
-  const shipped = defaultUnitsJson?.animations?.keyframes?.[base];
+  const shipped = shippedDefaults?.animations?.keyframes?.[base];
   if (shipped) {
     return clone(shipped);
   }
@@ -219,7 +224,7 @@ export function resetClip(data, defaults, unitId, faction, base, scope) {
   let changed = false;
 
   if (scope === 'global') {
-    const dk = defaults?.animations?.keyframes?.[base] || defaultUnitsJson?.animations?.keyframes?.[base];
+    const dk = defaults?.animations?.keyframes?.[base] || _defaultUnitsVisuals?.animations?.keyframes?.[base];
     const dp = defaults?.animations?.procedural?.[base];
     if (dk) { anims.keyframes[base] = clone(dk); changed = true; }
     if (dp) { anims.procedural[base] = clone(dp); changed = true; }
@@ -270,9 +275,10 @@ const hasKeys = (clip) => Object.values(clip?.tracks || {}).some((t) => Array.is
  * unless it is a provable duplicate.
  * Returns { removed: [], migrated: [], fixed: [] }.
  */
-export function sanitizeUnitsData(data) {
+export function sanitizeUnitsData(data, shippedDefaults = _defaultUnitsVisuals) {
   const report = { removed: [], migrated: [], fixed: [] };
   if (!data || typeof data !== 'object') return report;
+  const shippedData = shippedDefaults || _defaultUnitsVisuals;
 
   if (!data.animations) data.animations = {};
   const anims = data.animations;
@@ -299,8 +305,8 @@ export function sanitizeUnitsData(data) {
       clip.layer = 'lowerBody';
       if (clip.loop === undefined) clip.loop = true;
       if (!hasKeys(clip)) {
-        if (name === base && defaultUnitsJson?.animations?.keyframes?.[base]) {
-          anims.keyframes[name] = clone(defaultUnitsJson.animations.keyframes[base]);
+        if (name === base && shippedData?.animations?.keyframes?.[base]) {
+          anims.keyframes[name] = clone(shippedData.animations.keyframes[base]);
         } else {
           delete anims.keyframes[name];
           report.removed.push(name);
@@ -338,7 +344,7 @@ export function sanitizeUnitsData(data) {
 
   for (const moveBase of ['idle', 'walk', 'run', 'charge', 'retreat_run', 'gallop']) {
     if (!anims.keyframes[moveBase] || !hasKeys(anims.keyframes[moveBase])) {
-      const shippedMove = defaultUnitsJson?.animations?.keyframes?.[moveBase];
+      const shippedMove = shippedData?.animations?.keyframes?.[moveBase];
       if (shippedMove) {
         anims.keyframes[moveBase] = clone(shippedMove);
       }
@@ -347,7 +353,7 @@ export function sanitizeUnitsData(data) {
 
   if (!anims.keyframes.switch_weapon || !hasKeys(anims.keyframes.switch_weapon)) {
     anims.keyframes.switch_weapon = clone(
-      defaultUnitsJson?.animations?.keyframes?.switch_weapon || DEFAULT_SWITCH_WEAPON_CLIP
+      shippedData?.animations?.keyframes?.switch_weapon || DEFAULT_SWITCH_WEAPON_CLIP
     );
   }
 
@@ -355,28 +361,28 @@ export function sanitizeUnitsData(data) {
     delete anims.procedural.swordsman_human_walk;
   }
 
-  if (!data._animOverhaulV3 && defaultUnitsJson?.animations?.keyframes) {
+  if (!data._animOverhaulV3 && shippedData?.animations?.keyframes) {
     data._animOverhaulV3 = true;
     for (const k of [
       'idle', 'swordsman_human_idle', 'walk', 'run', 'charge', 'retreat_run', 'gallop',
       'attack_slash', 'swordsman_human_attack_slash',
       'attack_thrust', 'spearman_human_attack_thrust', 'block'
     ]) {
-      if (defaultUnitsJson.animations.keyframes[k]) {
-        anims.keyframes[k] = clone(defaultUnitsJson.animations.keyframes[k]);
+      if (shippedData.animations.keyframes[k]) {
+        anims.keyframes[k] = clone(shippedData.animations.keyframes[k]);
       }
     }
   }
 
-  if (!data._animOverhaulV4 && defaultUnitsJson?.animations?.keyframes) {
+  if (!data._animOverhaulV4 && shippedData?.animations?.keyframes) {
     data._animOverhaulV4 = true;
     for (const k of [
       'worker_build', 'worker_chop', 'worker_mine',
       'idle__v2', 'swordsman_human_idle__v2',
       'attack_slash__v2', 'swordsman_human_attack_slash__v2'
     ]) {
-      if (defaultUnitsJson.animations.keyframes[k] && !anims.keyframes[k]) {
-        anims.keyframes[k] = clone(defaultUnitsJson.animations.keyframes[k]);
+      if (shippedData.animations.keyframes[k] && !anims.keyframes[k]) {
+        anims.keyframes[k] = clone(shippedData.animations.keyframes[k]);
       }
     }
   }

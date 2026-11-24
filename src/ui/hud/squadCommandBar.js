@@ -1,4 +1,4 @@
-import unitStatsData from '../../data/unitStats.json';
+import { dataRegistry } from '../../data/dataRegistry.js';
 import { UNIT_ICON_SVGS, findCustomIconById } from './unitIconsCatalog.js';
 /**
  * Kings Lands — Bottom-Center Squad Command Bar & Top-Right Heroes Bar
@@ -84,6 +84,11 @@ export class SquadCommandBar {
     this.currentPage = 0;
     this._lastRenderSignature = '';
     this._cachedCompanies = new Map();
+    this._unitStatsData = dataRegistry.getUnitStats();
+    this._unsubRegistry = dataRegistry.subscribe(() => {
+      this._unitStatsData = dataRegistry.getUnitStats();
+      this._lastRenderSignature = '';
+    });
     this._buildDom();
   }
 
@@ -446,6 +451,7 @@ export class SquadCommandBar {
           `;
         }
 
+        const unitStatsData = this._unitStatsData || dataRegistry.getUnitStats();
         const uStat = unitStatsData?.units?.[c.unitType];
         const customFromLib = uStat?.squadCardIconKey
           ? findCustomIconById(unitStatsData?.customPlaceholderIcons, uStat.squadCardIconKey)?.dataUrl
