@@ -15,8 +15,8 @@
  */
 
 import { FX_ONE, mulDiv, fxHypot, xorshift32, fxRandomRange } from '../../core/fx.js';
-import buildingsData from '../../data/buildings.json';
-import unitStatsData from '../../data/unitStats.json';
+import { defaultBuildingsData as buildingsData } from '../../data/defaults.js';
+import { defaultUnitStats as unitStatsData } from '../../data/defaults.js';
 
 const TOWER_HEIGHT_RANGE_BONUS_FX = 6 * FX_ONE; // +6m range bonus from tower elevation
 const TURRET_RELOAD_MIN_TICKS = 44;

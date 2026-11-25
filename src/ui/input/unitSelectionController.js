@@ -16,7 +16,7 @@ import { EventTypes } from '../../core/eventBus.js';
 import { IndexToUnitType } from '../../sim/gameState.js';
 import { FormationTypes, sanitizeFormationForUnit } from '../../sim/formations/formations.js';
 import { resolveDefaultFormation } from '../../sim/formations/company.js';
-import engineConfig from '../../data/engineConfig.json';
+import { defaultEngineConfig as engineConfig } from '../../data/defaults.js';
 
 export const SAME_TYPE_SELECT_RADIUS_METERS = 65;
 

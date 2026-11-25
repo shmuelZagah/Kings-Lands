@@ -1,0 +1,53 @@
+{
+  "id": "takdik",
+  "name": "Takdik",
+  "teamColors": {
+    "primary": "#57534e",
+    "secondary": "#a8a29e"
+  },
+  "sharedUnits": false,
+  "bases": [
+    "takdik_base"
+  ],
+  "units": [],
+  "buildings": "shared",
+  "heroes": [],
+  "gear": [
+    "takdik_worn_tunic",
+    "takdik_heavy_cuirass",
+    "takdik_hood",
+    "takdik_war_helm",
+    "takdik_tunic_sleeve_R",
+    "takdik_heavy_pauldron_R",
+    "takdik_tunic_sleeve_L",
+    "takdik_heavy_pauldron_L",
+    "takdik_leather_bracer_R",
+    "takdik_heavy_vambrace_R",
+    "takdik_leather_bracer_L",
+    "takdik_heavy_vambrace_L",
+    "takdik_leather_gloves_R",
+    "takdik_heavy_gauntlets_R",
+    "takdik_leather_gloves_L",
+    "takdik_heavy_gauntlets_L",
+    "takdik_worn_trousers_R",
+    "takdik_heavy_cuisse_R",
+    "takdik_worn_trousers_L",
+    "takdik_heavy_cuisse_L",
+    "takdik_cloth_wraps_R",
+    "takdik_heavy_greave_R",
+    "takdik_cloth_wraps_L",
+    "takdik_heavy_greave_L",
+    "takdik_worn_shoes_R",
+    "takdik_leather_boots_R",
+    "takdik_metal_boots_R",
+    "takdik_worn_shoes_L",
+    "takdik_leather_boots_L",
+    "takdik_metal_boots_L"
+  ],
+  "animations": [],
+  "files": {
+    "units": "races/takdik/units.json",
+    "gear": "races/takdik/gear.json",
+    "animations": "races/takdik/animations.json"
+  }
+}

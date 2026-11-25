@@ -16,6 +16,7 @@
  *     sitting between adjacent trees!
  */
 
+import { HEROES_LAB_NAME } from '../../data/labNames.js';
 import * as THREE from 'three';
 import { modelProvider } from '../../render/modelProvider.js';
 import { spawn3DSpellEffect, inferDefaultVfxStyle } from '../../render/worldEffectsRenderer.js';
@@ -135,7 +136,7 @@ export class HallOfHeroesApp {
           <div class="flex items-center gap-2.5">
             <span class="text-base">👑</span>
             <h1 class="text-sm font-extrabold uppercase tracking-wider text-amber-400">
-              Hall of Heroes
+              ${HEROES_LAB_NAME}
             </h1>
           </div>
 

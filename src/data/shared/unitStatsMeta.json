@@ -1,0 +1,66 @@
+{
+  "version": 2,
+  "formationRules": {
+    "square": {
+      "id": "square",
+      "labelEn": "Square",
+      "toggleLabel": "Default Square",
+      "requiresMounted": null,
+      "requiresWeaponTypes": [],
+      "defaultEnabled": true
+    },
+    "shieldWall": {
+      "id": "shieldWall",
+      "labelEn": "Shield Wall",
+      "toggleLabel": "Square ↔ Shield Wall",
+      "requiresMounted": false,
+      "requiresWeaponTypes": [
+        "shield",
+        "melee_short"
+      ],
+      "defaultEnabled": true
+    },
+    "spearWall": {
+      "id": "spearWall",
+      "labelEn": "Spear Wall",
+      "toggleLabel": "Square ↔ Spear Wall",
+      "requiresMounted": false,
+      "requiresWeaponTypes": [
+        "melee_long"
+      ],
+      "defaultEnabled": true
+    },
+    "pikePhalanx": {
+      "id": "pikePhalanx",
+      "labelEn": "Pike Phalanx",
+      "toggleLabel": "Square ↔ Pike Phalanx",
+      "requiresMounted": false,
+      "requiresWeaponTypes": [
+        "melee_long"
+      ],
+      "defaultEnabled": true
+    },
+    "wedge": {
+      "id": "wedge",
+      "labelEn": "Wedge",
+      "toggleLabel": "Square ↔ Wedge",
+      "requiresMounted": true,
+      "requiresWeaponTypes": [
+        "melee_short",
+        "melee_long"
+      ],
+      "defaultEnabled": true
+    },
+    "skirmishCircle": {
+      "id": "skirmishCircle",
+      "labelEn": "Skirmish Circle",
+      "toggleLabel": "Square ↔ Skirmish Circle",
+      "requiresMounted": true,
+      "requiresWeaponTypes": [
+        "thrown",
+        "bow"
+      ],
+      "defaultEnabled": false
+    }
+  }
+}

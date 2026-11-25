@@ -1,0 +1,2267 @@
+{
+  "id": "mirukenkay_base",
+  "race": "mirukenkay",
+  "displayName": "Mirukenkay Goldenborn Base",
+  "type": "procedural_3d",
+  "gltfUrl": null,
+  "scale": 1.25,
+  "selectionRingRadius": 0.85,
+  "bannerStyle": "royal_standard",
+  "locomotionAnim": "walk",
+  "combatAnim": "attack_slash",
+  "equipment": {},
+  "hierarchy": {
+    "pelvis": {
+      "pos": [0,1.04,0],
+      "limits": {
+        "x": [-35,35],
+        "y": [-40,40],
+        "z": [-25,25]
+      },
+      "meshes": [
+        {
+          "name": "shorts_hip",
+          "shape": "lathe",
+          "size": [20],
+          "points": [
+            [0,-0.12],
+            [0.168,-0.12],
+            [0.182,-0.08],
+            [0.194,-0.03],
+            [0.192,0.03],
+            [0.178,0.08],
+            [0.165,0.115],
+            [0,0.115]
+          ],
+          "pos": [0,0.02,0],
+          "scale": [1.32,1,0.82],
+          "color": "team.primary",
+          "metalness": 0,
+          "roughness": 0.85
+        },
+        {
+          "name": "waist_sash_wrap",
+          "shape": "cylinder",
+          "size": [0.175,0.172,0.095,18],
+          "pos": [0,0.105,0],
+          "scale": [1.26,1,0.84],
+          "color": "team.secondary",
+          "metalness": 0.05,
+          "roughness": 0.8
+        },
+        {
+          "name": "glute_R",
+          "shape": "box",
+          "size": [0.13,0.14,0.11],
+          "pos": [0.082,-0.035,-0.065],
+          "rot": [0.15,0.15,0],
+          "color": "team.primary",
+          "roughness": 0.85
+        },
+        {
+          "name": "glute_L",
+          "shape": "box",
+          "size": [0.13,0.14,0.11],
+          "pos": [-0.082,-0.035,-0.065],
+          "rot": [0.15,-0.15,0],
+          "color": "team.primary",
+          "roughness": 0.85
+        }
+      ],
+      "children": {
+        "torso": {
+          "pos": [0,0.04,0],
+          "lockPos": true,
+          "limits": {
+            "x": [-45,60],
+            "y": [-45,45],
+            "z": [-30,30]
+          },
+          "meshes": [
+            {
+              "name": "torso_core",
+              "shape": "lathe",
+              "size": [8],
+              "points": [
+                [0,0.02],
+                [0.138,0.02],
+                [0.144,0.12],
+                [0.152,0.25],
+                [0.168,0.38],
+                [0.215,0.48],
+                [0.242,0.58],
+                [0.228,0.66],
+                [0.15,0.73],
+                [0,0.75]
+              ],
+              "pos": [0,0,0],
+              "scale": [1.2,1,0.76],
+              "color": "#f6c438",
+              "metalness": 0.8,
+              "roughness": 0.22,
+              "pattern": "crystal",
+              "patternRepeat": [2.5,1.8]
+            },
+            {
+              "name": "clavicle_R",
+              "shape": "box",
+              "size": [0.17,0.032,0.045],
+              "pos": [0.105,0.655,0.095],
+              "rot": [0.15,-0.18,0.12],
+              "color": "#fef08a",
+              "metalness": 0.78,
+              "roughness": 0.18
+            },
+            {
+              "name": "clavicle_L",
+              "shape": "box",
+              "size": [0.17,0.032,0.045],
+              "pos": [-0.105,0.655,0.095],
+              "rot": [0.15,0.18,-0.12],
+              "color": "#fef08a",
+              "metalness": 0.78,
+              "roughness": 0.18
+            },
+            {
+              "name": "trap_facet_R",
+              "shape": "box",
+              "size": [0.16,0.085,0.13],
+              "pos": [0.135,0.665,-0.015],
+              "rot": [0.1,0,-0.32],
+              "color": "#fde047",
+              "metalness": 0.8,
+              "roughness": 0.2,
+              "pattern": "crystal",
+              "patternRepeat": [1.5,1]
+            },
+            {
+              "name": "trap_facet_L",
+              "shape": "box",
+              "size": [0.16,0.085,0.13],
+              "pos": [-0.135,0.665,-0.015],
+              "rot": [0.1,0,0.32],
+              "color": "#fde047",
+              "metalness": 0.8,
+              "roughness": 0.2,
+              "pattern": "crystal",
+              "patternRepeat": [1.5,1]
+            },
+            {
+              "name": "pec_upper_R",
+              "shape": "box",
+              "size": [0.145,0.085,0.075],
+              "pos": [0.085,0.595,0.112],
+              "rot": [-0.32,0.22,-0.08],
+              "color": "#fef08a",
+              "metalness": 0.78,
+              "roughness": 0.18
+            },
+            {
+              "name": "pec_upper_L",
+              "shape": "box",
+              "size": [0.145,0.085,0.075],
+              "pos": [-0.085,0.595,0.112],
+              "rot": [-0.32,-0.22,0.08],
+              "color": "#fef08a",
+              "metalness": 0.78,
+              "roughness": 0.18
+            },
+            {
+              "name": "pec_main_R",
+              "shape": "box",
+              "size": [0.15,0.115,0.085],
+              "pos": [0.088,0.515,0.128],
+              "rot": [0.08,0.24,-0.06],
+              "color": "#fde047",
+              "metalness": 0.8,
+              "roughness": 0.2,
+              "pattern": "crystal",
+              "patternRepeat": [1.5,1.5]
+            },
+            {
+              "name": "pec_main_L",
+              "shape": "box",
+              "size": [0.15,0.115,0.085],
+              "pos": [-0.088,0.515,0.128],
+              "rot": [0.08,-0.24,0.06],
+              "color": "#fde047",
+              "metalness": 0.8,
+              "roughness": 0.2,
+              "pattern": "crystal",
+              "patternRepeat": [1.5,1.5]
+            },
+            {
+              "name": "abs_1_R",
+              "shape": "box",
+              "size": [0.076,0.082,0.065],
+              "pos": [0.044,0.405,0.122],
+              "rot": [0.05,0.14,0],
+              "color": "#fde047",
+              "metalness": 0.8,
+              "roughness": 0.2
+            },
+            {
+              "name": "abs_1_L",
+              "shape": "box",
+              "size": [0.076,0.082,0.065],
+              "pos": [-0.044,0.405,0.122],
+              "rot": [0.05,-0.14,0],
+              "color": "#fde047",
+              "metalness": 0.8,
+              "roughness": 0.2
+            },
+            {
+              "name": "abs_2_R",
+              "shape": "box",
+              "size": [0.074,0.082,0.062],
+              "pos": [0.043,0.312,0.118],
+              "rot": [0.06,0.14,0],
+              "color": "#f6c438",
+              "metalness": 0.8,
+              "roughness": 0.22
+            },
+            {
+              "name": "abs_2_L",
+              "shape": "box",
+              "size": [0.074,0.082,0.062],
+              "pos": [-0.043,0.312,0.118],
+              "rot": [0.06,-0.14,0],
+              "color": "#f6c438",
+              "metalness": 0.8,
+              "roughness": 0.22
+            },
+            {
+              "name": "abs_3_R",
+              "shape": "box",
+              "size": [0.07,0.085,0.058],
+              "pos": [0.04,0.218,0.114],
+              "rot": [0.1,0.14,0],
+              "color": "#eab308",
+              "metalness": 0.82,
+              "roughness": 0.22
+            },
+            {
+              "name": "abs_3_L",
+              "shape": "box",
+              "size": [0.07,0.085,0.058],
+              "pos": [-0.04,0.218,0.114],
+              "rot": [0.1,-0.14,0],
+              "color": "#eab308",
+              "metalness": 0.82,
+              "roughness": 0.22
+            },
+            {
+              "name": "oblique_R",
+              "shape": "box",
+              "size": [0.085,0.24,0.11],
+              "pos": [0.135,0.31,0.025],
+              "rot": [0.05,0.35,-0.15],
+              "color": "#eab308",
+              "metalness": 0.82,
+              "roughness": 0.24
+            },
+            {
+              "name": "oblique_L",
+              "shape": "box",
+              "size": [0.085,0.24,0.11],
+              "pos": [-0.135,0.31,0.025],
+              "rot": [0.05,-0.35,0.15],
+              "color": "#eab308",
+              "metalness": 0.82,
+              "roughness": 0.24
+            },
+            {
+              "name": "scapula_facet_R",
+              "shape": "box",
+              "size": [0.14,0.16,0.07],
+              "pos": [0.105,0.54,-0.115],
+              "rot": [0.12,-0.25,-0.15],
+              "color": "#fde047",
+              "metalness": 0.8,
+              "roughness": 0.2,
+              "pattern": "crystal",
+              "patternRepeat": [1.5,1.5]
+            },
+            {
+              "name": "scapula_facet_L",
+              "shape": "box",
+              "size": [0.14,0.16,0.07],
+              "pos": [-0.105,0.54,-0.115],
+              "rot": [0.12,0.25,0.15],
+              "color": "#fde047",
+              "metalness": 0.8,
+              "roughness": 0.2,
+              "pattern": "crystal",
+              "patternRepeat": [1.5,1.5]
+            },
+            {
+              "name": "lat_facet_R",
+              "shape": "box",
+              "size": [0.12,0.22,0.08],
+              "pos": [0.145,0.42,-0.075],
+              "rot": [0.08,-0.35,-0.28],
+              "color": "#f6c438",
+              "metalness": 0.8,
+              "roughness": 0.22
+            },
+            {
+              "name": "lat_facet_L",
+              "shape": "box",
+              "size": [0.12,0.22,0.08],
+              "pos": [-0.145,0.42,-0.075],
+              "rot": [0.08,0.35,0.28],
+              "color": "#f6c438",
+              "metalness": 0.8,
+              "roughness": 0.22
+            },
+            {
+              "name": "lumbar_pillar_R",
+              "shape": "box",
+              "size": [0.068,0.24,0.06],
+              "pos": [0.045,0.26,-0.102],
+              "rot": [-0.06,-0.15,0],
+              "color": "#eab308",
+              "metalness": 0.82,
+              "roughness": 0.22
+            },
+            {
+              "name": "lumbar_pillar_L",
+              "shape": "box",
+              "size": [0.068,0.24,0.06],
+              "pos": [-0.045,0.26,-0.102],
+              "rot": [-0.06,0.15,0],
+              "color": "#eab308",
+              "metalness": 0.82,
+              "roughness": 0.22
+            }
+          ],
+          "children": {
+            "head": {
+              "pos": [0,0.7,0],
+              "lockPos": true,
+              "limits": {
+                "x": [-50,60],
+                "y": [-80,80],
+                "z": [-35,35]
+              },
+              "meshes": [
+                {
+                  "name": "neck_core",
+                  "shape": "lathe",
+                  "size": [6],
+                  "points": [
+                    [0,-0.05],
+                    [0.082,-0.04],
+                    [0.076,0.02],
+                    [0.072,0.08],
+                    [0.07,0.13],
+                    [0,0.14]
+                  ],
+                  "pos": [0,0,0],
+                  "scale": [0.95,1,0.92],
+                  "color": "#eab308",
+                  "metalness": 0.82,
+                  "roughness": 0.22,
+                  "pattern": "crystal",
+                  "patternRepeat": [1.5,1]
+                },
+                {
+                  "name": "scm_muscle_R",
+                  "shape": "box",
+                  "size": [0.036,0.15,0.042],
+                  "pos": [0.045,0.045,0.032],
+                  "rot": [-0.24,0.2,0.22],
+                  "color": "#fde047",
+                  "metalness": 0.8,
+                  "roughness": 0.2
+                },
+                {
+                  "name": "scm_muscle_L",
+                  "shape": "box",
+                  "size": [0.036,0.15,0.042],
+                  "pos": [-0.045,0.045,0.032],
+                  "rot": [-0.24,-0.2,-0.22],
+                  "color": "#fde047",
+                  "metalness": 0.8,
+                  "roughness": 0.2
+                },
+                {
+                  "name": "cranium_core",
+                  "shape": "lathe",
+                  "size": [8],
+                  "points": [
+                    [0,0.08],
+                    [0.075,0.1],
+                    [0.105,0.16],
+                    [0.112,0.23],
+                    [0.102,0.29],
+                    [0.068,0.33],
+                    [0,0.34]
+                  ],
+                  "pos": [0,0,-0.012],
+                  "scale": [0.92,1,1.08],
+                  "color": "#f6c438",
+                  "metalness": 0.8,
+                  "roughness": 0.2,
+                  "pattern": "crystal",
+                  "patternRepeat": [2,2]
+                },
+                {
+                  "name": "forehead_center_plane",
+                  "shape": "box",
+                  "size": [0.078,0.072,0.05],
+                  "pos": [0,0.268,0.076],
+                  "rot": [-0.22,0,0],
+                  "color": "#fef08a",
+                  "metalness": 0.78,
+                  "roughness": 0.18
+                },
+                {
+                  "name": "forehead_side_R",
+                  "shape": "box",
+                  "size": [0.055,0.07,0.065],
+                  "pos": [0.058,0.265,0.058],
+                  "rot": [-0.18,0.52,-0.12],
+                  "color": "#fde047",
+                  "metalness": 0.8,
+                  "roughness": 0.2
+                },
+                {
+                  "name": "forehead_side_L",
+                  "shape": "box",
+                  "size": [0.055,0.07,0.065],
+                  "pos": [-0.058,0.265,0.058],
+                  "rot": [-0.18,-0.52,0.12],
+                  "color": "#fde047",
+                  "metalness": 0.8,
+                  "roughness": 0.2
+                },
+                {
+                  "name": "crown_ridge_center",
+                  "shape": "box",
+                  "size": [0.064,0.042,0.15],
+                  "pos": [0,0.322,-0.005],
+                  "rot": [0.08,0,0.7854],
+                  "color": "#fef08a",
+                  "metalness": 0.78,
+                  "roughness": 0.18
+                },
+                {
+                  "name": "hair_plane_top_R",
+                  "shape": "box",
+                  "size": [0.068,0.045,0.14],
+                  "pos": [0.052,0.305,-0.012],
+                  "rot": [0.05,0.15,-0.42],
+                  "color": "#f6c438",
+                  "metalness": 0.8,
+                  "roughness": 0.2,
+                  "pattern": "crystal",
+                  "patternRepeat": [1.5,1.5]
+                },
+                {
+                  "name": "hair_plane_top_L",
+                  "shape": "box",
+                  "size": [0.068,0.045,0.14],
+                  "pos": [-0.052,0.305,-0.012],
+                  "rot": [0.05,-0.15,0.42],
+                  "color": "#f6c438",
+                  "metalness": 0.8,
+                  "roughness": 0.2,
+                  "pattern": "crystal",
+                  "patternRepeat": [1.5,1.5]
+                },
+                {
+                  "name": "hair_plane_side_R",
+                  "shape": "box",
+                  "size": [0.042,0.085,0.125],
+                  "pos": [0.088,0.255,-0.022],
+                  "rot": [0.1,0.12,-0.18],
+                  "color": "#eab308",
+                  "metalness": 0.82,
+                  "roughness": 0.22,
+                  "pattern": "crystal",
+                  "patternRepeat": [1.5,1.5]
+                },
+                {
+                  "name": "hair_plane_side_L",
+                  "shape": "box",
+                  "size": [0.042,0.085,0.125],
+                  "pos": [-0.088,0.255,-0.022],
+                  "rot": [0.1,-0.12,0.18],
+                  "color": "#eab308",
+                  "metalness": 0.82,
+                  "roughness": 0.22,
+                  "pattern": "crystal",
+                  "patternRepeat": [1.5,1.5]
+                },
+                {
+                  "name": "occiput_plane_upper",
+                  "shape": "box",
+                  "size": [0.11,0.085,0.065],
+                  "pos": [0,0.265,-0.095],
+                  "rot": [0.35,0,0],
+                  "color": "#eab308",
+                  "metalness": 0.82,
+                  "roughness": 0.22,
+                  "pattern": "crystal",
+                  "patternRepeat": [1.5,1.5]
+                },
+                {
+                  "name": "occiput_plane_lower",
+                  "shape": "box",
+                  "size": [0.095,0.08,0.06],
+                  "pos": [0,0.195,-0.092],
+                  "rot": [-0.38,0,0],
+                  "color": "#ca8a04",
+                  "metalness": 0.84,
+                  "roughness": 0.24
+                },
+                {
+                  "name": "glabella_keystone",
+                  "shape": "box",
+                  "size": [0.026,0.028,0.035],
+                  "pos": [0,0.232,0.096],
+                  "rot": [0.15,0,0],
+                  "color": "#fde047",
+                  "metalness": 0.8,
+                  "roughness": 0.2
+                },
+                {
+                  "name": "brow_ridge_R",
+                  "shape": "box",
+                  "size": [0.052,0.018,0.042],
+                  "pos": [0.038,0.234,0.092],
+                  "rot": [0.12,-0.22,0.14],
+                  "color": "#fef08a",
+                  "metalness": 0.78,
+                  "roughness": 0.18
+                },
+                {
+                  "name": "brow_ridge_L",
+                  "shape": "box",
+                  "size": [0.052,0.018,0.042],
+                  "pos": [-0.038,0.234,0.092],
+                  "rot": [0.12,0.22,-0.14],
+                  "color": "#fef08a",
+                  "metalness": 0.78,
+                  "roughness": 0.18
+                },
+                {
+                  "name": "eye_socket_R",
+                  "shape": "box",
+                  "size": [0.042,0.026,0.032],
+                  "pos": [0.038,0.214,0.084],
+                  "rot": [0.1,-0.2,0.08],
+                  "color": "#a16207",
+                  "metalness": 0.85,
+                  "roughness": 0.3
+                },
+                {
+                  "name": "eye_socket_L",
+                  "shape": "box",
+                  "size": [0.042,0.026,0.032],
+                  "pos": [-0.038,0.214,0.084],
+                  "rot": [0.1,0.2,-0.08],
+                  "color": "#a16207",
+                  "metalness": 0.85,
+                  "roughness": 0.3
+                },
+                {
+                  "name": "eye_R",
+                  "shape": "sphere",
+                  "size": [0.013,8,6],
+                  "pos": [0.038,0.214,0.096],
+                  "scale": [1.25,0.68,0.75],
+                  "color": "#fef08a",
+                  "metalness": 0.5,
+                  "roughness": 0.12
+                },
+                {
+                  "name": "eye_L",
+                  "shape": "sphere",
+                  "size": [0.013,8,6],
+                  "pos": [-0.038,0.214,0.096],
+                  "scale": [1.25,0.68,0.75],
+                  "color": "#fef08a",
+                  "metalness": 0.5,
+                  "roughness": 0.12
+                },
+                {
+                  "name": "nose_bridge_plane",
+                  "shape": "box",
+                  "size": [0.022,0.062,0.042],
+                  "pos": [0,0.198,0.106],
+                  "rot": [-0.22,0,0],
+                  "color": "#fef08a",
+                  "metalness": 0.78,
+                  "roughness": 0.18
+                },
+                {
+                  "name": "nose_side_R",
+                  "shape": "box",
+                  "size": [0.018,0.056,0.038],
+                  "pos": [0.012,0.194,0.1],
+                  "rot": [-0.2,0.45,-0.15],
+                  "color": "#eab308",
+                  "metalness": 0.82,
+                  "roughness": 0.22
+                },
+                {
+                  "name": "nose_side_L",
+                  "shape": "box",
+                  "size": [0.018,0.056,0.038],
+                  "pos": [-0.012,0.194,0.1],
+                  "rot": [-0.2,-0.45,0.15],
+                  "color": "#eab308",
+                  "metalness": 0.82,
+                  "roughness": 0.22
+                },
+                {
+                  "name": "zygoma_cheek_R",
+                  "shape": "box",
+                  "size": [0.056,0.052,0.078],
+                  "pos": [0.058,0.182,0.062],
+                  "rot": [0.12,0.38,-0.22],
+                  "color": "#fde047",
+                  "metalness": 0.8,
+                  "roughness": 0.18
+                },
+                {
+                  "name": "zygoma_cheek_L",
+                  "shape": "box",
+                  "size": [0.056,0.052,0.078],
+                  "pos": [-0.058,0.182,0.062],
+                  "rot": [0.12,-0.38,0.22],
+                  "color": "#fde047",
+                  "metalness": 0.8,
+                  "roughness": 0.18
+                },
+                {
+                  "name": "cheek_hollow_R",
+                  "shape": "box",
+                  "size": [0.048,0.065,0.075],
+                  "pos": [0.05,0.138,0.048],
+                  "rot": [0.08,0.28,0.25],
+                  "color": "#d99b1e",
+                  "metalness": 0.84,
+                  "roughness": 0.24
+                },
+                {
+                  "name": "cheek_hollow_L",
+                  "shape": "box",
+                  "size": [0.048,0.065,0.075],
+                  "pos": [-0.05,0.138,0.048],
+                  "rot": [0.08,-0.28,-0.25],
+                  "color": "#d99b1e",
+                  "metalness": 0.84,
+                  "roughness": 0.24
+                },
+                {
+                  "name": "jaw_angle_R",
+                  "shape": "box",
+                  "size": [0.045,0.065,0.085],
+                  "pos": [0.052,0.132,0.025],
+                  "rot": [0.22,0.22,0.15],
+                  "color": "#f6c438",
+                  "metalness": 0.8,
+                  "roughness": 0.2
+                },
+                {
+                  "name": "jaw_angle_L",
+                  "shape": "box",
+                  "size": [0.045,0.065,0.085],
+                  "pos": [-0.052,0.132,0.025],
+                  "rot": [0.22,-0.22,-0.15],
+                  "color": "#f6c438",
+                  "metalness": 0.8,
+                  "roughness": 0.2
+                },
+                {
+                  "name": "muzzle_mouth_upper",
+                  "shape": "box",
+                  "size": [0.056,0.026,0.045],
+                  "pos": [0,0.152,0.092],
+                  "rot": [-0.1,0,0],
+                  "color": "#fde047",
+                  "metalness": 0.8,
+                  "roughness": 0.2
+                },
+                {
+                  "name": "mouth_lower_lip",
+                  "shape": "box",
+                  "size": [0.048,0.018,0.04],
+                  "pos": [0,0.134,0.092],
+                  "rot": [0.15,0,0],
+                  "color": "#eab308",
+                  "metalness": 0.82,
+                  "roughness": 0.22
+                },
+                {
+                  "name": "chin_block",
+                  "shape": "box",
+                  "size": [0.052,0.042,0.058],
+                  "pos": [0,0.106,0.082],
+                  "rot": [0.12,0,0],
+                  "color": "#fef08a",
+                  "metalness": 0.78,
+                  "roughness": 0.18
+                },
+                {
+                  "name": "ear_facet_R",
+                  "shape": "box",
+                  "size": [0.024,0.058,0.038],
+                  "pos": [0.092,0.195,-0.008],
+                  "rot": [-0.18,0.22,-0.1],
+                  "color": "#eab308",
+                  "metalness": 0.82,
+                  "roughness": 0.22
+                },
+                {
+                  "name": "ear_facet_L",
+                  "shape": "box",
+                  "size": [0.024,0.058,0.038],
+                  "pos": [-0.092,0.195,-0.008],
+                  "rot": [-0.18,-0.22,0.1],
+                  "color": "#eab308",
+                  "metalness": 0.82,
+                  "roughness": 0.22
+                }
+              ]
+            },
+            "arm_R": {
+              "pos": [0.295,0.62,0],
+              "lockPos": true,
+              "limits": {
+                "x": [-180,60],
+                "y": [-90,90],
+                "z": [-30,170]
+              },
+              "meshes": [
+                {
+                  "name": "deltoid_cap_R",
+                  "shape": "box",
+                  "size": [0.13,0.14,0.14],
+                  "pos": [0.015,-0.03,0],
+                  "rot": [0,0,-0.18],
+                  "color": "#fde047",
+                  "metalness": 0.8,
+                  "roughness": 0.2,
+                  "pattern": "crystal",
+                  "patternRepeat": [1.5,1.5]
+                },
+                {
+                  "name": "deltoid_outer_facet_R",
+                  "shape": "box",
+                  "size": [0.06,0.16,0.11],
+                  "pos": [0.058,-0.065,0],
+                  "rot": [0,0,0.15],
+                  "color": "#f6c438",
+                  "metalness": 0.82,
+                  "roughness": 0.22
+                },
+                {
+                  "name": "deltoid_front_facet_R",
+                  "shape": "box",
+                  "size": [0.095,0.14,0.06],
+                  "pos": [0.015,-0.055,0.052],
+                  "rot": [-0.15,0.22,-0.1],
+                  "color": "#fef08a",
+                  "metalness": 0.78,
+                  "roughness": 0.2
+                },
+                {
+                  "name": "deltoid_rear_facet_R",
+                  "shape": "box",
+                  "size": [0.095,0.14,0.06],
+                  "pos": [0.015,-0.055,-0.052],
+                  "rot": [0.15,-0.22,-0.1],
+                  "color": "#eab308",
+                  "metalness": 0.82,
+                  "roughness": 0.24
+                },
+                {
+                  "name": "upper_arm_core_R",
+                  "shape": "lathe",
+                  "size": [6],
+                  "points": [
+                    [0,-0.35],
+                    [0.058,-0.34],
+                    [0.072,-0.22],
+                    [0.082,-0.1],
+                    [0.076,0.02],
+                    [0,0.04]
+                  ],
+                  "pos": [0,0,0],
+                  "color": "#f6c438",
+                  "metalness": 0.8,
+                  "roughness": 0.22,
+                  "pattern": "crystal",
+                  "patternRepeat": [2,1.5]
+                },
+                {
+                  "name": "bicep_facet_R",
+                  "shape": "box",
+                  "size": [0.072,0.17,0.065],
+                  "pos": [-0.005,-0.19,0.042],
+                  "rot": [0.06,0.12,0],
+                  "color": "#fde047",
+                  "metalness": 0.8,
+                  "roughness": 0.2
+                },
+                {
+                  "name": "tricep_outer_facet_R",
+                  "shape": "box",
+                  "size": [0.068,0.18,0.075],
+                  "pos": [0.028,-0.16,-0.038],
+                  "rot": [-0.08,-0.2,0.08],
+                  "color": "#eab308",
+                  "metalness": 0.82,
+                  "roughness": 0.24
+                },
+                {
+                  "name": "armband_wrap_R",
+                  "shape": "cylinder",
+                  "size": [0.084,0.082,0.036,8],
+                  "pos": [0,-0.135,0],
+                  "color": "#d6c7b2",
+                  "roughness": 0.82,
+                  "metalness": 0.05
+                }
+              ],
+              "children": {
+                "forearm_R": {
+                  "pos": [0,-0.35,0],
+                  "lockPos": true,
+                  "limits": {
+                    "x": [-145,5],
+                    "y": [-80,80],
+                    "z": [-3,3]
+                  },
+                  "meshes": [
+                    {
+                      "name": "elbow_facet_R",
+                      "shape": "box",
+                      "size": [0.082,0.082,0.088],
+                      "pos": [0,0,-0.012],
+                      "rot": [0.25,0.2,0],
+                      "color": "#eab308",
+                      "metalness": 0.82,
+                      "roughness": 0.22
+                    },
+                    {
+                      "name": "forearm_core_R",
+                      "shape": "lathe",
+                      "size": [6],
+                      "points": [
+                        [0,-0.31],
+                        [0.042,-0.3],
+                        [0.052,-0.18],
+                        [0.068,-0.07],
+                        [0.062,0],
+                        [0,0.02]
+                      ],
+                      "pos": [0,0,0],
+                      "color": "#f6c438",
+                      "metalness": 0.8,
+                      "roughness": 0.22,
+                      "pattern": "crystal",
+                      "patternRepeat": [2,1.5]
+                    },
+                    {
+                      "name": "forearm_ridge_outer_R",
+                      "shape": "box",
+                      "size": [0.055,0.22,0.065],
+                      "pos": [0.022,-0.12,0.012],
+                      "rot": [0.04,0.18,0.08],
+                      "color": "#fde047",
+                      "metalness": 0.8,
+                      "roughness": 0.2
+                    },
+                    {
+                      "name": "forearm_ridge_inner_R",
+                      "shape": "box",
+                      "size": [0.052,0.2,0.06],
+                      "pos": [-0.018,-0.13,-0.012],
+                      "rot": [-0.04,-0.15,-0.06],
+                      "color": "#eab308",
+                      "metalness": 0.82,
+                      "roughness": 0.24
+                    },
+                    {
+                      "name": "wrist_bracer_wrap_R",
+                      "shape": "cylinder",
+                      "size": [0.052,0.046,0.095,8],
+                      "pos": [0,-0.245,0],
+                      "color": "#c2b299",
+                      "roughness": 0.85,
+                      "metalness": 0.05
+                    }
+                  ],
+                  "children": {
+                    "hand_R": {
+                      "pos": [0,-0.31,0],
+                      "lockPos": true,
+                      "limits": {
+                        "x": [-70,70],
+                        "y": [-30,30],
+                        "z": [-25,25]
+                      },
+                      "meshes": [
+                        {
+                          "name": "wrist_block_R",
+                          "shape": "box",
+                          "size": [0.052,0.045,0.068],
+                          "pos": [0,-0.01,0],
+                          "color": "#f6c438",
+                          "metalness": 0.8,
+                          "roughness": 0.22
+                        },
+                        {
+                          "name": "palm_facet_R",
+                          "shape": "box",
+                          "size": [0.046,0.085,0.082],
+                          "pos": [0,-0.058,0],
+                          "color": "#fde047",
+                          "metalness": 0.8,
+                          "roughness": 0.2
+                        }
+                      ],
+                      "children": {
+                        "weapon_socket_R": {
+                          "pos": [0,-0.09,0.045],
+                          "meshes": []
+                        },
+                        "index_R": {
+                          "pos": [0,-0.105,0.032],
+                          "rot": [0,0,-0.18],
+                          "lockPos": true,
+                          "limits": {
+                            "x": [-8,8],
+                            "y": [-8,8],
+                            "z": [-100,15]
+                          },
+                          "meshes": [
+                            {
+                              "name": "index_knuckle_R",
+                              "shape": "box",
+                              "size": [0.022,0.022,0.022],
+                              "pos": [0,0,0],
+                              "color": "#fde047",
+                              "metalness": 0.8,
+                              "roughness": 0.22
+                            },
+                            {
+                              "name": "index_a_R",
+                              "shape": "box",
+                              "size": [0.02,0.038,0.02],
+                              "pos": [0,-0.019,0],
+                              "color": "#f6c438",
+                              "metalness": 0.8,
+                              "roughness": 0.24
+                            }
+                          ],
+                          "children": {
+                            "index2_R": {
+                              "pos": [0,-0.038,0],
+                              "rot": [0,0,-0.3],
+                              "lockPos": true,
+                              "limits": {
+                                "x": [-3,3],
+                                "y": [-3,3],
+                                "z": [-100,5]
+                              },
+                              "meshes": [
+                                {
+                                  "name": "index_joint_R",
+                                  "shape": "box",
+                                  "size": [0.018,0.018,0.018],
+                                  "pos": [0,0,0],
+                                  "color": "#fde047",
+                                  "metalness": 0.8,
+                                  "roughness": 0.22
+                                },
+                                {
+                                  "name": "index_b_R",
+                                  "shape": "box",
+                                  "size": [0.016,0.03,0.016],
+                                  "pos": [0,-0.015,0],
+                                  "color": "#eab308",
+                                  "metalness": 0.82,
+                                  "roughness": 0.24
+                                }
+                              ]
+                            }
+                          }
+                        },
+                        "middle_R": {
+                          "pos": [0,-0.105,0.011],
+                          "rot": [0,0,-0.18],
+                          "lockPos": true,
+                          "limits": {
+                            "x": [-8,8],
+                            "y": [-8,8],
+                            "z": [-100,15]
+                          },
+                          "meshes": [
+                            {
+                              "name": "middle_knuckle_R",
+                              "shape": "box",
+                              "size": [0.022,0.022,0.022],
+                              "pos": [0,0,0],
+                              "color": "#fde047",
+                              "metalness": 0.8,
+                              "roughness": 0.22
+                            },
+                            {
+                              "name": "middle_a_R",
+                              "shape": "box",
+                              "size": [0.02,0.044,0.02],
+                              "pos": [0,-0.022,0],
+                              "color": "#f6c438",
+                              "metalness": 0.8,
+                              "roughness": 0.24
+                            }
+                          ],
+                          "children": {
+                            "middle2_R": {
+                              "pos": [0,-0.044,0],
+                              "rot": [0,0,-0.3],
+                              "lockPos": true,
+                              "limits": {
+                                "x": [-3,3],
+                                "y": [-3,3],
+                                "z": [-100,5]
+                              },
+                              "meshes": [
+                                {
+                                  "name": "middle_joint_R",
+                                  "shape": "box",
+                                  "size": [0.018,0.018,0.018],
+                                  "pos": [0,0,0],
+                                  "color": "#fde047",
+                                  "metalness": 0.8,
+                                  "roughness": 0.22
+                                },
+                                {
+                                  "name": "middle_b_R",
+                                  "shape": "box",
+                                  "size": [0.016,0.035,0.016],
+                                  "pos": [0,-0.0175,0],
+                                  "color": "#eab308",
+                                  "metalness": 0.82,
+                                  "roughness": 0.24
+                                }
+                              ]
+                            }
+                          }
+                        },
+                        "ring_R": {
+                          "pos": [0,-0.105,-0.011],
+                          "rot": [0,0,-0.18],
+                          "lockPos": true,
+                          "limits": {
+                            "x": [-8,8],
+                            "y": [-8,8],
+                            "z": [-100,15]
+                          },
+                          "meshes": [
+                            {
+                              "name": "ring_knuckle_R",
+                              "shape": "box",
+                              "size": [0.022,0.022,0.022],
+                              "pos": [0,0,0],
+                              "color": "#fde047",
+                              "metalness": 0.8,
+                              "roughness": 0.22
+                            },
+                            {
+                              "name": "ring_a_R",
+                              "shape": "box",
+                              "size": [0.02,0.04,0.02],
+                              "pos": [0,-0.02,0],
+                              "color": "#f6c438",
+                              "metalness": 0.8,
+                              "roughness": 0.24
+                            }
+                          ],
+                          "children": {
+                            "ring2_R": {
+                              "pos": [0,-0.04,0],
+                              "rot": [0,0,-0.3],
+                              "lockPos": true,
+                              "limits": {
+                                "x": [-3,3],
+                                "y": [-3,3],
+                                "z": [-100,5]
+                              },
+                              "meshes": [
+                                {
+                                  "name": "ring_joint_R",
+                                  "shape": "box",
+                                  "size": [0.018,0.018,0.018],
+                                  "pos": [0,0,0],
+                                  "color": "#fde047",
+                                  "metalness": 0.8,
+                                  "roughness": 0.22
+                                },
+                                {
+                                  "name": "ring_b_R",
+                                  "shape": "box",
+                                  "size": [0.016,0.032,0.016],
+                                  "pos": [0,-0.016,0],
+                                  "color": "#eab308",
+                                  "metalness": 0.82,
+                                  "roughness": 0.24
+                                }
+                              ]
+                            }
+                          }
+                        },
+                        "pinky_R": {
+                          "pos": [0,-0.105,-0.032],
+                          "rot": [0,0,-0.18],
+                          "lockPos": true,
+                          "limits": {
+                            "x": [-8,8],
+                            "y": [-8,8],
+                            "z": [-100,15]
+                          },
+                          "meshes": [
+                            {
+                              "name": "pinky_knuckle_R",
+                              "shape": "box",
+                              "size": [0.022,0.022,0.022],
+                              "pos": [0,0,0],
+                              "color": "#fde047",
+                              "metalness": 0.8,
+                              "roughness": 0.22
+                            },
+                            {
+                              "name": "pinky_a_R",
+                              "shape": "box",
+                              "size": [0.02,0.032,0.02],
+                              "pos": [0,-0.016,0],
+                              "color": "#f6c438",
+                              "metalness": 0.8,
+                              "roughness": 0.24
+                            }
+                          ],
+                          "children": {
+                            "pinky2_R": {
+                              "pos": [0,-0.032,0],
+                              "rot": [0,0,-0.3],
+                              "lockPos": true,
+                              "limits": {
+                                "x": [-3,3],
+                                "y": [-3,3],
+                                "z": [-100,5]
+                              },
+                              "meshes": [
+                                {
+                                  "name": "pinky_joint_R",
+                                  "shape": "box",
+                                  "size": [0.018,0.018,0.018],
+                                  "pos": [0,0,0],
+                                  "color": "#fde047",
+                                  "metalness": 0.8,
+                                  "roughness": 0.22
+                                },
+                                {
+                                  "name": "pinky_b_R",
+                                  "shape": "box",
+                                  "size": [0.016,0.026,0.016],
+                                  "pos": [0,-0.013,0],
+                                  "color": "#eab308",
+                                  "metalness": 0.82,
+                                  "roughness": 0.24
+                                }
+                              ]
+                            }
+                          }
+                        },
+                        "thumb_R": {
+                          "pos": [-0.028,-0.048,0.036],
+                          "rot": [-0.3,0,-0.15],
+                          "lockPos": true,
+                          "limits": {
+                            "x": [-8,8],
+                            "y": [-8,8],
+                            "z": [-100,15]
+                          },
+                          "meshes": [
+                            {
+                              "name": "thumb_base_R",
+                              "shape": "box",
+                              "size": [0.028,0.028,0.028],
+                              "pos": [0,0,0],
+                              "color": "#fde047",
+                              "metalness": 0.8,
+                              "roughness": 0.22
+                            },
+                            {
+                              "name": "thumb_a_R",
+                              "shape": "box",
+                              "size": [0.022,0.036,0.022],
+                              "pos": [0,-0.018,0],
+                              "color": "#f6c438",
+                              "metalness": 0.8,
+                              "roughness": 0.24
+                            }
+                          ],
+                          "children": {
+                            "thumb2_R": {
+                              "pos": [0,-0.036,0],
+                              "rot": [0,0,-0.2],
+                              "lockPos": true,
+                              "limits": {
+                                "x": [-3,3],
+                                "y": [-3,3],
+                                "z": [-100,5]
+                              },
+                              "meshes": [
+                                {
+                                  "name": "thumb_joint_R",
+                                  "shape": "box",
+                                  "size": [0.02,0.02,0.02],
+                                  "pos": [0,0,0],
+                                  "color": "#fde047",
+                                  "metalness": 0.8,
+                                  "roughness": 0.22
+                                },
+                                {
+                                  "name": "thumb_b_R",
+                                  "shape": "box",
+                                  "size": [0.018,0.03,0.018],
+                                  "pos": [0,-0.015,0],
+                                  "color": "#eab308",
+                                  "metalness": 0.82,
+                                  "roughness": 0.24
+                                }
+                              ]
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "arm_L": {
+              "pos": [-0.295,0.62,0],
+              "lockPos": true,
+              "limits": {
+                "x": [-180,60],
+                "y": [-90,90],
+                "z": [-170,30]
+              },
+              "meshes": [
+                {
+                  "name": "deltoid_cap_L",
+                  "shape": "box",
+                  "size": [0.13,0.14,0.14],
+                  "pos": [-0.015,-0.03,0],
+                  "rot": [0,0,0.18],
+                  "color": "#fde047",
+                  "metalness": 0.8,
+                  "roughness": 0.2,
+                  "pattern": "crystal",
+                  "patternRepeat": [1.5,1.5]
+                },
+                {
+                  "name": "deltoid_outer_facet_L",
+                  "shape": "box",
+                  "size": [0.06,0.16,0.11],
+                  "pos": [-0.058,-0.065,0],
+                  "rot": [0,0,-0.15],
+                  "color": "#f6c438",
+                  "metalness": 0.82,
+                  "roughness": 0.22
+                },
+                {
+                  "name": "deltoid_front_facet_L",
+                  "shape": "box",
+                  "size": [0.095,0.14,0.06],
+                  "pos": [-0.015,-0.055,0.052],
+                  "rot": [-0.15,-0.22,0.1],
+                  "color": "#fef08a",
+                  "metalness": 0.78,
+                  "roughness": 0.2
+                },
+                {
+                  "name": "deltoid_rear_facet_L",
+                  "shape": "box",
+                  "size": [0.095,0.14,0.06],
+                  "pos": [-0.015,-0.055,-0.052],
+                  "rot": [0.15,0.22,0.1],
+                  "color": "#eab308",
+                  "metalness": 0.82,
+                  "roughness": 0.24
+                },
+                {
+                  "name": "upper_arm_core_L",
+                  "shape": "lathe",
+                  "size": [6],
+                  "points": [
+                    [0,-0.35],
+                    [0.058,-0.34],
+                    [0.072,-0.22],
+                    [0.082,-0.1],
+                    [0.076,0.02],
+                    [0,0.04]
+                  ],
+                  "pos": [0,0,0],
+                  "color": "#f6c438",
+                  "metalness": 0.8,
+                  "roughness": 0.22,
+                  "pattern": "crystal",
+                  "patternRepeat": [2,1.5]
+                },
+                {
+                  "name": "bicep_facet_L",
+                  "shape": "box",
+                  "size": [0.072,0.17,0.065],
+                  "pos": [0.005,-0.19,0.042],
+                  "rot": [0.06,-0.12,0],
+                  "color": "#fde047",
+                  "metalness": 0.8,
+                  "roughness": 0.2
+                },
+                {
+                  "name": "tricep_outer_facet_L",
+                  "shape": "box",
+                  "size": [0.068,0.18,0.075],
+                  "pos": [-0.028,-0.16,-0.038],
+                  "rot": [-0.08,0.2,-0.08],
+                  "color": "#eab308",
+                  "metalness": 0.82,
+                  "roughness": 0.24
+                },
+                {
+                  "name": "armband_wrap_L",
+                  "shape": "cylinder",
+                  "size": [0.084,0.082,0.036,8],
+                  "pos": [0,-0.135,0],
+                  "color": "#d6c7b2",
+                  "roughness": 0.82,
+                  "metalness": 0.05
+                }
+              ],
+              "children": {
+                "forearm_L": {
+                  "pos": [0,-0.35,0],
+                  "lockPos": true,
+                  "limits": {
+                    "x": [-145,5],
+                    "y": [-80,80],
+                    "z": [-3,3]
+                  },
+                  "meshes": [
+                    {
+                      "name": "elbow_facet_L",
+                      "shape": "box",
+                      "size": [0.082,0.082,0.088],
+                      "pos": [0,0,-0.012],
+                      "rot": [0.25,-0.2,0],
+                      "color": "#eab308",
+                      "metalness": 0.82,
+                      "roughness": 0.22
+                    },
+                    {
+                      "name": "forearm_core_L",
+                      "shape": "lathe",
+                      "size": [6],
+                      "points": [
+                        [0,-0.31],
+                        [0.042,-0.3],
+                        [0.052,-0.18],
+                        [0.068,-0.07],
+                        [0.062,0],
+                        [0,0.02]
+                      ],
+                      "pos": [0,0,0],
+                      "color": "#f6c438",
+                      "metalness": 0.8,
+                      "roughness": 0.22,
+                      "pattern": "crystal",
+                      "patternRepeat": [2,1.5]
+                    },
+                    {
+                      "name": "forearm_ridge_outer_L",
+                      "shape": "box",
+                      "size": [0.055,0.22,0.065],
+                      "pos": [-0.022,-0.12,0.012],
+                      "rot": [0.04,-0.18,-0.08],
+                      "color": "#fde047",
+                      "metalness": 0.8,
+                      "roughness": 0.2
+                    },
+                    {
+                      "name": "forearm_ridge_inner_L",
+                      "shape": "box",
+                      "size": [0.052,0.2,0.06],
+                      "pos": [0.018,-0.13,-0.012],
+                      "rot": [-0.04,0.15,0.06],
+                      "color": "#eab308",
+                      "metalness": 0.82,
+                      "roughness": 0.24
+                    },
+                    {
+                      "name": "wrist_bracer_wrap_L",
+                      "shape": "cylinder",
+                      "size": [0.052,0.046,0.095,8],
+                      "pos": [0,-0.245,0],
+                      "color": "#c2b299",
+                      "roughness": 0.85,
+                      "metalness": 0.05
+                    }
+                  ],
+                  "children": {
+                    "hand_L": {
+                      "pos": [0,-0.31,0],
+                      "lockPos": true,
+                      "limits": {
+                        "x": [-70,70],
+                        "y": [-30,30],
+                        "z": [-25,25]
+                      },
+                      "meshes": [
+                        {
+                          "name": "wrist_block_L",
+                          "shape": "box",
+                          "size": [0.052,0.045,0.068],
+                          "pos": [0,-0.01,0],
+                          "color": "#f6c438",
+                          "metalness": 0.8,
+                          "roughness": 0.22
+                        },
+                        {
+                          "name": "palm_facet_L",
+                          "shape": "box",
+                          "size": [0.046,0.085,0.082],
+                          "pos": [0,-0.058,0],
+                          "color": "#fde047",
+                          "metalness": 0.8,
+                          "roughness": 0.2
+                        }
+                      ],
+                      "children": {
+                        "weapon_socket_L": {
+                          "pos": [0,-0.09,0.045],
+                          "meshes": []
+                        },
+                        "index_L": {
+                          "pos": [0,-0.105,0.032],
+                          "rot": [0,0,0.18],
+                          "lockPos": true,
+                          "limits": {
+                            "x": [-8,8],
+                            "y": [-8,8],
+                            "z": [-15,100]
+                          },
+                          "meshes": [
+                            {
+                              "name": "index_knuckle_L",
+                              "shape": "box",
+                              "size": [0.022,0.022,0.022],
+                              "pos": [0,0,0],
+                              "color": "#fde047",
+                              "metalness": 0.8,
+                              "roughness": 0.22
+                            },
+                            {
+                              "name": "index_a_L",
+                              "shape": "box",
+                              "size": [0.02,0.038,0.02],
+                              "pos": [0,-0.019,0],
+                              "color": "#f6c438",
+                              "metalness": 0.8,
+                              "roughness": 0.24
+                            }
+                          ],
+                          "children": {
+                            "index2_L": {
+                              "pos": [0,-0.038,0],
+                              "rot": [0,0,0.3],
+                              "lockPos": true,
+                              "limits": {
+                                "x": [-3,3],
+                                "y": [-3,3],
+                                "z": [-5,100]
+                              },
+                              "meshes": [
+                                {
+                                  "name": "index_joint_L",
+                                  "shape": "box",
+                                  "size": [0.018,0.018,0.018],
+                                  "pos": [0,0,0],
+                                  "color": "#fde047",
+                                  "metalness": 0.8,
+                                  "roughness": 0.22
+                                },
+                                {
+                                  "name": "index_b_L",
+                                  "shape": "box",
+                                  "size": [0.016,0.03,0.016],
+                                  "pos": [0,-0.015,0],
+                                  "color": "#eab308",
+                                  "metalness": 0.82,
+                                  "roughness": 0.24
+                                }
+                              ]
+                            }
+                          }
+                        },
+                        "middle_L": {
+                          "pos": [0,-0.105,0.011],
+                          "rot": [0,0,0.18],
+                          "lockPos": true,
+                          "limits": {
+                            "x": [-8,8],
+                            "y": [-8,8],
+                            "z": [-15,100]
+                          },
+                          "meshes": [
+                            {
+                              "name": "middle_knuckle_L",
+                              "shape": "box",
+                              "size": [0.022,0.022,0.022],
+                              "pos": [0,0,0],
+                              "color": "#fde047",
+                              "metalness": 0.8,
+                              "roughness": 0.22
+                            },
+                            {
+                              "name": "middle_a_L",
+                              "shape": "box",
+                              "size": [0.02,0.044,0.02],
+                              "pos": [0,-0.022,0],
+                              "color": "#f6c438",
+                              "metalness": 0.8,
+                              "roughness": 0.24
+                            }
+                          ],
+                          "children": {
+                            "middle2_L": {
+                              "pos": [0,-0.044,0],
+                              "rot": [0,0,0.3],
+                              "lockPos": true,
+                              "limits": {
+                                "x": [-3,3],
+                                "y": [-3,3],
+                                "z": [-5,100]
+                              },
+                              "meshes": [
+                                {
+                                  "name": "middle_joint_L",
+                                  "shape": "box",
+                                  "size": [0.018,0.018,0.018],
+                                  "pos": [0,0,0],
+                                  "color": "#fde047",
+                                  "metalness": 0.8,
+                                  "roughness": 0.22
+                                },
+                                {
+                                  "name": "middle_b_L",
+                                  "shape": "box",
+                                  "size": [0.016,0.035,0.016],
+                                  "pos": [0,-0.0175,0],
+                                  "color": "#eab308",
+                                  "metalness": 0.82,
+                                  "roughness": 0.24
+                                }
+                              ]
+                            }
+                          }
+                        },
+                        "ring_L": {
+                          "pos": [0,-0.105,-0.011],
+                          "rot": [0,0,0.18],
+                          "lockPos": true,
+                          "limits": {
+                            "x": [-8,8],
+                            "y": [-8,8],
+                            "z": [-15,100]
+                          },
+                          "meshes": [
+                            {
+                              "name": "ring_knuckle_L",
+                              "shape": "box",
+                              "size": [0.022,0.022,0.022],
+                              "pos": [0,0,0],
+                              "color": "#fde047",
+                              "metalness": 0.8,
+                              "roughness": 0.22
+                            },
+                            {
+                              "name": "ring_a_L",
+                              "shape": "box",
+                              "size": [0.02,0.04,0.02],
+                              "pos": [0,-0.02,0],
+                              "color": "#f6c438",
+                              "metalness": 0.8,
+                              "roughness": 0.24
+                            }
+                          ],
+                          "children": {
+                            "ring2_L": {
+                              "pos": [0,-0.04,0],
+                              "rot": [0,0,0.3],
+                              "lockPos": true,
+                              "limits": {
+                                "x": [-3,3],
+                                "y": [-3,3],
+                                "z": [-5,100]
+                              },
+                              "meshes": [
+                                {
+                                  "name": "ring_joint_L",
+                                  "shape": "box",
+                                  "size": [0.018,0.018,0.018],
+                                  "pos": [0,0,0],
+                                  "color": "#fde047",
+                                  "metalness": 0.8,
+                                  "roughness": 0.22
+                                },
+                                {
+                                  "name": "ring_b_L",
+                                  "shape": "box",
+                                  "size": [0.016,0.032,0.016],
+                                  "pos": [0,-0.016,0],
+                                  "color": "#eab308",
+                                  "metalness": 0.82,
+                                  "roughness": 0.24
+                                }
+                              ]
+                            }
+                          }
+                        },
+                        "pinky_L": {
+                          "pos": [0,-0.105,-0.032],
+                          "rot": [0,0,0.18],
+                          "lockPos": true,
+                          "limits": {
+                            "x": [-8,8],
+                            "y": [-8,8],
+                            "z": [-15,100]
+                          },
+                          "meshes": [
+                            {
+                              "name": "pinky_knuckle_L",
+                              "shape": "box",
+                              "size": [0.022,0.022,0.022],
+                              "pos": [0,0,0],
+                              "color": "#fde047",
+                              "metalness": 0.8,
+                              "roughness": 0.22
+                            },
+                            {
+                              "name": "pinky_a_L",
+                              "shape": "box",
+                              "size": [0.02,0.032,0.02],
+                              "pos": [0,-0.016,0],
+                              "color": "#f6c438",
+                              "metalness": 0.8,
+                              "roughness": 0.24
+                            }
+                          ],
+                          "children": {
+                            "pinky2_L": {
+                              "pos": [0,-0.032,0],
+                              "rot": [0,0,0.3],
+                              "lockPos": true,
+                              "limits": {
+                                "x": [-3,3],
+                                "y": [-3,3],
+                                "z": [-5,100]
+                              },
+                              "meshes": [
+                                {
+                                  "name": "pinky_joint_L",
+                                  "shape": "box",
+                                  "size": [0.018,0.018,0.018],
+                                  "pos": [0,0,0],
+                                  "color": "#fde047",
+                                  "metalness": 0.8,
+                                  "roughness": 0.22
+                                },
+                                {
+                                  "name": "pinky_b_L",
+                                  "shape": "box",
+                                  "size": [0.016,0.026,0.016],
+                                  "pos": [0,-0.013,0],
+                                  "color": "#eab308",
+                                  "metalness": 0.82,
+                                  "roughness": 0.24
+                                }
+                              ]
+                            }
+                          }
+                        },
+                        "thumb_L": {
+                          "pos": [0.028,-0.048,0.036],
+                          "rot": [-0.3,0,0.15],
+                          "lockPos": true,
+                          "limits": {
+                            "x": [-8,8],
+                            "y": [-8,8],
+                            "z": [-15,100]
+                          },
+                          "meshes": [
+                            {
+                              "name": "thumb_base_L",
+                              "shape": "box",
+                              "size": [0.028,0.028,0.028],
+                              "pos": [0,0,0],
+                              "color": "#fde047",
+                              "metalness": 0.8,
+                              "roughness": 0.22
+                            },
+                            {
+                              "name": "thumb_a_L",
+                              "shape": "box",
+                              "size": [0.022,0.036,0.022],
+                              "pos": [0,-0.018,0],
+                              "color": "#f6c438",
+                              "metalness": 0.8,
+                              "roughness": 0.24
+                            }
+                          ],
+                          "children": {
+                            "thumb2_L": {
+                              "pos": [0,-0.036,0],
+                              "rot": [0,0,0.2],
+                              "lockPos": true,
+                              "limits": {
+                                "x": [-3,3],
+                                "y": [-3,3],
+                                "z": [-5,100]
+                              },
+                              "meshes": [
+                                {
+                                  "name": "thumb_joint_L",
+                                  "shape": "box",
+                                  "size": [0.02,0.02,0.02],
+                                  "pos": [0,0,0],
+                                  "color": "#fde047",
+                                  "metalness": 0.8,
+                                  "roughness": 0.22
+                                },
+                                {
+                                  "name": "thumb_b_L",
+                                  "shape": "box",
+                                  "size": [0.018,0.03,0.018],
+                                  "pos": [0,-0.015,0],
+                                  "color": "#eab308",
+                                  "metalness": 0.82,
+                                  "roughness": 0.24
+                                }
+                              ]
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "stow_back": {
+              "pos": [0,0.35,-0.17]
+            }
+          }
+        },
+        "leg_R": {
+          "pos": [0.155,0,0],
+          "lockPos": true,
+          "limits": {
+            "x": [-120,35],
+            "y": [-45,45],
+            "z": [-30,60]
+          },
+          "meshes": [
+            {
+              "name": "shorts_leg_R",
+              "shape": "lathe",
+              "size": [16],
+              "points": [
+                [0,-0.22],
+                [0.128,-0.22],
+                [0.132,-0.15],
+                [0.136,-0.07],
+                [0.132,0.01],
+                [0.115,0.06],
+                [0,0.06]
+              ],
+              "pos": [0,0,0],
+              "color": "team.primary",
+              "metalness": 0,
+              "roughness": 0.85
+            },
+            {
+              "name": "shorts_hem_trim_R",
+              "shape": "cylinder",
+              "size": [0.131,0.131,0.028,16],
+              "pos": [0,-0.21,0],
+              "color": "team.secondary",
+              "metalness": 0.2,
+              "roughness": 0.7
+            },
+            {
+              "name": "thigh_core_R",
+              "shape": "lathe",
+              "size": [6],
+              "points": [
+                [0,-0.53],
+                [0.072,-0.51],
+                [0.092,-0.38],
+                [0.115,-0.22],
+                [0.125,-0.08],
+                [0.11,0.03],
+                [0,0.04]
+              ],
+              "pos": [0,0,0],
+              "color": "#f6c438",
+              "metalness": 0.8,
+              "roughness": 0.22,
+              "pattern": "crystal",
+              "patternRepeat": [2,1.5]
+            },
+            {
+              "name": "quad_rectus_facet_R",
+              "shape": "box",
+              "size": [0.085,0.28,0.085],
+              "pos": [0.005,-0.33,0.052],
+              "rot": [0.06,0.08,0],
+              "color": "#fde047",
+              "metalness": 0.8,
+              "roughness": 0.2,
+              "pattern": "crystal",
+              "patternRepeat": [1.5,1.5]
+            },
+            {
+              "name": "quad_vastus_outer_R",
+              "shape": "box",
+              "size": [0.075,0.26,0.095],
+              "pos": [0.055,-0.32,0.015],
+              "rot": [0.03,0.25,0.08],
+              "color": "#f6c438",
+              "metalness": 0.82,
+              "roughness": 0.22
+            },
+            {
+              "name": "quad_vastus_inner_R",
+              "shape": "box",
+              "size": [0.072,0.22,0.082],
+              "pos": [-0.042,-0.37,0.025],
+              "rot": [0.04,-0.22,-0.06],
+              "color": "#eab308",
+              "metalness": 0.82,
+              "roughness": 0.22
+            },
+            {
+              "name": "hamstring_facet_R",
+              "shape": "box",
+              "size": [0.092,0.26,0.08],
+              "pos": [0,-0.33,-0.048],
+              "rot": [-0.05,0,0],
+              "color": "#ca8a04",
+              "metalness": 0.84,
+              "roughness": 0.25
+            }
+          ],
+          "children": {
+            "shin_R": {
+              "pos": [0,-0.53,0],
+              "lockPos": true,
+              "limits": {
+                "x": [0,150],
+                "y": [-3,3],
+                "z": [-3,3]
+              },
+              "meshes": [
+                {
+                  "name": "knee_core_R",
+                  "shape": "box",
+                  "size": [0.105,0.11,0.11],
+                  "pos": [0,0,0.005],
+                  "rot": [0,0.2,0],
+                  "color": "#f6c438",
+                  "metalness": 0.8,
+                  "roughness": 0.22
+                },
+                {
+                  "name": "kneecap_diamond_R",
+                  "shape": "box",
+                  "size": [0.072,0.088,0.045],
+                  "pos": [0,0.005,0.058],
+                  "rot": [0.12,0,0.7854],
+                  "color": "#fef08a",
+                  "metalness": 0.78,
+                  "roughness": 0.18
+                },
+                {
+                  "name": "shin_core_R",
+                  "shape": "lathe",
+                  "size": [6],
+                  "points": [
+                    [0,-0.49],
+                    [0.045,-0.48],
+                    [0.056,-0.35],
+                    [0.082,-0.2],
+                    [0.088,-0.1],
+                    [0.072,0],
+                    [0,0.02]
+                  ],
+                  "pos": [0,0,0],
+                  "color": "#f6c438",
+                  "metalness": 0.8,
+                  "roughness": 0.22,
+                  "pattern": "crystal",
+                  "patternRepeat": [2,1.5]
+                },
+                {
+                  "name": "tibia_front_blade_R",
+                  "shape": "box",
+                  "size": [0.048,0.34,0.055],
+                  "pos": [0,-0.22,0.036],
+                  "rot": [-0.04,0.7854,0],
+                  "color": "#fde047",
+                  "metalness": 0.8,
+                  "roughness": 0.2
+                },
+                {
+                  "name": "calf_facet_outer_R",
+                  "shape": "box",
+                  "size": [0.072,0.22,0.085],
+                  "pos": [0.028,-0.16,-0.038],
+                  "rot": [-0.08,-0.25,0.08],
+                  "color": "#eab308",
+                  "metalness": 0.82,
+                  "roughness": 0.24
+                },
+                {
+                  "name": "calf_facet_inner_R",
+                  "shape": "box",
+                  "size": [0.072,0.22,0.085],
+                  "pos": [-0.028,-0.16,-0.038],
+                  "rot": [-0.08,0.25,-0.08],
+                  "color": "#eab308",
+                  "metalness": 0.82,
+                  "roughness": 0.24
+                },
+                {
+                  "name": "ankle_wrap_R",
+                  "shape": "cylinder",
+                  "size": [0.058,0.052,0.14,8],
+                  "pos": [0,-0.39,0],
+                  "color": "#c2b299",
+                  "roughness": 0.85,
+                  "metalness": 0.05
+                }
+              ],
+              "children": {
+                "foot_R": {
+                  "pos": [0,-0.49,0],
+                  "lockPos": true,
+                  "limits": {
+                    "x": [-40,50],
+                    "y": [-15,15],
+                    "z": [-20,20]
+                  },
+                  "meshes": [
+                    {
+                      "name": "ankle_facet_R",
+                      "shape": "box",
+                      "size": [0.072,0.055,0.078],
+                      "pos": [0,0,0],
+                      "color": "#f6c438",
+                      "metalness": 0.8,
+                      "roughness": 0.22
+                    },
+                    {
+                      "name": "foot_wedge_R",
+                      "shape": "box",
+                      "size": [0.088,0.048,0.19],
+                      "pos": [0,-0.015,0.055],
+                      "rot": [0.1,0,0],
+                      "color": "#fde047",
+                      "metalness": 0.8,
+                      "roughness": 0.2
+                    },
+                    {
+                      "name": "sandal_sole_R",
+                      "shape": "box",
+                      "size": [0.094,0.018,0.21],
+                      "pos": [0,-0.038,0.055],
+                      "color": "#785c38",
+                      "roughness": 0.9
+                    },
+                    {
+                      "name": "sandal_strap_R",
+                      "shape": "box",
+                      "size": [0.096,0.032,0.065],
+                      "pos": [0,-0.008,0.045],
+                      "rot": [0.2,0,0],
+                      "color": "#c2b299",
+                      "roughness": 0.85
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "leg_L": {
+          "pos": [-0.155,0,0],
+          "lockPos": true,
+          "limits": {
+            "x": [-120,35],
+            "y": [-45,45],
+            "z": [-60,30]
+          },
+          "meshes": [
+            {
+              "name": "shorts_leg_L",
+              "shape": "lathe",
+              "size": [16],
+              "points": [
+                [0,-0.22],
+                [0.128,-0.22],
+                [0.132,-0.15],
+                [0.136,-0.07],
+                [0.132,0.01],
+                [0.115,0.06],
+                [0,0.06]
+              ],
+              "pos": [0,0,0],
+              "color": "team.primary",
+              "metalness": 0,
+              "roughness": 0.85
+            },
+            {
+              "name": "shorts_hem_trim_L",
+              "shape": "cylinder",
+              "size": [0.131,0.131,0.028,16],
+              "pos": [0,-0.21,0],
+              "color": "team.secondary",
+              "metalness": 0.2,
+              "roughness": 0.7
+            },
+            {
+              "name": "thigh_core_L",
+              "shape": "lathe",
+              "size": [6],
+              "points": [
+                [0,-0.53],
+                [0.072,-0.51],
+                [0.092,-0.38],
+                [0.115,-0.22],
+                [0.125,-0.08],
+                [0.11,0.03],
+                [0,0.04]
+              ],
+              "pos": [0,0,0],
+              "color": "#f6c438",
+              "metalness": 0.8,
+              "roughness": 0.22,
+              "pattern": "crystal",
+              "patternRepeat": [2,1.5]
+            },
+            {
+              "name": "quad_rectus_facet_L",
+              "shape": "box",
+              "size": [0.085,0.28,0.085],
+              "pos": [-0.005,-0.33,0.052],
+              "rot": [0.06,-0.08,0],
+              "color": "#fde047",
+              "metalness": 0.8,
+              "roughness": 0.2,
+              "pattern": "crystal",
+              "patternRepeat": [1.5,1.5]
+            },
+            {
+              "name": "quad_vastus_outer_L",
+              "shape": "box",
+              "size": [0.075,0.26,0.095],
+              "pos": [-0.055,-0.32,0.015],
+              "rot": [0.03,-0.25,-0.08],
+              "color": "#f6c438",
+              "metalness": 0.82,
+              "roughness": 0.22
+            },
+            {
+              "name": "quad_vastus_inner_L",
+              "shape": "box",
+              "size": [0.072,0.22,0.082],
+              "pos": [0.042,-0.37,0.025],
+              "rot": [0.04,0.22,0.06],
+              "color": "#eab308",
+              "metalness": 0.82,
+              "roughness": 0.22
+            },
+            {
+              "name": "hamstring_facet_L",
+              "shape": "box",
+              "size": [0.092,0.26,0.08],
+              "pos": [0,-0.33,-0.048],
+              "rot": [-0.05,0,0],
+              "color": "#ca8a04",
+              "metalness": 0.84,
+              "roughness": 0.25
+            }
+          ],
+          "children": {
+            "shin_L": {
+              "pos": [0,-0.53,0],
+              "lockPos": true,
+              "limits": {
+                "x": [0,150],
+                "y": [-3,3],
+                "z": [-3,3]
+              },
+              "meshes": [
+                {
+                  "name": "knee_core_L",
+                  "shape": "box",
+                  "size": [0.105,0.11,0.11],
+                  "pos": [0,0,0.005],
+                  "rot": [0,-0.2,0],
+                  "color": "#f6c438",
+                  "metalness": 0.8,
+                  "roughness": 0.22
+                },
+                {
+                  "name": "kneecap_diamond_L",
+                  "shape": "box",
+                  "size": [0.072,0.088,0.045],
+                  "pos": [0,0.005,0.058],
+                  "rot": [0.12,0,0.7854],
+                  "color": "#fef08a",
+                  "metalness": 0.78,
+                  "roughness": 0.18
+                },
+                {
+                  "name": "shin_core_L",
+                  "shape": "lathe",
+                  "size": [6],
+                  "points": [
+                    [0,-0.49],
+                    [0.045,-0.48],
+                    [0.056,-0.35],
+                    [0.082,-0.2],
+                    [0.088,-0.1],
+                    [0.072,0],
+                    [0,0.02]
+                  ],
+                  "pos": [0,0,0],
+                  "color": "#f6c438",
+                  "metalness": 0.8,
+                  "roughness": 0.22,
+                  "pattern": "crystal",
+                  "patternRepeat": [2,1.5]
+                },
+                {
+                  "name": "tibia_front_blade_L",
+                  "shape": "box",
+                  "size": [0.048,0.34,0.055],
+                  "pos": [0,-0.22,0.036],
+                  "rot": [-0.04,0.7854,0],
+                  "color": "#fde047",
+                  "metalness": 0.8,
+                  "roughness": 0.2
+                },
+                {
+                  "name": "calf_facet_outer_L",
+                  "shape": "box",
+                  "size": [0.072,0.22,0.085],
+                  "pos": [-0.028,-0.16,-0.038],
+                  "rot": [-0.08,0.25,-0.08],
+                  "color": "#eab308",
+                  "metalness": 0.82,
+                  "roughness": 0.24
+                },
+                {
+                  "name": "calf_facet_inner_L",
+                  "shape": "box",
+                  "size": [0.072,0.22,0.085],
+                  "pos": [0.028,-0.16,-0.038],
+                  "rot": [-0.08,-0.25,0.08],
+                  "color": "#eab308",
+                  "metalness": 0.82,
+                  "roughness": 0.24
+                },
+                {
+                  "name": "ankle_wrap_L",
+                  "shape": "cylinder",
+                  "size": [0.058,0.052,0.14,8],
+                  "pos": [0,-0.39,0],
+                  "color": "#c2b299",
+                  "roughness": 0.85,
+                  "metalness": 0.05
+                }
+              ],
+              "children": {
+                "foot_L": {
+                  "pos": [0,-0.49,0],
+                  "lockPos": true,
+                  "limits": {
+                    "x": [-40,50],
+                    "y": [-15,15],
+                    "z": [-20,20]
+                  },
+                  "meshes": [
+                    {
+                      "name": "ankle_facet_L",
+                      "shape": "box",
+                      "size": [0.072,0.055,0.078],
+                      "pos": [0,0,0],
+                      "color": "#f6c438",
+                      "metalness": 0.8,
+                      "roughness": 0.22
+                    },
+                    {
+                      "name": "foot_wedge_L",
+                      "shape": "box",
+                      "size": [0.088,0.048,0.19],
+                      "pos": [0,-0.015,0.055],
+                      "rot": [0.1,0,0],
+                      "color": "#fde047",
+                      "metalness": 0.8,
+                      "roughness": 0.2
+                    },
+                    {
+                      "name": "sandal_sole_L",
+                      "shape": "box",
+                      "size": [0.094,0.018,0.21],
+                      "pos": [0,-0.038,0.055],
+                      "color": "#785c38",
+                      "roughness": 0.9
+                    },
+                    {
+                      "name": "sandal_strap_L",
+                      "shape": "box",
+                      "size": [0.096,0.032,0.065],
+                      "pos": [0,-0.008,0.045],
+                      "rot": [0.2,0,0],
+                      "color": "#c2b299",
+                      "roughness": 0.85
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "stow_hip_R": {
+          "pos": [0.2,-0.02,0]
+        },
+        "stow_hip_L": {
+          "pos": [-0.2,-0.02,0]
+        }
+      }
+    }
+  },
+  "colorOverrides": {},
+  "skins": {}
+}

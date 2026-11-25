@@ -1,0 +1,53 @@
+{
+  "id": "almasir",
+  "name": "Almasir",
+  "teamColors": {
+    "primary": "#4a3525",
+    "secondary": "#a8947b"
+  },
+  "sharedUnits": false,
+  "bases": [
+    "almasir_base"
+  ],
+  "units": [],
+  "buildings": "shared",
+  "heroes": [],
+  "gear": [
+    "almasir_worn_tunic",
+    "almasir_heavy_cuirass",
+    "almasir_hood",
+    "almasir_war_helm",
+    "almasir_tunic_sleeve_R",
+    "almasir_heavy_pauldron_R",
+    "almasir_tunic_sleeve_L",
+    "almasir_heavy_pauldron_L",
+    "almasir_leather_bracer_R",
+    "almasir_heavy_vambrace_R",
+    "almasir_leather_bracer_L",
+    "almasir_heavy_vambrace_L",
+    "almasir_leather_gloves_R",
+    "almasir_heavy_gauntlets_R",
+    "almasir_leather_gloves_L",
+    "almasir_heavy_gauntlets_L",
+    "almasir_worn_trousers_R",
+    "almasir_heavy_cuisse_R",
+    "almasir_worn_trousers_L",
+    "almasir_heavy_cuisse_L",
+    "almasir_cloth_wraps_R",
+    "almasir_heavy_greave_R",
+    "almasir_cloth_wraps_L",
+    "almasir_heavy_greave_L",
+    "almasir_worn_shoes_R",
+    "almasir_leather_boots_R",
+    "almasir_metal_boots_R",
+    "almasir_worn_shoes_L",
+    "almasir_leather_boots_L",
+    "almasir_metal_boots_L"
+  ],
+  "animations": [],
+  "files": {
+    "units": "races/almasir/units.json",
+    "gear": "races/almasir/gear.json",
+    "animations": "races/almasir/animations.json"
+  }
+}

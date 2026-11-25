@@ -46,13 +46,13 @@
       "trainSpeedBonusPctPerLevel": 15,
       "hpPerLevelBonus": 400,
       "hasBuiltInTurret": true,
-      "turretOffset": [0, 11, 0],
+      "turretOffset": [0,11,0],
       "turretRangeMeters": 38,
       "turretDamage": 34,
       "turretReloadMinTicks": 12,
       "turretReloadMaxTicks": 18,
       "turretVolleyCount": 3,
-      "damageStages": [70, 35],
+      "damageStages": [70,35],
       "options": [
         {
           "id": "worker",
@@ -123,7 +123,7 @@
       "hasWatchtowerSupport": false,
       "watchtowerLevel": 0,
       "trainSpeedBonusPctPerLevel": 0,
-      "turretOffset": [0, 0, 0],
+      "turretOffset": [0,0,0],
       "options": [
         {
           "id": "watchtower",
@@ -182,8 +182,8 @@
       "hpPerLevelBonus": 250,
       "baseUpgradeCostCoins": 260,
       "xpPerLevel": 600,
-      "turretOffset": [0.8, 7.5, -0.6],
-      "damageStages": [70, 35],
+      "turretOffset": [0.8,7.5,-0.6],
+      "damageStages": [70,35],
       "options": [
         {
           "id": "gatherer",
@@ -241,8 +241,8 @@
       "watchtowerLevel": 0,
       "trainSpeedBonusPctPerLevel": 0,
       "hpPerLevelBonus": 200,
-      "turretOffset": [0, 6.5, 0],
-      "damageStages": [70, 35],
+      "turretOffset": [0,6.5,0],
+      "damageStages": [70,35],
       "options": [],
       "arrowProtectionPermille": 700,
       "meleeProtectionPermille": 350
@@ -272,8 +272,8 @@
       "hpPerLevelBonus": 250,
       "baseUpgradeCostCoins": 380,
       "xpPerLevel": 700,
-      "turretOffset": [0.9, 8.0, -0.8],
-      "damageStages": [70, 35],
+      "turretOffset": [0.9,8,-0.8],
+      "damageStages": [70,35],
       "options": [
         {
           "id": "swordsman",
@@ -334,8 +334,8 @@
       "hpPerLevelBonus": 250,
       "baseUpgradeCostCoins": 350,
       "xpPerLevel": 700,
-      "turretOffset": [0.9, 8.0, -0.8],
-      "damageStages": [70, 35],
+      "turretOffset": [0.9,8,-0.8],
+      "damageStages": [70,35],
       "options": [
         {
           "id": "archer",
@@ -396,8 +396,8 @@
       "hpPerLevelBonus": 250,
       "baseUpgradeCostCoins": 450,
       "xpPerLevel": 750,
-      "turretOffset": [1.1, 8.2, -1.0],
-      "damageStages": [70, 35],
+      "turretOffset": [1.1,8.2,-1],
+      "damageStages": [70,35],
       "options": [
         {
           "id": "light_cavalry",
@@ -458,8 +458,8 @@
       "hpPerLevelBonus": 250,
       "baseUpgradeCostCoins": 520,
       "xpPerLevel": 800,
-      "turretOffset": [1.0, 8.2, -0.9],
-      "damageStages": [70, 35],
+      "turretOffset": [1,8.2,-0.9],
+      "damageStages": [70,35],
       "options": [
         {
           "id": "ballista",
@@ -535,8 +535,8 @@
       "hpPerLevelBonus": 250,
       "baseUpgradeCostCoins": 340,
       "xpPerLevel": 650,
-      "turretOffset": [0.8, 7.6, -0.7],
-      "damageStages": [70, 35],
+      "turretOffset": [0.8,7.6,-0.7],
+      "damageStages": [70,35],
       "options": [
         {
           "id": "forged_blades",
@@ -621,7 +621,7 @@
       "watchtowerLevel": 1,
       "trainSpeedBonusPctPerLevel": 0,
       "hasBuiltInTurret": true,
-      "turretOffset": [0, 8.2, 0.3],
+      "turretOffset": [0,8.2,0.3],
       "turretRangeMeters": 28,
       "turretDamage": 8,
       "turretReloadMinTicks": 40,
@@ -629,7 +629,7 @@
       "turretVolleyCount": 1,
       "maxGarrison": 2,
       "garrisonElevationRangeBonusMeters": 6,
-      "damageStages": [70, 35],
+      "damageStages": [70,35],
       "options": [],
       "arrowProtectionPermille": 700,
       "meleeProtectionPermille": 350
@@ -658,7 +658,7 @@
       "trainSpeedBonusPctPerLevel": 0,
       "hasBuiltInTurret": true,
       "mountedBallistaUnitId": "ballista",
-      "turretOffset": [0, 8.5, 0.65],
+      "turretOffset": [0,8.5,0.65],
       "turretRangeMeters": 36,
       "turretDamage": 18,
       "turretReloadMinTicks": 48,
@@ -666,7 +666,7 @@
       "turretVolleyCount": 1,
       "maxGarrison": 0,
       "garrisonElevationRangeBonusMeters": 6,
-      "damageStages": [70, 35],
+      "damageStages": [70,35],
       "options": [],
       "arrowProtectionPermille": 700,
       "meleeProtectionPermille": 350
@@ -693,16 +693,16 @@
       "hasWatchtowerSupport": false,
       "watchtowerLevel": 0,
       "trainSpeedBonusPctPerLevel": 0,
-      "turretOffset": [0, 6.5, 0],
+      "turretOffset": [0,6.5,0],
       "isPassiveAoE": true,
       "xpPerLevel": 500,
       "auraRadiusMeters": 22,
       "healPerTick": 3,
       "healPulseIntervalTicks": 10,
-      "outOfCombatDelaySec": 3.0,
+      "outOfCombatDelaySec": 3,
       "reinforceIntervalTicks": 70,
       "reinforceCostPermille": 500,
-      "damageStages": [70, 35],
+      "damageStages": [70,35],
       "options": [],
       "arrowProtectionPermille": 700,
       "meleeProtectionPermille": 350
@@ -729,14 +729,14 @@
       "hasWatchtowerSupport": false,
       "watchtowerLevel": 0,
       "trainSpeedBonusPctPerLevel": 0,
-      "turretOffset": [0, 6.5, 0],
+      "turretOffset": [0,6.5,0],
       "isPassiveAoE": true,
       "xpPerLevel": 500,
       "auraRadiusMeters": 26,
       "damageBonusPermille": 200,
       "defenseBonusPermille": 200,
       "moraleRegenBonusPermille": 250,
-      "damageStages": [70, 35],
+      "damageStages": [70,35],
       "options": [],
       "arrowProtectionPermille": 700,
       "meleeProtectionPermille": 350

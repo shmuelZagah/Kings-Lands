@@ -55,8 +55,7 @@ import {
   loadBuildingSkins,
   saveBuildingSkins
 } from '../../src/data/buildingSkinStore.js';
-import defaultUnitsVisuals from '../../src/data/visuals/units.json';
-import defaultBuildingsData from '../../src/data/buildings.json';
+import { defaultUnitsVisuals, defaultBuildingsData } from '../../src/data/defaults.js';
 import { buildBuildingsStudioViewData } from '../../src/tools/units_buildings/buildingStudioAdapter.js';
 import {
   renderUnitsLeftListHtml,

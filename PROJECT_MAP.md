@@ -90,7 +90,7 @@ index.html
 
 * **Asset/animation tooling:** `src/tools/studio/` edits and previews visual/animation data; it is not the authoritative RTS simulation.
 
-* **Configuration:** `src/data/*.json`; inspect actual consumers before adding or renaming fields.
+* **Configuration:** `src/data/{races,bases,shared}/**.json` (one identity card per race, assembled by `dataRegistry.js`; see `src/data/DATA_LAYOUT.md`); inspect actual consumers before adding or renaming fields. The sim is configured only through a frozen snapshot (`src/sim/simConfig.js`).
 
 ## 3. Recommended entry points for common tasks
 
@@ -121,7 +121,7 @@ index.html
 | Change radial building menu or multi-building selection | `src/ui/hud/buildingRadialMenu.js` | `hudIcons.js`, `CommandBus`, `buildings.json` | 
 | Change building 3D procedural architecture | `src/render/buildingArchitectures.js` | `src/render/buildingModelFactory.js` | 
 | Change projectiles, level-up pillars, floating text | `src/render/worldEffectsRenderer.js` | `src/render/sceneManager.js` | 
-| Change unit 3D models or carry props | `src/render/modelFactory.js` | `src/data/visuals/units.json`, `animator3d.js` | 
+| Change unit 3D models or carry props | `src/render/modelFactory.js` | `src/data/races/<race>/*.json` + `src/data/bases/*.json` (see `src/data/DATA_LAYOUT.md`), `animator3d.js` | 
 | Change terrain visuals | `src/render/terrainRenderer.js` | `worldGen.js`, `nav/grid.js` | 
 | Change camera controls | `src/render/cameraController.js` | `sceneManager.js`, `inputRouter.js`, `eventBus.js` | 
 

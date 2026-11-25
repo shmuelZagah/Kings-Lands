@@ -1,4 +1,5 @@
 import assert from 'assert';
+import { readHeroesJson, readUnitsJson } from '../helpers/loadData.mjs';
 import fs from 'fs';
 import * as THREE from 'three';
 import { ModelFactory } from '../../src/render/modelFactory.js';
@@ -9,8 +10,8 @@ import { sanitizeUnitsData } from '../../src/tools/studio/clipEditing.js';
 import { runHealthCheck } from '../../src/tools/studio/healthCheck.js';
 
 export async function runRenderTests() {
-  const unitsJson = JSON.parse(fs.readFileSync(new URL('../../src/data/visuals/units.json', import.meta.url), 'utf8'));
-  const heroesJson = JSON.parse(fs.readFileSync(new URL('../../src/data/heroes.json', import.meta.url), 'utf8'));
+  const unitsJson = readUnitsJson();
+  const heroesJson = readHeroesJson();
 
   // 1. Verify Studio runHealthCheck reports 0 errors and 0 warnings across all units (including ballista)
   const hc = runHealthCheck(unitsJson);

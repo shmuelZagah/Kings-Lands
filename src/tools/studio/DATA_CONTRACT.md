@@ -1,5 +1,9 @@
 # Kings Lands — `units.json` data contract
 
+> **Layout note (stage 2):** the shipped data is now split per race (`src/data/races/`, `bases/`, `shared/`, see
+> `src/data/DATA_LAYOUT.md`). `assembleBundle()` rebuilds exactly the bundle described here, so everything below about
+> the *shape* of units.json still holds. Where it says "replace `units.json`", use `node scripts/data/build.mjs split <folder>`.
+
 **Status: basic (v1).** It describes what exists today. New units, new clips and heroes will extend it; when they
 do, update this file *and* `src/tools/studio/healthCheck.js` (every rule below that says "checked" lives there).
 

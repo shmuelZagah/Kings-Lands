@@ -23,7 +23,7 @@ import { loadGameSettings, applySettingsToRuntime, saveGameSnapshot } from './co
 const sharedUbStateManager = new UnitsBuildingsStateManager();
 const sharedHeroStateManager = new HeroStateManager();
 import { clearAndHideGameHud, restoreGameHud } from './ui/hud/hudVisibilityManager.js';
-import engineConfig from './data/engineConfig.json';
+import { defaultEngineConfig as engineConfig } from './data/defaults.js';
 import { dataRegistry } from './data/dataRegistry.js';
 
 // Visible warning when the browser refuses to store the data (quota): the edit still works everywhere in this session,

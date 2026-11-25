@@ -19,7 +19,7 @@ import {
 import { GarrisonSystem } from './garrisonSystem.js';
 import { ProductionAndRallySystem } from './productionAndRallySystem.js';
 import { BuildingCombatSystem } from './buildingCombatSystem.js';
-import buildingsData from '../../data/buildings.json';
+import { defaultBuildingsData as buildingsData } from '../../data/defaults.js';
 
 export const MAX_SLOPE_HEIGHT_DIFF_FX = 2252;
 export const CITADEL_SLOT_RING_RADIUS_FX = (10 * FX_ONE + 512) | 0;

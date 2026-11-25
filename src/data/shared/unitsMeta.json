@@ -1,0 +1,115 @@
+{
+  "version": "1.0.0",
+  "teamPalettes": {
+    "1": {
+      "name": "Kingdom of the White Tree",
+      "primary": "#1d4ed8",
+      "secondary": "#fbbf24",
+      "cloth": "#1e3a8a",
+      "metal": "#cbd5e1",
+      "darkMetal": "#475569"
+    },
+    "2": {
+      "name": "Host of the Iron Crown",
+      "primary": "#b91c1c",
+      "secondary": "#f59e0b",
+      "cloth": "#7f1d1d",
+      "metal": "#94a3b8",
+      "darkMetal": "#334155"
+    }
+  },
+  "actionRules": {
+    "always": [
+      "take_damage",
+      "die",
+      "knocked_down",
+      "victory_cheer"
+    ],
+    "types": {
+      "melee_short": {
+        "grants": [
+          "attack_slash"
+        ]
+      },
+      "melee_long": {
+        "grants": [
+          "attack_thrust"
+        ]
+      },
+      "bow": {
+        "grants": [
+          "shoot_bow",
+          "attack_bash"
+        ]
+      },
+      "thrown": {
+        "grants": [
+          "throw_javelin"
+        ]
+      },
+      "shield": {
+        "grants": [
+          "block"
+        ]
+      }
+    },
+    "twoHandedGrants": [
+      "block"
+    ],
+    "defaultAttack": "attack_slash"
+  },
+  "factions": {
+    "human": {
+      "displayName": "Human",
+      "teamColors": null,
+      "sharedUnits": true
+    },
+    "katiler": {
+      "displayName": "Katiler",
+      "teamColors": {
+        "primary": "#4c1d95",
+        "secondary": "#d4a017"
+      },
+      "sharedUnits": false
+    },
+    "mirukenkay": {
+      "displayName": "Mirukenkay",
+      "teamColors": {
+        "primary": "#c2b299",
+        "secondary": "#9c8a6e"
+      },
+      "sharedUnits": false
+    },
+    "almasir": {
+      "displayName": "Almasir",
+      "teamColors": {
+        "primary": "#4a3525",
+        "secondary": "#a8947b"
+      },
+      "sharedUnits": false
+    },
+    "takdik": {
+      "displayName": "Takdik",
+      "teamColors": {
+        "primary": "#57534e",
+        "secondary": "#a8a29e"
+      },
+      "sharedUnits": false
+    },
+    "nefrolai": {
+      "displayName": "Nefrolai",
+      "teamColors": {
+        "primary": "#4f4739",
+        "secondary": "#8c7a5b"
+      },
+      "sharedUnits": false
+    }
+  },
+  "arrowConfig": {
+    "style": "bodkin",
+    "length": 0.68,
+    "shaftHex": "#f8fafc",
+    "headHex": "#ffffff",
+    "fletchHex": "#e2e8f0"
+  }
+}

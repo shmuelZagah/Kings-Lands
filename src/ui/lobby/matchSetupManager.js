@@ -15,6 +15,7 @@
  *   - Developer (`isDevMode = true`): Full DevConsole, cheats, and Labs in ESC menu.
  */
 
+import { ANIMATION_LAB_NAME, UNITS_BUILDINGS_LAB_NAME, HEROES_LAB_NAME, MAP_EDITOR_NAME } from '../../data/labNames.js';
 import {
   MAP_WORLD_SIZE,
   getActiveCustomMapState,
@@ -617,16 +618,16 @@ export class PreGameLobbyModal {
           ${this._renderBrandHeader()}
           <nav id="kl-menu-nav" class="w-full flex flex-col gap-2 whitespace-nowrap" style="font-family: Georgia, 'Times New Roman', serif;">
             <button id="btn-lobby-open-map-editor" type="button" style="--kl-idx: 0" class="${SKYRIM_TEXT_BTN} ${enterCls} whitespace-nowrap">
-              Map Editor
+              ${MAP_EDITOR_NAME}
             </button>
             <button id="btn-lobby-open-units-lab" type="button" style="--kl-idx: 1" class="${SKYRIM_TEXT_BTN} ${enterCls} whitespace-nowrap">
-              Units &amp; Buildings
+              ${UNITS_BUILDINGS_LAB_NAME}
             </button>
             <button id="btn-lobby-open-heroes" type="button" style="--kl-idx: 2" class="${SKYRIM_TEXT_BTN} ${enterCls}">
-              Hall of Heroes
+              ${HEROES_LAB_NAME}
             </button>
             <button id="btn-lobby-open-studio" type="button" style="--kl-idx: 3" class="${SKYRIM_TEXT_BTN} ${enterCls}">
-              Animation Studio
+              ${ANIMATION_LAB_NAME}
             </button>
             <button id="menu-btn-back-home" type="button" style="--kl-idx: 4" class="${SKYRIM_SUB_BTN} ${enterCls} mt-4 text-zinc-500 hover:text-zinc-200">
               Back
@@ -1294,13 +1295,13 @@ export class EscPauseMenuModal {
             this.isDevMode
               ? `<div class="w-4/5 border-t border-amber-700/35 my-1 pt-1.5 text-[10px] font-bold uppercase text-amber-300/80 tracking-[0.16em]">Developer Labs</div>
                  <button id="btn-esc-units-lab" type="button" class="w-full text-center px-3 py-0.5 bg-transparent border-0 text-zinc-300 hover:text-amber-200 hover:bg-gradient-to-r hover:from-transparent hover:via-amber-400/15 hover:to-transparent transition-all duration-200 cursor-pointer text-sm font-semibold drop-shadow-[0_2px_8px_rgba(0,0,0,0.98)]">
-                   Units &amp; Buildings
+                   ${UNITS_BUILDINGS_LAB_NAME}
                  </button>
                  <button id="btn-esc-heroes" type="button" class="w-full text-center px-3 py-0.5 bg-transparent border-0 text-zinc-300 hover:text-amber-200 hover:bg-gradient-to-r hover:from-transparent hover:via-amber-400/15 hover:to-transparent transition-all duration-200 cursor-pointer text-sm font-semibold drop-shadow-[0_2px_8px_rgba(0,0,0,0.98)]">
-                   Hall of Heroes
+                   ${HEROES_LAB_NAME}
                  </button>
                  <button id="btn-esc-studio" type="button" class="w-full text-center px-3 py-0.5 bg-transparent border-0 text-zinc-300 hover:text-amber-200 hover:bg-gradient-to-r hover:from-transparent hover:via-amber-400/15 hover:to-transparent transition-all duration-200 cursor-pointer text-sm font-semibold drop-shadow-[0_2px_8px_rgba(0,0,0,0.98)]">
-                   Animation Studio
+                   ${ANIMATION_LAB_NAME}
                  </button>`
               : ''
           }

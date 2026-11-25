@@ -1,4 +1,5 @@
 import assert from 'assert';
+import { readEngineConfig } from '../helpers/loadData.mjs';
 import fs from 'fs';
 import * as THREE from 'three';
 import { WorldPicker } from '../../src/ui/input/worldPicker.js';
@@ -55,7 +56,7 @@ export async function runUiTests() {
     assert.ok(DEV_CONSOLE_COMMANDS.some((item) => item.code === rc), `DEV_CONSOLE_COMMANDS must include '${rc}'`);
   }
 
-  const config = JSON.parse(fs.readFileSync(new URL('../../src/data/engineConfig.json', import.meta.url), 'utf8'));
+  const config = readEngineConfig();
   const gs = new GameState(config);
   const compsBefore = gs.companies.size;
   gs.processCommands([

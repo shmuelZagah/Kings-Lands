@@ -17,7 +17,7 @@ import { CompanyOrderType, SlotConstraints } from '../formations/company.js';
 import { computeArmyDragLayoutFx } from '../formations/armyDrag.js';
 import { UnitCombatSystem } from './unitCombatSystem.js';
 import { UnitCollisionSystem } from './unitCollisionSystem.js';
-import unitStatsData from '../../data/unitStats.json';
+import { defaultUnitStats as unitStatsData } from '../../data/defaults.js';
 import { CHARGE_MIN_RUN_DIST_FX } from './combatSystem.js';
 
 export const UnitPhysicsProfile = Object.freeze({

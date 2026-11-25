@@ -6,7 +6,10 @@
   "scripts": {
     "dev": "vite --host 0.0.0.0 --port 3000",
     "build": "vite build",
-    "preview": "vite preview --host 0.0.0.0 --port 3000"
+    "preview": "vite preview --host 0.0.0.0 --port 3000",
+    "data:split": "node scripts/data/build.mjs split",
+    "data:index": "node scripts/data/build.mjs index",
+    "data:check": "node scripts/data/build.mjs check"
   },
   "dependencies": {
     "three": "^0.158.0"

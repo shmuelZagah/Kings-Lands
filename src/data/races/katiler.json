@@ -1,0 +1,63 @@
+{
+  "id": "katiler",
+  "name": "Katiler",
+  "teamColors": {
+    "primary": "#4c1d95",
+    "secondary": "#d4a017"
+  },
+  "sharedUnits": false,
+  "bases": [
+    "katiler_base"
+  ],
+  "units": [
+    "katiler_wolf"
+  ],
+  "buildings": "shared",
+  "heroes": [],
+  "gear": [
+    "katiler_worn_tunic",
+    "katiler_heavy_cuirass",
+    "katiler_hood",
+    "katiler_war_helm",
+    "katiler_tunic_sleeve_R",
+    "katiler_heavy_pauldron_R",
+    "katiler_tunic_sleeve_L",
+    "katiler_heavy_pauldron_L",
+    "katiler_leather_bracer_R",
+    "katiler_heavy_vambrace_R",
+    "katiler_leather_bracer_L",
+    "katiler_heavy_vambrace_L",
+    "katiler_leather_gloves_R",
+    "katiler_heavy_gauntlets_R",
+    "katiler_leather_gloves_L",
+    "katiler_heavy_gauntlets_L",
+    "katiler_worn_trousers_R",
+    "katiler_heavy_cuisse_R",
+    "katiler_worn_trousers_L",
+    "katiler_heavy_cuisse_L",
+    "katiler_cloth_wraps_R",
+    "katiler_heavy_greave_R",
+    "katiler_cloth_wraps_L",
+    "katiler_heavy_greave_L",
+    "katiler_worn_shoes_R",
+    "katiler_leather_boots_R",
+    "katiler_metal_boots_R",
+    "katiler_worn_shoes_L",
+    "katiler_leather_boots_L",
+    "katiler_metal_boots_L",
+    "wolf_war_helm",
+    "wolf_spiked_collar",
+    "wolf_battle_saddle",
+    "wolf_shadow_barding",
+    "wolf_leg_guard_FL",
+    "wolf_leg_guard_FR",
+    "wolf_leg_guard_BL",
+    "wolf_leg_guard_BR"
+  ],
+  "animations": [],
+  "files": {
+    "units": "races/katiler/units.json",
+    "gear": "races/katiler/gear.json",
+    "animations": "races/katiler/animations.json"
+  }
+}

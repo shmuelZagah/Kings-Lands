@@ -1,5 +1,5 @@
-import { syncLiveConfigObjectsInMemory } from '../tools/units_buildings/unitsBuildingsStateManager.js';
-import defaultBuildingsData from '../data/buildings.json';
+import { applySimSnapshot } from './simConfig.js';
+import { defaultBuildingsData } from '../data/defaults.js';
 import {
   FX_ONE,
   TICKS_PER_SEC,
@@ -98,9 +98,7 @@ const CORPSE_SINK_START_TICKS = (CORPSE_DECAY_TICKS - 30) | 0; // Sink during la
 export class GameState {
   constructor(config) {
     this.config = config;
-    if (config?.unitStatsData || config?.buildingsData || config?.unitsVisualsData) {
-      syncLiveConfigObjectsInMemory(config.unitStatsData, config.buildingsData, config.unitsVisualsData);
-    }
+    if (config?.simSnapshot) applySimSnapshot(config.simSnapshot);   // the ONLY way lab data reaches a match
     this.tick = 0;
     this.rngState = (config?.simulation?.initialSeed | 0) || 133742069;
 
@@ -769,17 +767,18 @@ export class GameState {
   }
 
 
-  syncUnitsBuildingsConfig(payload = {}) {
-    if (!payload) return;
-    syncLiveConfigObjectsInMemory(payload.unitStatsData, payload.buildingsData, payload.unitsVisualsData);
+  /**
+   * Re-reads the sim data from a snapshot (tests / explicit "apply now"). The live game never calls this:
+   * a match keeps the snapshot it started with.
+   */
+  applySimConfig(snapshot) {
+    applySimSnapshot(snapshot);
     if (this.constructionSystem && defaultBuildingsData?.buildings) {
       this.constructionSystem.buildingDefs = defaultBuildingsData.buildings;
     }
     if (this.economySystem && defaultBuildingsData?.buildings) {
       this.economySystem.buildingDefs = defaultBuildingsData.buildings;
-      if (defaultBuildingsData.economy) {
-        this.economySystem.ecoConfig = defaultBuildingsData.economy;
-      }
+      if (defaultBuildingsData.economy) this.economySystem.ecoConfig = defaultBuildingsData.economy;
     }
     for (const comp of this.companies.values()) {
       if (!comp || comp.isHero) continue;

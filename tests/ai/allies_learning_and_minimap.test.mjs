@@ -6,7 +6,7 @@ import {
 } from '../../src/core/gameSettingsAndSaves.js';
 import { DevConsole } from '../../src/ui/hud/devConsole.js';
 import assert from 'node:assert/strict';
-import engineConfig from '../../src/data/engineConfig.json';
+import { defaultEngineConfig as engineConfig } from '../../src/data/defaults.js';
 import { GameState, UnitTypeIndex } from '../../src/sim/gameState.js';
 import { FowState } from '../../src/sim/systems/visionSystem.js';
 import {

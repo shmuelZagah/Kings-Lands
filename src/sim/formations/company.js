@@ -1,5 +1,5 @@
 import { resolveUnitActiveCapabilities } from '../combatCapabilitiesRegistry.js';
-import unitStatsData from '../../data/unitStats.json';
+import { defaultUnitStats as unitStatsData } from '../../data/defaults.js';
 import {
   FX_ONE,
   ANGLE_MASK,

@@ -1,0 +1,53 @@
+{
+  "id": "nefrolai",
+  "name": "Nefrolai",
+  "teamColors": {
+    "primary": "#4f4739",
+    "secondary": "#8c7a5b"
+  },
+  "sharedUnits": false,
+  "bases": [
+    "nefrolai_base"
+  ],
+  "units": [],
+  "buildings": "shared",
+  "heroes": [],
+  "gear": [
+    "nefrolai_worn_tunic",
+    "nefrolai_heavy_cuirass",
+    "nefrolai_hood",
+    "nefrolai_war_helm",
+    "nefrolai_tunic_sleeve_R",
+    "nefrolai_heavy_pauldron_R",
+    "nefrolai_tunic_sleeve_L",
+    "nefrolai_heavy_pauldron_L",
+    "nefrolai_leather_bracer_R",
+    "nefrolai_heavy_vambrace_R",
+    "nefrolai_leather_bracer_L",
+    "nefrolai_heavy_vambrace_L",
+    "nefrolai_leather_gloves_R",
+    "nefrolai_heavy_gauntlets_R",
+    "nefrolai_leather_gloves_L",
+    "nefrolai_heavy_gauntlets_L",
+    "nefrolai_worn_trousers_R",
+    "nefrolai_heavy_cuisse_R",
+    "nefrolai_worn_trousers_L",
+    "nefrolai_heavy_cuisse_L",
+    "nefrolai_cloth_wraps_R",
+    "nefrolai_heavy_greave_R",
+    "nefrolai_cloth_wraps_L",
+    "nefrolai_heavy_greave_L",
+    "nefrolai_worn_shoes_R",
+    "nefrolai_leather_boots_R",
+    "nefrolai_metal_boots_R",
+    "nefrolai_worn_shoes_L",
+    "nefrolai_leather_boots_L",
+    "nefrolai_metal_boots_L"
+  ],
+  "animations": [],
+  "files": {
+    "units": "races/nefrolai/units.json",
+    "gear": "races/nefrolai/gear.json",
+    "animations": "races/nefrolai/animations.json"
+  }
+}

@@ -1,4 +1,5 @@
 import assert from 'assert';
+import { readEngineConfig } from '../helpers/loadData.mjs';
 import fs from 'fs';
 import { FX_ONE, ANGLE_STEPS, mulDiv, isqrt, fxSin, fxCos, fxAtan2, fxHypot, fxClamp, fxRandomRange } from '../../src/core/fx.js';
 import { CommandBus, CommandTypes } from '../../src/core/commandBus.js';
@@ -31,7 +32,7 @@ export async function runCoreTests() {
   }
 
   // Edge Cases: Out-of-bounds world coordinates in NavGrid and SpatialHash
-  const config = JSON.parse(fs.readFileSync(new URL('../../src/data/engineConfig.json', import.meta.url), 'utf8'));
+  const config = readEngineConfig();
   const gs = new GameState(config);
   assert.strictEqual(gs.navGrid.isWalkableWorldFx(-50000, -50000), false, 'Negative OOB coords must not be walkable');
   assert.strictEqual(gs.navGrid.isWalkableWorldFx(gs.worldSizeFx + 50000, gs.worldSizeFx + 50000), false, 'Overflow OOB coords must not be walkable');

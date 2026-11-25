@@ -1,0 +1,4150 @@
+{
+  "units": {},
+  "stats": {},
+  "heroes": {},
+  "keyframes": {
+    "attack_slash": {
+      "mode": "keyframes",
+      "layer": "upperBody",
+      "duration": 0.82,
+      "loop": false,
+      "tracks": {
+        "torso": [
+          {
+            "t": 0,
+            "pos": [0,0,0],
+            "rot": [0.05,-0.08,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.28,
+            "pos": [0,0,0],
+            "rot": [-0.12,-0.46,-0.06],
+            "easing": "ease-in-out",
+            "posKey": false
+          },
+          {
+            "t": 0.48,
+            "pos": [0,0,0],
+            "rot": [0.26,0.52,0.08],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.74,
+            "pos": [0,0,0],
+            "rot": [0.12,0.16,0.02],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 1,
+            "pos": [0,0,0],
+            "rot": [0.05,-0.08,0],
+            "easing": "smooth",
+            "posKey": false
+          }
+        ],
+        "head": [
+          {
+            "t": 0,
+            "pos": [0,0,0],
+            "rot": [0,0.06,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.28,
+            "pos": [0,0,0],
+            "rot": [0.06,0.32,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.48,
+            "pos": [0,0,0],
+            "rot": [-0.1,-0.28,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 1,
+            "pos": [0,0,0],
+            "rot": [0,0.06,0],
+            "easing": "smooth",
+            "posKey": false
+          }
+        ],
+        "arm_L": [
+          {
+            "t": 0,
+            "pos": [0,0,0],
+            "rot": [-0.36,0.32,-0.12],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.28,
+            "pos": [0,0,0],
+            "rot": [-0.48,0.52,-0.18],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.48,
+            "pos": [0,0,0],
+            "rot": [-0.3,-0.16,-0.24],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 1,
+            "pos": [0,0,0],
+            "rot": [-0.36,0.32,-0.12],
+            "easing": "smooth",
+            "posKey": false
+          }
+        ],
+        "forearm_L": [
+          {
+            "t": 0,
+            "pos": [0,0,0],
+            "rot": [-0.66,0.2,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.28,
+            "pos": [0,0,0],
+            "rot": [-0.78,0.28,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.48,
+            "pos": [0,0,0],
+            "rot": [-0.58,0.1,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 1,
+            "pos": [0,0,0],
+            "rot": [-0.66,0.2,0],
+            "easing": "smooth",
+            "posKey": false
+          }
+        ],
+        "arm_R": [
+          {
+            "t": 0,
+            "pos": [0,0,0],
+            "rot": [-0.24,-0.16,0.12],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.28,
+            "pos": [0,0,0],
+            "rot": [-1.68,-0.36,0.38],
+            "easing": "ease-in-out",
+            "posKey": false
+          },
+          {
+            "t": 0.48,
+            "pos": [0,0,0],
+            "rot": [-0.12,0.38,-0.22],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.72,
+            "pos": [0,0,0],
+            "rot": [-0.18,0.08,0.05],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 1,
+            "pos": [0,0,0],
+            "rot": [-0.24,-0.16,0.12],
+            "easing": "smooth",
+            "posKey": false
+          }
+        ],
+        "forearm_R": [
+          {
+            "t": 0,
+            "pos": [0,0,0],
+            "rot": [-0.48,-0.08,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.28,
+            "pos": [0,0,0],
+            "rot": [-0.86,0.14,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.48,
+            "pos": [0,0,0],
+            "rot": [-0.14,-0.12,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.72,
+            "pos": [0,0,0],
+            "rot": [-0.38,-0.05,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 1,
+            "pos": [0,0,0],
+            "rot": [-0.48,-0.08,0],
+            "easing": "smooth",
+            "posKey": false
+          }
+        ],
+        "hand_R": [
+          {
+            "t": 0,
+            "pos": [0,0,0],
+            "rot": [0,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.28,
+            "pos": [0,0,0],
+            "rot": [-0.28,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.48,
+            "pos": [0,0,0],
+            "rot": [0.45,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 1,
+            "pos": [0,0,0],
+            "rot": [0,0,0],
+            "easing": "smooth",
+            "posKey": false
+          }
+        ]
+      },
+      "events": [
+        {
+          "time": 0.18,
+          "type": "sound",
+          "payload": {
+            "cue": "sword_whoosh"
+          }
+        },
+        {
+          "time": 0.48,
+          "type": "hit",
+          "payload": {
+            "damageType": "slash",
+            "socket": "weapon_socket_R"
+          }
+        },
+        {
+          "time": 0.48,
+          "type": "effect",
+          "payload": {
+            "fx": "blade_spark"
+          }
+        }
+      ]
+    },
+    "attack_thrust": {
+      "mode": "keyframes",
+      "layer": "upperBody",
+      "duration": 0.78,
+      "loop": false,
+      "tracks": {
+        "torso": [
+          {
+            "t": 0,
+            "pos": [0,0,0],
+            "rot": [0.06,-0.12,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.25,
+            "pos": [0,0,0],
+            "rot": [-0.08,-0.42,-0.04],
+            "easing": "ease-in-out",
+            "posKey": false
+          },
+          {
+            "t": 0.45,
+            "pos": [0,0,0],
+            "rot": [0.28,0.42,0.06],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.72,
+            "pos": [0,0,0],
+            "rot": [0.12,0.08,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 1,
+            "pos": [0,0,0],
+            "rot": [0.06,-0.12,0],
+            "easing": "smooth",
+            "posKey": false
+          }
+        ],
+        "head": [
+          {
+            "t": 0,
+            "pos": [0,0,0],
+            "rot": [0,0.1,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.25,
+            "pos": [0,0,0],
+            "rot": [0.04,0.34,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.45,
+            "pos": [0,0,0],
+            "rot": [-0.12,-0.3,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 1,
+            "pos": [0,0,0],
+            "rot": [0,0.1,0],
+            "easing": "smooth",
+            "posKey": false
+          }
+        ],
+        "arm_L": [
+          {
+            "t": 0,
+            "pos": [0,0,0],
+            "rot": [-0.44,0.38,-0.12],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.25,
+            "pos": [0,0,0],
+            "rot": [-0.52,0.48,-0.14],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.45,
+            "pos": [0,0,0],
+            "rot": [-0.38,0.18,-0.18],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 1,
+            "pos": [0,0,0],
+            "rot": [-0.44,0.38,-0.12],
+            "easing": "smooth",
+            "posKey": false
+          }
+        ],
+        "forearm_L": [
+          {
+            "t": 0,
+            "pos": [0,0,0],
+            "rot": [-0.68,0.22,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.25,
+            "pos": [0,0,0],
+            "rot": [-0.76,0.28,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.45,
+            "pos": [0,0,0],
+            "rot": [-0.62,0.14,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 1,
+            "pos": [0,0,0],
+            "rot": [-0.68,0.22,0],
+            "easing": "smooth",
+            "posKey": false
+          }
+        ],
+        "arm_R": [
+          {
+            "t": 0,
+            "pos": [0,0,0],
+            "rot": [-0.18,-0.12,0.1],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.25,
+            "pos": [0,0,0],
+            "rot": [0.44,0.22,0.16],
+            "easing": "ease-in-out",
+            "posKey": false
+          },
+          {
+            "t": 0.45,
+            "pos": [0,0,0],
+            "rot": [-0.78,-0.14,-0.06],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.7,
+            "pos": [0,0,0],
+            "rot": [-0.28,-0.08,0.06],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 1,
+            "pos": [0,0,0],
+            "rot": [-0.18,-0.12,0.1],
+            "easing": "smooth",
+            "posKey": false
+          }
+        ],
+        "forearm_R": [
+          {
+            "t": 0,
+            "pos": [0,0,0],
+            "rot": [-0.42,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.25,
+            "pos": [0,0,0],
+            "rot": [-0.78,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.45,
+            "pos": [0,0,0],
+            "rot": [-0.08,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.7,
+            "pos": [0,0,0],
+            "rot": [-0.36,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 1,
+            "pos": [0,0,0],
+            "rot": [-0.42,0,0],
+            "easing": "smooth",
+            "posKey": false
+          }
+        ],
+        "hand_R": [
+          {
+            "t": 0,
+            "pos": [0,0,0],
+            "rot": [0,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.25,
+            "pos": [0,0,0],
+            "rot": [-0.2,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.45,
+            "pos": [0,0,0],
+            "rot": [0.32,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 1,
+            "pos": [0,0,0],
+            "rot": [0,0,0],
+            "easing": "smooth",
+            "posKey": false
+          }
+        ]
+      },
+      "events": [
+        {
+          "time": 0.2,
+          "type": "sound",
+          "payload": {
+            "cue": "spear_thrust"
+          }
+        },
+        {
+          "time": 0.45,
+          "type": "hit",
+          "payload": {
+            "damageType": "pierce",
+            "socket": "weapon_socket_R"
+          }
+        },
+        {
+          "time": 0.45,
+          "type": "effect",
+          "payload": {
+            "fx": "thrust_ring"
+          }
+        }
+      ]
+    },
+    "shoot_bow": {
+      "mode": "keyframes",
+      "layer": "upperBody",
+      "duration": 1.1,
+      "loop": false,
+      "tracks": {
+        "torso": [
+          {
+            "t": 0,
+            "rot": [0,0,0],
+            "posKey": false,
+            "pos": [0,0,0]
+          },
+          {
+            "t": 0.3,
+            "rot": [-0.2894,0.8158,0.0472],
+            "pos": [0,0,0],
+            "posKey": false
+          },
+          {
+            "t": 0.53,
+            "pos": [0,0,0],
+            "rot": [-0.2894,0.8158,0.0472],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.59,
+            "pos": [0,0,0],
+            "rot": [0,0.837,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.76,
+            "rot": [0,-0.52,0],
+            "posKey": false,
+            "pos": [0,0,0]
+          },
+          {
+            "t": 1,
+            "rot": [0,0,0],
+            "posKey": false,
+            "pos": [0,0,0]
+          }
+        ],
+        "arm_L": [
+          {
+            "t": 0,
+            "rot": [0,0,0],
+            "posKey": false,
+            "pos": [0,0,0]
+          },
+          {
+            "t": 0.25,
+            "rot": [-1.38,0.42,-1.1841],
+            "pos": [0,0,0],
+            "posKey": false
+          },
+          {
+            "t": 0.51,
+            "pos": [0,0,0],
+            "rot": [-1.38,0.42,-1.1841],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.72,
+            "rot": [-1.38,0.42,0],
+            "posKey": false,
+            "pos": [0,0,0]
+          },
+          {
+            "t": 1,
+            "rot": [0,0,0],
+            "posKey": false,
+            "pos": [0,0,0]
+          }
+        ],
+        "arm_R": [
+          {
+            "t": 0,
+            "rot": [0,0,0],
+            "pos": [0,0,0],
+            "posKey": false
+          },
+          {
+            "t": 0.25,
+            "rot": [-1.4757,0.1158,-1.0415],
+            "pos": [0,0,0],
+            "posKey": false
+          },
+          {
+            "t": 0.4,
+            "pos": [0,0,0],
+            "rot": [-1.4516,-0.0422,-0.6839],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.49,
+            "pos": [0,0,0],
+            "rot": [-1.4516,-0.0422,-0.6839],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.58,
+            "rot": [-1.42,-0.25,0],
+            "pos": [0,0,0],
+            "posKey": false
+          },
+          {
+            "t": 0.65,
+            "rot": [-1.2,-0.35,0],
+            "pos": [0,0,0],
+            "posKey": false
+          },
+          {
+            "t": 1,
+            "rot": [0,0,0],
+            "pos": [0,0,0],
+            "posKey": false
+          }
+        ],
+        "head": [
+          {
+            "t": 0,
+            "pos": [0,0,0],
+            "rot": [0,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.31,
+            "pos": [0,0,0],
+            "rot": [-0.084,-0.4687,-0.038],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.58,
+            "pos": [0,0,0],
+            "rot": [-0.084,-0.4687,-0.038],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.75,
+            "pos": [0,0,0],
+            "rot": [-0.0333,0.5201,-0.0269],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 1,
+            "pos": [0,0,0],
+            "rot": [0,0,0],
+            "easing": "smooth",
+            "posKey": false
+          }
+        ],
+        "leg_R": [
+          {
+            "t": 0,
+            "pos": [0,0,0],
+            "rot": [0,0,0],
+            "easing": "smooth",
+            "rotKey": false,
+            "posKey": false
+          }
+        ],
+        "leg_L": [
+          {
+            "t": 0,
+            "pos": [0,0,0],
+            "rot": [0,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.2,
+            "pos": [0,0,0],
+            "rot": [-0.2764,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.33,
+            "pos": [0,0,0],
+            "rot": [0,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.59,
+            "pos": [0,0,0],
+            "rot": [0,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.73,
+            "pos": [0,0,0],
+            "rot": [-0.2764,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 1,
+            "pos": [0,0,0],
+            "rot": [0,0,0],
+            "easing": "smooth",
+            "posKey": false
+          }
+        ]
+      },
+      "events": [
+        {
+          "time": 0.25,
+          "type": "sound",
+          "payload": {
+            "cue": "bow_draw"
+          }
+        },
+        {
+          "time": 0.45,
+          "type": "hold",
+          "payload": {}
+        },
+        {
+          "time": 0.62,
+          "type": "release",
+          "payload": {
+            "projectile": "arrow",
+            "socket": "weapon_socket_L"
+          }
+        },
+        {
+          "time": 0.62,
+          "type": "effect",
+          "payload": {
+            "fx": "arrow_launch"
+          }
+        }
+      ]
+    },
+    "throw_javelin": {
+      "mode": "keyframes",
+      "layer": "upperBody",
+      "duration": 0.9,
+      "loop": false,
+      "tracks": {
+        "torso": [
+          {
+            "t": 0,
+            "rot": [0,0,0],
+            "posKey": false,
+            "pos": [0,0,0]
+          },
+          {
+            "t": 0.35,
+            "rot": [-0.25,-0.6,0],
+            "posKey": false,
+            "pos": [0,0,0]
+          },
+          {
+            "t": 0.55,
+            "rot": [0.32,0.55,0],
+            "posKey": false,
+            "pos": [0,0,0]
+          },
+          {
+            "t": 1,
+            "rot": [0,0,0],
+            "posKey": false,
+            "pos": [0,0,0]
+          }
+        ],
+        "arm_R": [
+          {
+            "t": 0,
+            "rot": [0,0,0],
+            "posKey": false,
+            "pos": [0,0,0]
+          },
+          {
+            "t": 0.35,
+            "rot": [-2.2,0.2,-0.25],
+            "posKey": false,
+            "pos": [0,0,0]
+          },
+          {
+            "t": 0.55,
+            "rot": [0.45,-0.2,0.1],
+            "posKey": false,
+            "pos": [0,0,0]
+          },
+          {
+            "t": 1,
+            "rot": [0,0,0],
+            "posKey": false,
+            "pos": [0,0,0]
+          }
+        ]
+      },
+      "events": [
+        {
+          "time": 0.52,
+          "type": "release",
+          "payload": {
+            "projectile": "javelin",
+            "socket": "weapon_socket_R"
+          }
+        },
+        {
+          "time": 0.52,
+          "type": "sound",
+          "payload": {
+            "cue": "javelin_cast"
+          }
+        }
+      ]
+    },
+    "take_damage": {
+      "mode": "keyframes",
+      "layer": "upperBody",
+      "duration": 0.45,
+      "loop": false,
+      "tracks": {
+        "torso": [
+          {
+            "t": 0,
+            "rot": [0,0,0],
+            "posKey": false,
+            "pos": [0,0,0]
+          },
+          {
+            "t": 0.25,
+            "rot": [-0.38,0.18,-0.15],
+            "posKey": false,
+            "pos": [0,0,0]
+          },
+          {
+            "t": 1,
+            "rot": [0,0,0],
+            "posKey": false,
+            "pos": [0,0,0]
+          }
+        ],
+        "head": [
+          {
+            "t": 0,
+            "rot": [0,0,0],
+            "posKey": false,
+            "pos": [0,0,0]
+          },
+          {
+            "t": 0.25,
+            "rot": [-0.45,0,0],
+            "posKey": false,
+            "pos": [0,0,0]
+          },
+          {
+            "t": 1,
+            "rot": [0,0,0],
+            "posKey": false,
+            "pos": [0,0,0]
+          }
+        ]
+      },
+      "events": [
+        {
+          "time": 0.1,
+          "type": "sound",
+          "payload": {
+            "cue": "armor_impact"
+          }
+        },
+        {
+          "time": 0.1,
+          "type": "effect",
+          "payload": {
+            "fx": "hit_flash"
+          }
+        }
+      ]
+    },
+    "die": {
+      "mode": "keyframes",
+      "layer": "fullBody",
+      "duration": 0.95,
+      "loop": false,
+      "clampWhenFinished": true,
+      "tracks": {
+        "torso": [
+          {
+            "t": 0,
+            "rot": [0,0,0],
+            "pos": [0,0,0],
+            "posKey": false
+          },
+          {
+            "t": 0.35,
+            "rot": [-0.4,0.2,0],
+            "pos": [0,0,0],
+            "posKey": false
+          },
+          {
+            "t": 1,
+            "rot": [-1.52,0.15,0.25],
+            "pos": [0,0,0],
+            "posKey": false
+          }
+        ],
+        "arm_R": [
+          {
+            "t": 0,
+            "rot": [0,0,0],
+            "posKey": false,
+            "pos": [0,0,0]
+          },
+          {
+            "t": 1,
+            "rot": [-0.8,0,-0.95],
+            "posKey": false,
+            "pos": [0,0,0]
+          }
+        ],
+        "arm_L": [
+          {
+            "t": 0,
+            "rot": [0,0,0],
+            "posKey": false,
+            "pos": [0,0,0]
+          },
+          {
+            "t": 1,
+            "rot": [-0.6,0,0.85],
+            "posKey": false,
+            "pos": [0,0,0]
+          }
+        ],
+        "leg_L": [
+          {
+            "t": 0,
+            "pos": [0,0,0],
+            "rot": [0,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.23,
+            "pos": [0,0,0],
+            "rot": [-0.5803340454014047,-0.1583246720650346,0.20792526671330763],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.8,
+            "pos": [0,0,0],
+            "rot": [0,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.99,
+            "pos": [0,0,0],
+            "rot": [-0.195581591291917,-0.12095898810572092,-0.02165521085588787],
+            "easing": "smooth",
+            "posKey": false
+          }
+        ],
+        "leg_R": [
+          {
+            "t": 0,
+            "pos": [0,0,0],
+            "rot": [0,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.25,
+            "pos": [0,0,0],
+            "rot": [-0.5502803181967144,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.64,
+            "pos": [0,0,0],
+            "rot": [-1.1548415188331884,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.74,
+            "pos": [0,0,0],
+            "rot": [-1.7303963097972128,0,0],
+            "easing": "ease-in-out",
+            "posKey": false
+          },
+          {
+            "t": 0.93,
+            "pos": [0,0,0],
+            "rot": [-1.2698701331951672,-0.011803327905679267,0.1510191809842993],
+            "easing": "smooth",
+            "posKey": false
+          }
+        ]
+      },
+      "events": [
+        {
+          "time": 0.15,
+          "type": "sound",
+          "payload": {
+            "cue": "unit_fall"
+          }
+        },
+        {
+          "time": 0.85,
+          "type": "effect",
+          "payload": {
+            "fx": "dust_puff"
+          }
+        }
+      ]
+    },
+    "knocked_down": {
+      "mode": "keyframes",
+      "layer": "fullBody",
+      "duration": 1.15,
+      "loop": false,
+      "tracks": {
+        "torso": [
+          {
+            "t": 0,
+            "pos": [0,0,0],
+            "rot": [0,0,0],
+            "rotKey": true,
+            "posKey": true,
+            "easing": "smooth"
+          },
+          {
+            "t": 0.28,
+            "pos": [0,-0.68,-0.35],
+            "rot": [-1.42,0,0],
+            "rotKey": true,
+            "posKey": true,
+            "easing": "smooth"
+          },
+          {
+            "t": 0.68,
+            "pos": [0,-0.68,-0.35],
+            "rot": [-1.42,0,0],
+            "rotKey": true,
+            "posKey": true,
+            "easing": "smooth"
+          },
+          {
+            "t": 1,
+            "pos": [0,0,0],
+            "rot": [0,0,0],
+            "rotKey": true,
+            "posKey": true,
+            "easing": "smooth"
+          }
+        ],
+        "arm_R": [
+          {
+            "t": 0,
+            "pos": [0,0,0],
+            "rot": [0,0,0],
+            "rotKey": true,
+            "posKey": false,
+            "easing": "smooth"
+          },
+          {
+            "t": 0.28,
+            "pos": [0,0,0],
+            "rot": [-0.55,0,-0.75],
+            "rotKey": true,
+            "posKey": false,
+            "easing": "smooth"
+          },
+          {
+            "t": 0.68,
+            "pos": [0,0,0],
+            "rot": [-0.55,0,-0.75],
+            "rotKey": true,
+            "posKey": false,
+            "easing": "smooth"
+          },
+          {
+            "t": 1,
+            "pos": [0,0,0],
+            "rot": [0,0,0],
+            "rotKey": true,
+            "posKey": false,
+            "easing": "smooth"
+          }
+        ],
+        "arm_L": [
+          {
+            "t": 0,
+            "pos": [0,0,0],
+            "rot": [0,0,0],
+            "rotKey": true,
+            "posKey": false,
+            "easing": "smooth"
+          },
+          {
+            "t": 0.28,
+            "pos": [0,0,0],
+            "rot": [-0.45,0,0.65],
+            "rotKey": true,
+            "posKey": false,
+            "easing": "smooth"
+          },
+          {
+            "t": 0.68,
+            "pos": [0,0,0],
+            "rot": [-0.45,0,0.65],
+            "rotKey": true,
+            "posKey": false,
+            "easing": "smooth"
+          },
+          {
+            "t": 1,
+            "pos": [0,0,0],
+            "rot": [0,0,0],
+            "rotKey": true,
+            "posKey": false,
+            "easing": "smooth"
+          }
+        ]
+      },
+      "events": []
+    },
+    "victory_cheer": {
+      "mode": "keyframes",
+      "layer": "upperBody",
+      "duration": 1.1,
+      "loop": true,
+      "tracks": {
+        "torso": [
+          {
+            "t": 0,
+            "pos": [0,0,0],
+            "rot": [0,0,0],
+            "rotKey": true,
+            "posKey": false,
+            "easing": "smooth"
+          },
+          {
+            "t": 0.35,
+            "pos": [0,0.05,0],
+            "rot": [-0.14,0,0],
+            "rotKey": true,
+            "posKey": true,
+            "easing": "smooth"
+          },
+          {
+            "t": 0.7,
+            "pos": [0,0.02,0],
+            "rot": [-0.06,0,0],
+            "rotKey": true,
+            "posKey": true,
+            "easing": "smooth"
+          },
+          {
+            "t": 1,
+            "pos": [0,0,0],
+            "rot": [0,0,0],
+            "rotKey": true,
+            "posKey": false,
+            "easing": "smooth"
+          }
+        ],
+        "arm_R": [
+          {
+            "t": 0,
+            "pos": [0,0,0],
+            "rot": [0,0,0],
+            "rotKey": true,
+            "posKey": false,
+            "easing": "smooth"
+          },
+          {
+            "t": 0.35,
+            "pos": [0,0,0],
+            "rot": [-2.65,0,-0.25],
+            "rotKey": true,
+            "posKey": false,
+            "easing": "smooth"
+          },
+          {
+            "t": 0.65,
+            "pos": [0,0,0],
+            "rot": [-2.35,0,-0.15],
+            "rotKey": true,
+            "posKey": false,
+            "easing": "smooth"
+          },
+          {
+            "t": 1,
+            "pos": [0,0,0],
+            "rot": [0,0,0],
+            "rotKey": true,
+            "posKey": false,
+            "easing": "smooth"
+          }
+        ],
+        "head": [
+          {
+            "t": 0,
+            "pos": [0,0,0],
+            "rot": [0,0,0],
+            "rotKey": true,
+            "posKey": false,
+            "easing": "smooth"
+          },
+          {
+            "t": 0.35,
+            "pos": [0,0,0],
+            "rot": [-0.24,0,0],
+            "rotKey": true,
+            "posKey": false,
+            "easing": "smooth"
+          },
+          {
+            "t": 1,
+            "pos": [0,0,0],
+            "rot": [0,0,0],
+            "rotKey": true,
+            "posKey": false,
+            "easing": "smooth"
+          }
+        ]
+      },
+      "events": []
+    },
+    "walk": {
+      "mode": "keyframes",
+      "layer": "lowerBody",
+      "duration": 0.85,
+      "loop": true,
+      "tracks": {
+        "torso": [
+          {
+            "t": 0,
+            "pos": [0,0,0],
+            "rot": [0.07,0.075,0],
+            "easing": "smooth"
+          },
+          {
+            "t": 0.25,
+            "pos": [0,0.048,0],
+            "rot": [0.07,0,0.03],
+            "easing": "smooth"
+          },
+          {
+            "t": 0.5,
+            "pos": [0,0,0],
+            "rot": [0.07,-0.075,0],
+            "easing": "smooth"
+          },
+          {
+            "t": 0.75,
+            "pos": [0,0.048,0],
+            "rot": [0.07,0,-0.03],
+            "easing": "smooth"
+          },
+          {
+            "t": 1,
+            "pos": [0,0,0],
+            "rot": [0.07,0.075,0],
+            "easing": "smooth"
+          }
+        ],
+        "head": [
+          {
+            "t": 0,
+            "pos": [0,0,0],
+            "rot": [-0.04,-0.05,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.25,
+            "pos": [0,0,0],
+            "rot": [-0.04,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.5,
+            "pos": [0,0,0],
+            "rot": [-0.04,0.05,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.75,
+            "pos": [0,0,0],
+            "rot": [-0.04,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 1,
+            "pos": [0,0,0],
+            "rot": [-0.04,-0.05,0],
+            "easing": "smooth",
+            "posKey": false
+          }
+        ],
+        "leg_L": [
+          {
+            "t": 0,
+            "pos": [0,0,0],
+            "rot": [0,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.25,
+            "pos": [0,0,0],
+            "rot": [-0.44,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.5,
+            "pos": [0,0,0],
+            "rot": [0,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.75,
+            "pos": [0,0,0],
+            "rot": [0.44,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 1,
+            "pos": [0,0,0],
+            "rot": [0,0,0],
+            "easing": "smooth",
+            "posKey": false
+          }
+        ],
+        "leg_R": [
+          {
+            "t": 0,
+            "pos": [0,0,0],
+            "rot": [0,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.25,
+            "pos": [0,0,0],
+            "rot": [0.44,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.5,
+            "pos": [0,0,0],
+            "rot": [0,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.75,
+            "pos": [0,0,0],
+            "rot": [-0.44,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 1,
+            "pos": [0,0,0],
+            "rot": [0,0,0],
+            "easing": "smooth",
+            "posKey": false
+          }
+        ],
+        "shin_L": [
+          {
+            "t": 0,
+            "pos": [0,0,0],
+            "rot": [0.08,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.25,
+            "pos": [0,0,0],
+            "rot": [0.08,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.5,
+            "pos": [0,0,0],
+            "rot": [0.08,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.75,
+            "pos": [0,0,0],
+            "rot": [0.5,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 1,
+            "pos": [0,0,0],
+            "rot": [0.08,0,0],
+            "easing": "smooth",
+            "posKey": false
+          }
+        ],
+        "shin_R": [
+          {
+            "t": 0,
+            "pos": [0,0,0],
+            "rot": [0.08,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.25,
+            "pos": [0,0,0],
+            "rot": [0.5,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.5,
+            "pos": [0,0,0],
+            "rot": [0.08,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.75,
+            "pos": [0,0,0],
+            "rot": [0.08,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 1,
+            "pos": [0,0,0],
+            "rot": [0.08,0,0],
+            "easing": "smooth",
+            "posKey": false
+          }
+        ],
+        "foot_L": [
+          {
+            "t": 0,
+            "pos": [0,0,0],
+            "rot": [0,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.25,
+            "pos": [0,0,0],
+            "rot": [0.18,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.5,
+            "pos": [0,0,0],
+            "rot": [0,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.75,
+            "pos": [0,0,0],
+            "rot": [-0.18,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 1,
+            "pos": [0,0,0],
+            "rot": [0,0,0],
+            "easing": "smooth",
+            "posKey": false
+          }
+        ],
+        "foot_R": [
+          {
+            "t": 0,
+            "pos": [0,0,0],
+            "rot": [0,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.25,
+            "pos": [0,0,0],
+            "rot": [-0.18,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.5,
+            "pos": [0,0,0],
+            "rot": [0,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.75,
+            "pos": [0,0,0],
+            "rot": [0.18,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 1,
+            "pos": [0,0,0],
+            "rot": [0,0,0],
+            "easing": "smooth",
+            "posKey": false
+          }
+        ],
+        "arm_L": [
+          {
+            "t": 0,
+            "pos": [0,0,0],
+            "rot": [-0.32,0.26,-0.12],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.25,
+            "pos": [0,0,0],
+            "rot": [-0.14,0.26,-0.12],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.5,
+            "pos": [0,0,0],
+            "rot": [-0.32,0.26,-0.12],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.75,
+            "pos": [0,0,0],
+            "rot": [-0.5,0.26,-0.12],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 1,
+            "pos": [0,0,0],
+            "rot": [-0.32,0.26,-0.12],
+            "easing": "smooth",
+            "posKey": false
+          }
+        ],
+        "arm_R": [
+          {
+            "t": 0,
+            "pos": [0,0,0],
+            "rot": [-0.2,-0.12,0.1],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.25,
+            "pos": [0,0,0],
+            "rot": [-0.5,-0.12,0.1],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.5,
+            "pos": [0,0,0],
+            "rot": [-0.2,-0.12,0.1],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.75,
+            "pos": [0,0,0],
+            "rot": [0.1,-0.12,0.1],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 1,
+            "pos": [0,0,0],
+            "rot": [-0.2,-0.12,0.1],
+            "easing": "smooth",
+            "posKey": false
+          }
+        ],
+        "forearm_L": [
+          {
+            "t": 0,
+            "pos": [0,0,0],
+            "rot": [-0.62,0.18,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.25,
+            "pos": [0,0,0],
+            "rot": [-0.62,0.18,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.5,
+            "pos": [0,0,0],
+            "rot": [-0.62,0.18,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.75,
+            "pos": [0,0,0],
+            "rot": [-0.62,0.18,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 1,
+            "pos": [0,0,0],
+            "rot": [-0.62,0.18,0],
+            "easing": "smooth",
+            "posKey": false
+          }
+        ],
+        "forearm_R": [
+          {
+            "t": 0,
+            "pos": [0,0,0],
+            "rot": [-0.42,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.25,
+            "pos": [0,0,0],
+            "rot": [-0.6,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.5,
+            "pos": [0,0,0],
+            "rot": [-0.42,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.75,
+            "pos": [0,0,0],
+            "rot": [-0.42,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 1,
+            "pos": [0,0,0],
+            "rot": [-0.42,0,0],
+            "easing": "smooth",
+            "posKey": false
+          }
+        ]
+      },
+      "events": [
+        {
+          "time": 0.25,
+          "type": "footstep",
+          "payload": {
+            "foot": "left"
+          }
+        },
+        {
+          "time": 0.75,
+          "type": "footstep",
+          "payload": {
+            "foot": "right"
+          }
+        }
+      ]
+    },
+    "run": {
+      "mode": "keyframes",
+      "layer": "lowerBody",
+      "duration": 0.56,
+      "loop": true,
+      "tracks": {
+        "torso": [
+          {
+            "t": 0,
+            "pos": [0,0,0],
+            "rot": [0.22,0.14,0],
+            "easing": "smooth"
+          },
+          {
+            "t": 0.25,
+            "pos": [0,0.095,0],
+            "rot": [0.22,0,0.055],
+            "easing": "smooth"
+          },
+          {
+            "t": 0.5,
+            "pos": [0,0,0],
+            "rot": [0.22,-0.14,0],
+            "easing": "smooth"
+          },
+          {
+            "t": 0.75,
+            "pos": [0,0.095,0],
+            "rot": [0.22,0,-0.055],
+            "easing": "smooth"
+          },
+          {
+            "t": 1,
+            "pos": [0,0,0],
+            "rot": [0.22,0.14,0],
+            "easing": "smooth"
+          }
+        ],
+        "head": [
+          {
+            "t": 0,
+            "pos": [0,0,0],
+            "rot": [-0.14,-0.08,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.25,
+            "pos": [0,0,0],
+            "rot": [-0.14,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.5,
+            "pos": [0,0,0],
+            "rot": [-0.14,0.08,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.75,
+            "pos": [0,0,0],
+            "rot": [-0.14,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 1,
+            "pos": [0,0,0],
+            "rot": [-0.14,-0.08,0],
+            "easing": "smooth",
+            "posKey": false
+          }
+        ],
+        "leg_L": [
+          {
+            "t": 0,
+            "pos": [0,0,0],
+            "rot": [-0.08,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.25,
+            "pos": [0,0,0],
+            "rot": [-0.84,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.5,
+            "pos": [0,0,0],
+            "rot": [-0.08,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.75,
+            "pos": [0,0,0],
+            "rot": [0.68,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 1,
+            "pos": [0,0,0],
+            "rot": [-0.08,0,0],
+            "easing": "smooth",
+            "posKey": false
+          }
+        ],
+        "leg_R": [
+          {
+            "t": 0,
+            "pos": [0,0,0],
+            "rot": [-0.08,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.25,
+            "pos": [0,0,0],
+            "rot": [0.68,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.5,
+            "pos": [0,0,0],
+            "rot": [-0.08,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.75,
+            "pos": [0,0,0],
+            "rot": [-0.84,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 1,
+            "pos": [0,0,0],
+            "rot": [-0.08,0,0],
+            "easing": "smooth",
+            "posKey": false
+          }
+        ],
+        "shin_L": [
+          {
+            "t": 0,
+            "pos": [0,0,0],
+            "rot": [0.18,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.25,
+            "pos": [0,0,0],
+            "rot": [0.18,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.5,
+            "pos": [0,0,0],
+            "rot": [0.18,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.75,
+            "pos": [0,0,0],
+            "rot": [0.96,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 1,
+            "pos": [0,0,0],
+            "rot": [0.18,0,0],
+            "easing": "smooth",
+            "posKey": false
+          }
+        ],
+        "shin_R": [
+          {
+            "t": 0,
+            "pos": [0,0,0],
+            "rot": [0.18,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.25,
+            "pos": [0,0,0],
+            "rot": [0.96,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.5,
+            "pos": [0,0,0],
+            "rot": [0.18,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.75,
+            "pos": [0,0,0],
+            "rot": [0.18,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 1,
+            "pos": [0,0,0],
+            "rot": [0.18,0,0],
+            "easing": "smooth",
+            "posKey": false
+          }
+        ],
+        "foot_L": [
+          {
+            "t": 0,
+            "pos": [0,0,0],
+            "rot": [0,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.25,
+            "pos": [0,0,0],
+            "rot": [0.28,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.5,
+            "pos": [0,0,0],
+            "rot": [0,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.75,
+            "pos": [0,0,0],
+            "rot": [-0.28,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 1,
+            "pos": [0,0,0],
+            "rot": [0,0,0],
+            "easing": "smooth",
+            "posKey": false
+          }
+        ],
+        "foot_R": [
+          {
+            "t": 0,
+            "pos": [0,0,0],
+            "rot": [0,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.25,
+            "pos": [0,0,0],
+            "rot": [-0.28,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.5,
+            "pos": [0,0,0],
+            "rot": [0,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.75,
+            "pos": [0,0,0],
+            "rot": [0.28,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 1,
+            "pos": [0,0,0],
+            "rot": [0,0,0],
+            "easing": "smooth",
+            "posKey": false
+          }
+        ],
+        "arm_L": [
+          {
+            "t": 0,
+            "pos": [0,0,0],
+            "rot": [-0.38,0.3,-0.14],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.25,
+            "pos": [0,0,0],
+            "rot": [-0.1,0.3,-0.14],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.5,
+            "pos": [0,0,0],
+            "rot": [-0.38,0.3,-0.14],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.75,
+            "pos": [0,0,0],
+            "rot": [-0.66,0.3,-0.14],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 1,
+            "pos": [0,0,0],
+            "rot": [-0.38,0.3,-0.14],
+            "easing": "smooth",
+            "posKey": false
+          }
+        ],
+        "arm_R": [
+          {
+            "t": 0,
+            "pos": [0,0,0],
+            "rot": [-0.3,-0.15,0.12],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.25,
+            "pos": [0,0,0],
+            "rot": [-0.82,-0.15,0.12],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.5,
+            "pos": [0,0,0],
+            "rot": [-0.3,-0.15,0.12],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.75,
+            "pos": [0,0,0],
+            "rot": [0.22,-0.15,0.12],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 1,
+            "pos": [0,0,0],
+            "rot": [-0.3,-0.15,0.12],
+            "easing": "smooth",
+            "posKey": false
+          }
+        ],
+        "forearm_L": [
+          {
+            "t": 0,
+            "pos": [0,0,0],
+            "rot": [-0.7,0.22,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.25,
+            "pos": [0,0,0],
+            "rot": [-0.7,0.22,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.5,
+            "pos": [0,0,0],
+            "rot": [-0.7,0.22,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.75,
+            "pos": [0,0,0],
+            "rot": [-0.7,0.22,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 1,
+            "pos": [0,0,0],
+            "rot": [-0.7,0.22,0],
+            "easing": "smooth",
+            "posKey": false
+          }
+        ],
+        "forearm_R": [
+          {
+            "t": 0,
+            "pos": [0,0,0],
+            "rot": [-0.65,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.25,
+            "pos": [0,0,0],
+            "rot": [-0.89,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.5,
+            "pos": [0,0,0],
+            "rot": [-0.65,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.75,
+            "pos": [0,0,0],
+            "rot": [-0.65,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 1,
+            "pos": [0,0,0],
+            "rot": [-0.65,0,0],
+            "easing": "smooth",
+            "posKey": false
+          }
+        ]
+      },
+      "events": [
+        {
+          "time": 0.22,
+          "type": "footstep",
+          "payload": {
+            "foot": "left",
+            "heavy": true
+          }
+        },
+        {
+          "time": 0.72,
+          "type": "footstep",
+          "payload": {
+            "foot": "right",
+            "heavy": true
+          }
+        }
+      ]
+    },
+    "charge": {
+      "mode": "keyframes",
+      "layer": "lowerBody",
+      "duration": 0.52,
+      "loop": true,
+      "tracks": {
+        "torso": [
+          {
+            "t": 0,
+            "pos": [0,0,0],
+            "rot": [0.32,0.12,0],
+            "easing": "smooth"
+          },
+          {
+            "t": 0.25,
+            "pos": [0,0.085,0],
+            "rot": [0.32,0,0.05],
+            "easing": "smooth"
+          },
+          {
+            "t": 0.5,
+            "pos": [0,0,0],
+            "rot": [0.32,-0.12,0],
+            "easing": "smooth"
+          },
+          {
+            "t": 0.75,
+            "pos": [0,0.085,0],
+            "rot": [0.32,0,-0.05],
+            "easing": "smooth"
+          },
+          {
+            "t": 1,
+            "pos": [0,0,0],
+            "rot": [0.32,0.12,0],
+            "easing": "smooth"
+          }
+        ],
+        "head": [
+          {
+            "t": 0,
+            "pos": [0,0,0],
+            "rot": [-0.22,-0.06,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.25,
+            "pos": [0,0,0],
+            "rot": [-0.22,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.5,
+            "pos": [0,0,0],
+            "rot": [-0.22,0.06,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.75,
+            "pos": [0,0,0],
+            "rot": [-0.22,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 1,
+            "pos": [0,0,0],
+            "rot": [-0.22,-0.06,0],
+            "easing": "smooth",
+            "posKey": false
+          }
+        ],
+        "leg_L": [
+          {
+            "t": 0,
+            "pos": [0,0,0],
+            "rot": [-0.1,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.25,
+            "pos": [0,0,0],
+            "rot": [-0.92,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.5,
+            "pos": [0,0,0],
+            "rot": [-0.1,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.75,
+            "pos": [0,0,0],
+            "rot": [0.72,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 1,
+            "pos": [0,0,0],
+            "rot": [-0.1,0,0],
+            "easing": "smooth",
+            "posKey": false
+          }
+        ],
+        "leg_R": [
+          {
+            "t": 0,
+            "pos": [0,0,0],
+            "rot": [-0.1,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.25,
+            "pos": [0,0,0],
+            "rot": [0.72,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.5,
+            "pos": [0,0,0],
+            "rot": [-0.1,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.75,
+            "pos": [0,0,0],
+            "rot": [-0.92,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 1,
+            "pos": [0,0,0],
+            "rot": [-0.1,0,0],
+            "easing": "smooth",
+            "posKey": false
+          }
+        ],
+        "shin_L": [
+          {
+            "t": 0,
+            "pos": [0,0,0],
+            "rot": [0.2,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.25,
+            "pos": [0,0,0],
+            "rot": [0.2,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.5,
+            "pos": [0,0,0],
+            "rot": [0.2,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.75,
+            "pos": [0,0,0],
+            "rot": [0.98,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 1,
+            "pos": [0,0,0],
+            "rot": [0.2,0,0],
+            "easing": "smooth",
+            "posKey": false
+          }
+        ],
+        "shin_R": [
+          {
+            "t": 0,
+            "pos": [0,0,0],
+            "rot": [0.2,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.25,
+            "pos": [0,0,0],
+            "rot": [0.98,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.5,
+            "pos": [0,0,0],
+            "rot": [0.2,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.75,
+            "pos": [0,0,0],
+            "rot": [0.2,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 1,
+            "pos": [0,0,0],
+            "rot": [0.2,0,0],
+            "easing": "smooth",
+            "posKey": false
+          }
+        ],
+        "arm_L": [
+          {
+            "t": 0,
+            "pos": [0,0,0],
+            "rot": [-0.48,0.42,-0.16],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.25,
+            "pos": [0,0,0],
+            "rot": [-0.36,0.42,-0.16],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.5,
+            "pos": [0,0,0],
+            "rot": [-0.48,0.42,-0.16],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.75,
+            "pos": [0,0,0],
+            "rot": [-0.6,0.42,-0.16],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 1,
+            "pos": [0,0,0],
+            "rot": [-0.48,0.42,-0.16],
+            "easing": "smooth",
+            "posKey": false
+          }
+        ],
+        "arm_R": [
+          {
+            "t": 0,
+            "pos": [0,0,0],
+            "rot": [-1.55,-0.24,0.26],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.25,
+            "pos": [0,0,0],
+            "rot": [-1.37,-0.24,0.26],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.5,
+            "pos": [0,0,0],
+            "rot": [-1.55,-0.24,0.26],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.75,
+            "pos": [0,0,0],
+            "rot": [-1.73,-0.24,0.26],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 1,
+            "pos": [0,0,0],
+            "rot": [-1.55,-0.24,0.26],
+            "easing": "smooth",
+            "posKey": false
+          }
+        ],
+        "forearm_L": [
+          {
+            "t": 0,
+            "pos": [0,0,0],
+            "rot": [-0.76,0.26,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.25,
+            "pos": [0,0,0],
+            "rot": [-0.76,0.26,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.5,
+            "pos": [0,0,0],
+            "rot": [-0.76,0.26,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.75,
+            "pos": [0,0,0],
+            "rot": [-0.76,0.26,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 1,
+            "pos": [0,0,0],
+            "rot": [-0.76,0.26,0],
+            "easing": "smooth",
+            "posKey": false
+          }
+        ],
+        "forearm_R": [
+          {
+            "t": 0,
+            "pos": [0,0,0],
+            "rot": [-0.52,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.25,
+            "pos": [0,0,0],
+            "rot": [-0.52,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.5,
+            "pos": [0,0,0],
+            "rot": [-0.52,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.75,
+            "pos": [0,0,0],
+            "rot": [-0.52,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 1,
+            "pos": [0,0,0],
+            "rot": [-0.52,0,0],
+            "easing": "smooth",
+            "posKey": false
+          }
+        ]
+      },
+      "events": [
+        {
+          "time": 0.25,
+          "type": "footstep",
+          "payload": {
+            "foot": "L"
+          }
+        },
+        {
+          "time": 0.75,
+          "type": "footstep",
+          "payload": {
+            "foot": "R"
+          }
+        }
+      ]
+    },
+    "retreat_run": {
+      "mode": "keyframes",
+      "layer": "lowerBody",
+      "duration": 0.6,
+      "loop": true,
+      "tracks": {
+        "torso": [
+          {
+            "t": 0,
+            "pos": [0,0,0],
+            "rot": [0.26,0.14,0],
+            "easing": "smooth"
+          },
+          {
+            "t": 0.25,
+            "pos": [0,0.09,0],
+            "rot": [0.26,0,0.07],
+            "easing": "smooth"
+          },
+          {
+            "t": 0.5,
+            "pos": [0,0,0],
+            "rot": [0.26,-0.14,0],
+            "easing": "smooth"
+          },
+          {
+            "t": 0.75,
+            "pos": [0,0.09,0],
+            "rot": [0.26,0,-0.07],
+            "easing": "smooth"
+          },
+          {
+            "t": 1,
+            "pos": [0,0,0],
+            "rot": [0.26,0.14,0],
+            "easing": "smooth"
+          }
+        ],
+        "head": [
+          {
+            "t": 0,
+            "pos": [0,0,0],
+            "rot": [0,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.25,
+            "pos": [0,0,0],
+            "rot": [0,0.55,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.5,
+            "pos": [0,0,0],
+            "rot": [0,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.75,
+            "pos": [0,0,0],
+            "rot": [0,-0.55,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 1,
+            "pos": [0,0,0],
+            "rot": [0,0,0],
+            "easing": "smooth",
+            "posKey": false
+          }
+        ],
+        "leg_L": [
+          {
+            "t": 0,
+            "pos": [0,0,0],
+            "rot": [0,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.25,
+            "pos": [0,0,0],
+            "rot": [0.85,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.5,
+            "pos": [0,0,0],
+            "rot": [0,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.75,
+            "pos": [0,0,0],
+            "rot": [-0.85,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 1,
+            "pos": [0,0,0],
+            "rot": [0,0,0],
+            "easing": "smooth",
+            "posKey": false
+          }
+        ],
+        "leg_R": [
+          {
+            "t": 0,
+            "pos": [0,0,0],
+            "rot": [0,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.25,
+            "pos": [0,0,0],
+            "rot": [-0.85,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.5,
+            "pos": [0,0,0],
+            "rot": [0,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.75,
+            "pos": [0,0,0],
+            "rot": [0.85,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 1,
+            "pos": [0,0,0],
+            "rot": [0,0,0],
+            "easing": "smooth",
+            "posKey": false
+          }
+        ],
+        "shin_L": [
+          {
+            "t": 0,
+            "pos": [0,0,0],
+            "rot": [0.12,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.25,
+            "pos": [0,0,0],
+            "rot": [0.12,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.5,
+            "pos": [0,0,0],
+            "rot": [0.12,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.75,
+            "pos": [0,0,0],
+            "rot": [0.74,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 1,
+            "pos": [0,0,0],
+            "rot": [0.12,0,0],
+            "easing": "smooth",
+            "posKey": false
+          }
+        ],
+        "shin_R": [
+          {
+            "t": 0,
+            "pos": [0,0,0],
+            "rot": [0.12,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.25,
+            "pos": [0,0,0],
+            "rot": [0.74,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.5,
+            "pos": [0,0,0],
+            "rot": [0.12,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.75,
+            "pos": [0,0,0],
+            "rot": [0.12,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 1,
+            "pos": [0,0,0],
+            "rot": [0.12,0,0],
+            "easing": "smooth",
+            "posKey": false
+          }
+        ],
+        "arm_L": [
+          {
+            "t": 0,
+            "pos": [0,0,0],
+            "rot": [-0.55,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.25,
+            "pos": [0,0,0],
+            "rot": [-1.27,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.5,
+            "pos": [0,0,0],
+            "rot": [-0.55,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.75,
+            "pos": [0,0,0],
+            "rot": [0.17,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 1,
+            "pos": [0,0,0],
+            "rot": [-0.55,0,0],
+            "easing": "smooth",
+            "posKey": false
+          }
+        ],
+        "arm_R": [
+          {
+            "t": 0,
+            "pos": [0,0,0],
+            "rot": [-0.55,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.25,
+            "pos": [0,0,0],
+            "rot": [0.17,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.5,
+            "pos": [0,0,0],
+            "rot": [-0.55,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.75,
+            "pos": [0,0,0],
+            "rot": [-1.27,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 1,
+            "pos": [0,0,0],
+            "rot": [-0.55,0,0],
+            "easing": "smooth",
+            "posKey": false
+          }
+        ]
+      },
+      "events": [
+        {
+          "time": 0.25,
+          "type": "footstep",
+          "payload": {
+            "foot": "L"
+          }
+        },
+        {
+          "time": 0.75,
+          "type": "footstep",
+          "payload": {
+            "foot": "R"
+          }
+        }
+      ]
+    },
+    "gallop": {
+      "mode": "keyframes",
+      "layer": "lowerBody",
+      "duration": 0.56,
+      "loop": true,
+      "tracks": {
+        "torso": [
+          {
+            "t": 0,
+            "pos": [0,0,0],
+            "rot": [0.16,0,0],
+            "easing": "smooth"
+          },
+          {
+            "t": 0.25,
+            "pos": [0,0.056,0],
+            "rot": [0.1,0,0],
+            "easing": "smooth"
+          },
+          {
+            "t": 0.5,
+            "pos": [0,0,0],
+            "rot": [0.04,0,0],
+            "easing": "smooth"
+          },
+          {
+            "t": 0.75,
+            "pos": [0,0.056,0],
+            "rot": [0.1,0,0],
+            "easing": "smooth"
+          },
+          {
+            "t": 1,
+            "pos": [0,0,0],
+            "rot": [0.16,0,0],
+            "easing": "smooth"
+          }
+        ],
+        "arm_L": [
+          {
+            "t": 0,
+            "pos": [0,0,0],
+            "rot": [0,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.25,
+            "pos": [0,0,0],
+            "rot": [-0.18,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.5,
+            "pos": [0,0,0],
+            "rot": [0,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.75,
+            "pos": [0,0,0],
+            "rot": [0.18,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 1,
+            "pos": [0,0,0],
+            "rot": [0,0,0],
+            "easing": "smooth",
+            "posKey": false
+          }
+        ],
+        "arm_R": [
+          {
+            "t": 0,
+            "pos": [0,0,0],
+            "rot": [0,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.25,
+            "pos": [0,0,0],
+            "rot": [0.18,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.5,
+            "pos": [0,0,0],
+            "rot": [0,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.75,
+            "pos": [0,0,0],
+            "rot": [-0.18,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 1,
+            "pos": [0,0,0],
+            "rot": [0,0,0],
+            "easing": "smooth",
+            "posKey": false
+          }
+        ],
+        "mount_torso": [
+          {
+            "t": 0,
+            "pos": [0,0,0],
+            "rot": [0.11,0,0],
+            "easing": "smooth"
+          },
+          {
+            "t": 0.25,
+            "pos": [0,0.14,0],
+            "rot": [0,0,0],
+            "easing": "smooth"
+          },
+          {
+            "t": 0.5,
+            "pos": [0,0,0],
+            "rot": [-0.11,0,0],
+            "easing": "smooth"
+          },
+          {
+            "t": 0.75,
+            "pos": [0,0.14,0],
+            "rot": [0,0,0],
+            "easing": "smooth"
+          },
+          {
+            "t": 1,
+            "pos": [0,0,0],
+            "rot": [0.11,0,0],
+            "easing": "smooth"
+          }
+        ],
+        "mount_head": [
+          {
+            "t": 0,
+            "pos": [0,0,0],
+            "rot": [-0.18,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.25,
+            "pos": [0,0,0],
+            "rot": [0,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.5,
+            "pos": [0,0,0],
+            "rot": [0.18,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.75,
+            "pos": [0,0,0],
+            "rot": [0,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 1,
+            "pos": [0,0,0],
+            "rot": [-0.18,0,0],
+            "easing": "smooth",
+            "posKey": false
+          }
+        ],
+        "mount_tail": [
+          {
+            "t": 0,
+            "pos": [0,0,0],
+            "rot": [0.25,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.25,
+            "pos": [0,0,0],
+            "rot": [0.25,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.5,
+            "pos": [0,0,0],
+            "rot": [0.25,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.75,
+            "pos": [0,0,0],
+            "rot": [0.25,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 1,
+            "pos": [0,0,0],
+            "rot": [0.25,0,0],
+            "easing": "smooth",
+            "posKey": false
+          }
+        ],
+        "mount_leg_FL": [
+          {
+            "t": 0,
+            "pos": [0,0,0],
+            "rot": [0,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.25,
+            "pos": [0,0,0],
+            "rot": [0.78,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.5,
+            "pos": [0,0,0],
+            "rot": [0,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.75,
+            "pos": [0,0,0],
+            "rot": [-0.78,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 1,
+            "pos": [0,0,0],
+            "rot": [0,0,0],
+            "easing": "smooth",
+            "posKey": false
+          }
+        ],
+        "mount_leg_FR": [
+          {
+            "t": 0,
+            "pos": [0,0,0],
+            "rot": [0.3393,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.25,
+            "pos": [0,0,0],
+            "rot": [0.7023,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.5,
+            "pos": [0,0,0],
+            "rot": [-0.3393,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.75,
+            "pos": [0,0,0],
+            "rot": [-0.7023,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 1,
+            "pos": [0,0,0],
+            "rot": [0.3393,0,0],
+            "easing": "smooth",
+            "posKey": false
+          }
+        ],
+        "mount_leg_BL": [
+          {
+            "t": 0,
+            "pos": [0,0,0],
+            "rot": [0,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.25,
+            "pos": [0,0,0],
+            "rot": [-0.78,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.5,
+            "pos": [0,0,0],
+            "rot": [0,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.75,
+            "pos": [0,0,0],
+            "rot": [0.78,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 1,
+            "pos": [0,0,0],
+            "rot": [0,0,0],
+            "easing": "smooth",
+            "posKey": false
+          }
+        ],
+        "mount_leg_BR": [
+          {
+            "t": 0,
+            "pos": [0,0,0],
+            "rot": [-0.3393,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.25,
+            "pos": [0,0,0],
+            "rot": [-0.7023,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.5,
+            "pos": [0,0,0],
+            "rot": [0.3393,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.75,
+            "pos": [0,0,0],
+            "rot": [0.7023,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 1,
+            "pos": [0,0,0],
+            "rot": [-0.3393,0,0],
+            "easing": "smooth",
+            "posKey": false
+          }
+        ]
+      },
+      "events": [
+        {
+          "time": 0.18,
+          "type": "footstep",
+          "payload": {
+            "hoof": "front"
+          }
+        },
+        {
+          "time": 0.64,
+          "type": "footstep",
+          "payload": {
+            "hoof": "rear"
+          }
+        }
+      ]
+    },
+    "idle": {
+      "mode": "keyframes",
+      "layer": "lowerBody",
+      "duration": 2.2,
+      "loop": true,
+      "tracks": {
+        "torso": [
+          {
+            "t": 0,
+            "pos": [0,0,0],
+            "rot": [0.04,-0.08,0],
+            "easing": "smooth"
+          },
+          {
+            "t": 0.5,
+            "pos": [0,0.022,0],
+            "rot": [0.07,-0.05,0],
+            "easing": "smooth"
+          },
+          {
+            "t": 1,
+            "pos": [0,0,0],
+            "rot": [0.04,-0.08,0],
+            "easing": "smooth"
+          }
+        ],
+        "head": [
+          {
+            "t": 0,
+            "pos": [0,0,0],
+            "rot": [-0.03,0.08,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.5,
+            "pos": [0,0,0],
+            "rot": [-0.05,-0.06,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 1,
+            "pos": [0,0,0],
+            "rot": [-0.03,0.08,0],
+            "easing": "smooth",
+            "posKey": false
+          }
+        ],
+        "arm_L": [
+          {
+            "t": 0,
+            "pos": [0,0,0],
+            "rot": [-0.34,0.3,-0.12],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.5,
+            "pos": [0,0,0],
+            "rot": [-0.38,0.32,-0.12],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 1,
+            "pos": [0,0,0],
+            "rot": [-0.34,0.3,-0.12],
+            "easing": "smooth",
+            "posKey": false
+          }
+        ],
+        "forearm_L": [
+          {
+            "t": 0,
+            "pos": [0,0,0],
+            "rot": [-0.64,0.2,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.5,
+            "pos": [0,0,0],
+            "rot": [-0.68,0.2,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 1,
+            "pos": [0,0,0],
+            "rot": [-0.64,0.2,0],
+            "easing": "smooth",
+            "posKey": false
+          }
+        ],
+        "arm_R": [
+          {
+            "t": 0,
+            "pos": [0,0,0],
+            "rot": [-0.22,-0.16,0.12],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.5,
+            "pos": [0,0,0],
+            "rot": [-0.26,-0.14,0.12],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 1,
+            "pos": [0,0,0],
+            "rot": [-0.22,-0.16,0.12],
+            "easing": "smooth",
+            "posKey": false
+          }
+        ],
+        "forearm_R": [
+          {
+            "t": 0,
+            "pos": [0,0,0],
+            "rot": [-0.46,-0.08,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.5,
+            "pos": [0,0,0],
+            "rot": [-0.5,-0.08,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 1,
+            "pos": [0,0,0],
+            "rot": [-0.46,-0.08,0],
+            "easing": "smooth",
+            "posKey": false
+          }
+        ],
+        "leg_L": [
+          {
+            "t": 0,
+            "pos": [0,0,0],
+            "rot": [-0.06,0,-0.03],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 1,
+            "pos": [0,0,0],
+            "rot": [-0.06,0,-0.03],
+            "easing": "smooth",
+            "posKey": false
+          }
+        ],
+        "leg_R": [
+          {
+            "t": 0,
+            "pos": [0,0,0],
+            "rot": [0.06,0,0.03],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 1,
+            "pos": [0,0,0],
+            "rot": [0.06,0,0.03],
+            "easing": "smooth",
+            "posKey": false
+          }
+        ]
+      },
+      "events": []
+    },
+    "block": {
+      "mode": "keyframes",
+      "layer": "upperBody",
+      "duration": 0.55,
+      "loop": false,
+      "tracks": {
+        "torso": [
+          {
+            "t": 0,
+            "pos": [0,0,0],
+            "rot": [0.05,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.3,
+            "pos": [0,0,0],
+            "rot": [0.16,0.28,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.7,
+            "pos": [0,0,0],
+            "rot": [0.14,0.24,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 1,
+            "pos": [0,0,0],
+            "rot": [0.05,0,0],
+            "easing": "smooth",
+            "posKey": false
+          }
+        ],
+        "arm_L": [
+          {
+            "t": 0,
+            "pos": [0,0,0],
+            "rot": [-0.36,0.32,-0.12],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.28,
+            "pos": [0,0,0],
+            "rot": [-0.62,0.58,-0.18],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.72,
+            "pos": [0,0,0],
+            "rot": [-0.58,0.54,-0.16],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 1,
+            "pos": [0,0,0],
+            "rot": [-0.36,0.32,-0.12],
+            "easing": "smooth",
+            "posKey": false
+          }
+        ],
+        "forearm_L": [
+          {
+            "t": 0,
+            "pos": [0,0,0],
+            "rot": [-0.66,0.2,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.28,
+            "pos": [0,0,0],
+            "rot": [-0.88,0.32,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.72,
+            "pos": [0,0,0],
+            "rot": [-0.84,0.28,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 1,
+            "pos": [0,0,0],
+            "rot": [-0.66,0.2,0],
+            "easing": "smooth",
+            "posKey": false
+          }
+        ],
+        "arm_R": [
+          {
+            "t": 0,
+            "pos": [0,0,0],
+            "rot": [-0.24,-0.16,0.12],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.3,
+            "pos": [0,0,0],
+            "rot": [-0.52,-0.28,0.18],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 1,
+            "pos": [0,0,0],
+            "rot": [-0.24,-0.16,0.12],
+            "easing": "smooth",
+            "posKey": false
+          }
+        ]
+      },
+      "events": []
+    },
+    "idle__v2": {
+      "mode": "keyframes",
+      "layer": "lowerBody",
+      "duration": 2.6,
+      "loop": true,
+      "tracks": {
+        "torso": [
+          {
+            "t": 0,
+            "pos": [0,0,0],
+            "rot": [0.04,-0.08,0],
+            "easing": "smooth"
+          },
+          {
+            "t": 0.35,
+            "pos": [0,0.018,0],
+            "rot": [0.02,0.14,0.02],
+            "easing": "smooth"
+          },
+          {
+            "t": 0.7,
+            "pos": [0,0.015,0],
+            "rot": [0.05,-0.16,-0.02],
+            "easing": "smooth"
+          },
+          {
+            "t": 1,
+            "pos": [0,0,0],
+            "rot": [0.04,-0.08,0],
+            "easing": "smooth"
+          }
+        ],
+        "head": [
+          {
+            "t": 0,
+            "pos": [0,0,0],
+            "rot": [-0.03,0.08,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.35,
+            "pos": [0,0,0],
+            "rot": [-0.06,-0.26,0.03],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.7,
+            "pos": [0,0,0],
+            "rot": [-0.02,0.24,-0.02],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 1,
+            "pos": [0,0,0],
+            "rot": [-0.03,0.08,0],
+            "easing": "smooth",
+            "posKey": false
+          }
+        ],
+        "arm_L": [
+          {
+            "t": 0,
+            "pos": [0,0,0],
+            "rot": [-0.34,0.3,-0.12],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.5,
+            "pos": [0,0,0],
+            "rot": [-0.42,0.36,-0.14],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 1,
+            "pos": [0,0,0],
+            "rot": [-0.34,0.3,-0.12],
+            "easing": "smooth",
+            "posKey": false
+          }
+        ],
+        "forearm_L": [
+          {
+            "t": 0,
+            "pos": [0,0,0],
+            "rot": [-0.64,0.2,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.5,
+            "pos": [0,0,0],
+            "rot": [-0.72,0.24,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 1,
+            "pos": [0,0,0],
+            "rot": [-0.64,0.2,0],
+            "easing": "smooth",
+            "posKey": false
+          }
+        ],
+        "arm_R": [
+          {
+            "t": 0,
+            "pos": [0,0,0],
+            "rot": [-0.22,-0.16,0.12],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.5,
+            "pos": [0,0,0],
+            "rot": [-0.34,-0.08,0.18],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 1,
+            "pos": [0,0,0],
+            "rot": [-0.22,-0.16,0.12],
+            "easing": "smooth",
+            "posKey": false
+          }
+        ],
+        "forearm_R": [
+          {
+            "t": 0,
+            "pos": [0,0,0],
+            "rot": [-0.46,-0.08,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.5,
+            "pos": [0,0,0],
+            "rot": [-0.62,-0.04,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 1,
+            "pos": [0,0,0],
+            "rot": [-0.46,-0.08,0],
+            "easing": "smooth",
+            "posKey": false
+          }
+        ]
+      },
+      "events": []
+    },
+    "attack_slash__v2": {
+      "mode": "keyframes",
+      "layer": "upperBody",
+      "duration": 0.8,
+      "loop": false,
+      "tracks": {
+        "torso": [
+          {
+            "t": 0,
+            "pos": [0,0,0],
+            "rot": [0.05,-0.08,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.26,
+            "pos": [0,0,0],
+            "rot": [0.08,0.44,0.05],
+            "easing": "ease-in-out",
+            "posKey": false
+          },
+          {
+            "t": 0.48,
+            "pos": [0,0,0],
+            "rot": [0.22,-0.52,-0.06],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.75,
+            "pos": [0,0,0],
+            "rot": [0.1,-0.18,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 1,
+            "pos": [0,0,0],
+            "rot": [0.05,-0.08,0],
+            "easing": "smooth",
+            "posKey": false
+          }
+        ],
+        "head": [
+          {
+            "t": 0,
+            "pos": [0,0,0],
+            "rot": [0,0.06,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.26,
+            "pos": [0,0,0],
+            "rot": [0,-0.28,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.48,
+            "pos": [0,0,0],
+            "rot": [-0.08,0.32,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 1,
+            "pos": [0,0,0],
+            "rot": [0,0.06,0],
+            "easing": "smooth",
+            "posKey": false
+          }
+        ],
+        "arm_L": [
+          {
+            "t": 0,
+            "pos": [0,0,0],
+            "rot": [-0.36,0.32,-0.12],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.26,
+            "pos": [0,0,0],
+            "rot": [-0.44,0.46,-0.16],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.48,
+            "pos": [0,0,0],
+            "rot": [-0.34,0.22,-0.2],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 1,
+            "pos": [0,0,0],
+            "rot": [-0.36,0.32,-0.12],
+            "easing": "smooth",
+            "posKey": false
+          }
+        ],
+        "forearm_L": [
+          {
+            "t": 0,
+            "pos": [0,0,0],
+            "rot": [-0.66,0.2,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.26,
+            "pos": [0,0,0],
+            "rot": [-0.74,0.25,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.48,
+            "pos": [0,0,0],
+            "rot": [-0.6,0.14,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 1,
+            "pos": [0,0,0],
+            "rot": [-0.66,0.2,0],
+            "easing": "smooth",
+            "posKey": false
+          }
+        ],
+        "arm_R": [
+          {
+            "t": 0,
+            "pos": [0,0,0],
+            "rot": [-0.24,-0.16,0.12],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.26,
+            "pos": [0,0,0],
+            "rot": [-1.18,0.52,-0.28],
+            "easing": "ease-in-out",
+            "posKey": false
+          },
+          {
+            "t": 0.48,
+            "pos": [0,0,0],
+            "rot": [-0.72,-0.68,0.46],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.74,
+            "pos": [0,0,0],
+            "rot": [-0.32,-0.24,0.18],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 1,
+            "pos": [0,0,0],
+            "rot": [-0.24,-0.16,0.12],
+            "easing": "smooth",
+            "posKey": false
+          }
+        ],
+        "forearm_R": [
+          {
+            "t": 0,
+            "pos": [0,0,0],
+            "rot": [-0.48,-0.08,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.26,
+            "pos": [0,0,0],
+            "rot": [-0.76,0.18,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.48,
+            "pos": [0,0,0],
+            "rot": [-0.16,-0.14,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 1,
+            "pos": [0,0,0],
+            "rot": [-0.48,-0.08,0],
+            "easing": "smooth",
+            "posKey": false
+          }
+        ],
+        "hand_R": [
+          {
+            "t": 0,
+            "pos": [0,0,0],
+            "rot": [0,0,0],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.26,
+            "pos": [0,0,0],
+            "rot": [-0.22,0,0.25],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 0.48,
+            "pos": [0,0,0],
+            "rot": [0.38,0,-0.25],
+            "easing": "smooth",
+            "posKey": false
+          },
+          {
+            "t": 1,
+            "pos": [0,0,0],
+            "rot": [0,0,0],
+            "easing": "smooth",
+            "posKey": false
+          }
+        ]
+      },
+      "events": [
+        {
+          "time": 0.18,
+          "type": "sound",
+          "payload": {
+            "cue": "sword_whoosh"
+          }
+        },
+        {
+          "time": 0.48,
+          "type": "hit",
+          "payload": {
+            "damageType": "slash",
+            "socket": "weapon_socket_R"
+          }
+        },
+        {
+          "time": 0.48,
+          "type": "effect",
+          "payload": {
+            "fx": "blade_spark"
+          }
+        }
+      ]
+    }
+  },
+  "procedural": {
+    "idle": {
+      "mode": "procedural",
+      "layer": "lowerBody",
+      "frequency": 1.6,
+      "bobAmplitude": 0.025,
+      "torsoSway": 0.03,
+      "armSwing": 0.05,
+      "legSwing": 0,
+      "events": []
+    },
+    "walk": {
+      "mode": "procedural",
+      "layer": "lowerBody",
+      "frequency": 2.4,
+      "bobAmplitude": 0.055,
+      "torsoSway": 0.05,
+      "armSwing": 0.34,
+      "legSwing": 0.48,
+      "events": [
+        {
+          "time": 0.25,
+          "type": "footstep",
+          "payload": {
+            "foot": "left"
+          }
+        },
+        {
+          "time": 0.75,
+          "type": "footstep",
+          "payload": {
+            "foot": "right"
+          }
+        }
+      ]
+    },
+    "run": {
+      "mode": "procedural",
+      "layer": "lowerBody",
+      "frequency": 5.2,
+      "bobAmplitude": 0.12,
+      "torsoSway": 0.14,
+      "armSwing": 0.68,
+      "legSwing": 0.85,
+      "events": [
+        {
+          "time": 0.22,
+          "type": "footstep",
+          "payload": {
+            "foot": "left",
+            "heavy": true
+          }
+        },
+        {
+          "time": 0.72,
+          "type": "footstep",
+          "payload": {
+            "foot": "right",
+            "heavy": true
+          }
+        }
+      ]
+    },
+    "gallop": {
+      "mode": "procedural",
+      "layer": "lowerBody",
+      "frequency": 4.8,
+      "bobAmplitude": 0.16,
+      "torsoSway": 0.1,
+      "armSwing": 0.22,
+      "legSwing": 0.15,
+      "isMountGallop": true,
+      "mountStride": 0.78,
+      "events": [
+        {
+          "time": 0.18,
+          "type": "footstep",
+          "payload": {
+            "hoof": "front"
+          }
+        },
+        {
+          "time": 0.64,
+          "type": "footstep",
+          "payload": {
+            "hoof": "rear"
+          }
+        },
+        {
+          "time": 0.5,
+          "type": "sound",
+          "payload": {
+            "cue": "horse_gallop"
+          }
+        }
+      ]
+    },
+    "charge": {
+      "mode": "procedural",
+      "layer": "lowerBody",
+      "frequency": 3.9,
+      "bobAmplitude": 0.08,
+      "torsoSway": 0.1,
+      "armSwing": 0.55,
+      "legSwing": 0.92,
+      "events": [
+        {
+          "time": 0.25,
+          "type": "footstep",
+          "payload": {
+            "foot": "L"
+          }
+        },
+        {
+          "time": 0.75,
+          "type": "footstep",
+          "payload": {
+            "foot": "R"
+          }
+        }
+      ]
+    },
+    "retreat_run": {
+      "mode": "procedural",
+      "layer": "lowerBody",
+      "frequency": 3.8,
+      "bobAmplitude": 0.09,
+      "torsoSway": 0.14,
+      "armSwing": 0.72,
+      "legSwing": 0.88,
+      "events": [
+        {
+          "time": 0.25,
+          "type": "footstep",
+          "payload": {
+            "foot": "L"
+          }
+        },
+        {
+          "time": 0.75,
+          "type": "footstep",
+          "payload": {
+            "foot": "R"
+          }
+        }
+      ]
+    }
+  }
+}

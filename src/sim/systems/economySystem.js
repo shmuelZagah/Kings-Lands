@@ -13,7 +13,7 @@ import {
   WORKER_FATIGUE_THRESHOLD_PERMILLE
 } from '../formations/company.js';
 import { generateDeterministicTreesFx, generateDeterministicMinesFx } from '../world/worldGen.js';
-import buildingsData from '../../data/buildings.json';
+import { defaultBuildingsData as buildingsData } from '../../data/defaults.js';
 
 export const ResourceTypes = Object.freeze({
   COINS: 'coins',

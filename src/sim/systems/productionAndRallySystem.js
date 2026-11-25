@@ -18,7 +18,7 @@ import {
 } from '../../core/fx.js';
 import { transformLocalSlotToWorldFx } from '../formations/formations.js';
 import { Company, CompanyOrderType, resolveDefaultFormation } from '../formations/company.js';
-import unitStatsData from '../../data/unitStats.json';
+import { defaultUnitStats as unitStatsData } from '../../data/defaults.js';
 
 const RALLY_ENEMY_SNAP_RADIUS_FX = 2253; // ~2.2 meters (direct click on enemy unit only)
 

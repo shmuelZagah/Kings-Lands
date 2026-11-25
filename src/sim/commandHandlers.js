@@ -108,16 +108,6 @@ export function processSimCommands(gameState, commands) {
       continue;
     }
 
-    if (type === CommandTypes.SYNC_HEROES_CONFIG) {
-      gameState.heroSystem?.syncHeroesConfig?.(payload?.heroesData, gameState);
-      continue;
-    }
-
-    if (type === CommandTypes.SYNC_UNITS_BUILDINGS_CONFIG) {
-      gameState.syncUnitsBuildingsConfig?.(payload);
-      continue;
-    }
-
     if (type === CommandTypes.SWITCH_COMPANY_WEAPON) {
       const targetTeam = (payload?.team | 0) || 1;
       const cids = Array.isArray(payload?.companyIds)

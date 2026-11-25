@@ -1,0 +1,2719 @@
+{
+  "id": "almasir_base",
+  "race": "almasir",
+  "displayName": "Almasir Dreadbrute Base",
+  "type": "procedural_3d",
+  "gltfUrl": null,
+  "scale": 1.25,
+  "selectionRingRadius": 0.92,
+  "bannerStyle": "royal_standard",
+  "locomotionAnim": "walk",
+  "combatAnim": "attack_slash",
+  "equipment": {},
+  "hierarchy": {
+    "pelvis": {
+      "pos": [0,0.96,0],
+      "limits": {
+        "x": [-35,35],
+        "y": [-40,40],
+        "z": [-25,25]
+      },
+      "meshes": [
+        {
+          "name": "shorts_hip",
+          "shape": "lathe",
+          "size": [22],
+          "points": [
+            [0,-0.13],
+            [0.19,-0.13],
+            [0.21,-0.08],
+            [0.222,-0.02],
+            [0.218,0.05],
+            [0.2,0.115],
+            [0,0.115]
+          ],
+          "pos": [0,0.02,0],
+          "scale": [1.34,1,0.88],
+          "color": "#2b211a",
+          "roughness": 0.88,
+          "metalness": 0.02
+        },
+        {
+          "name": "war_belt_main",
+          "shape": "cylinder",
+          "size": [0.208,0.214,0.095,20],
+          "pos": [0,0.095,0],
+          "scale": [1.32,1,0.88],
+          "color": "#261c14",
+          "roughness": 0.8,
+          "metalness": 0.1
+        },
+        {
+          "name": "war_belt_rim_top",
+          "shape": "torus",
+          "size": [0.21,0.012,20,8],
+          "pos": [0,0.14,0],
+          "rot": [1.5708,0,0],
+          "scale": [1.32,0.88,1],
+          "color": "#4a3525",
+          "roughness": 0.75,
+          "metalness": 0.15
+        },
+        {
+          "name": "war_belt_rim_bot",
+          "shape": "torus",
+          "size": [0.215,0.012,20,8],
+          "pos": [0,0.05,0],
+          "rot": [1.5708,0,0],
+          "scale": [1.32,0.88,1],
+          "color": "#4a3525",
+          "roughness": 0.75,
+          "metalness": 0.15
+        },
+        {
+          "name": "belt_buckle_center",
+          "shape": "box",
+          "size": [0.095,0.088,0.035],
+          "pos": [0,0.095,0.185],
+          "color": "#575047",
+          "roughness": 0.45,
+          "metalness": 0.65
+        },
+        {
+          "name": "belt_Hanging_strap_C",
+          "shape": "box",
+          "size": [0.068,0.28,0.022],
+          "pos": [0,-0.08,0.188],
+          "rot": [-0.05,0,0],
+          "color": "#261c14",
+          "roughness": 0.82,
+          "metalness": 0.08
+        },
+        {
+          "name": "loincloth_front_main",
+          "shape": "extrude",
+          "points": [
+            [-0.12,0.05],
+            [0.12,0.05],
+            [0.105,-0.22],
+            [0.055,-0.17],
+            [0,-0.34],
+            [-0.055,-0.19],
+            [-0.105,-0.24]
+          ],
+          "depth": 0.018,
+          "pos": [0,0,0.168],
+          "rot": [-0.06,0,0],
+          "color": "team.primary",
+          "roughness": 0.88,
+          "metalness": 0.02
+        },
+        {
+          "name": "loincloth_back_main",
+          "shape": "extrude",
+          "points": [
+            [-0.16,0.05],
+            [0.16,0.05],
+            [0.145,-0.26],
+            [0.075,-0.19],
+            [0.01,-0.35],
+            [-0.065,-0.22],
+            [-0.14,-0.28]
+          ],
+          "depth": 0.018,
+          "pos": [0,0,-0.182],
+          "rot": [0.08,0,0],
+          "color": "team.primary",
+          "roughness": 0.88,
+          "metalness": 0.02
+        }
+      ],
+      "children": {
+        "torso": {
+          "pos": [0,0.04,0],
+          "lockPos": true,
+          "limits": {
+            "x": [-45,60],
+            "y": [-45,45],
+            "z": [-30,30]
+          },
+          "meshes": [
+            {
+              "name": "torso_core",
+              "shape": "lathe",
+              "size": [24],
+              "points": [
+                [0,0.02],
+                [0.165,0.02],
+                [0.174,0.12],
+                [0.185,0.24],
+                [0.205,0.35],
+                [0.255,0.46],
+                [0.282,0.56],
+                [0.265,0.64],
+                [0.18,0.7],
+                [0,0.71]
+              ],
+              "pos": [0,0,0],
+              "scale": [1.26,1,0.86],
+              "color": "#1f2126",
+              "roughness": 0.7,
+              "metalness": 0.08
+            },
+            {
+              "name": "pec_R",
+              "shape": "sphere",
+              "size": [0.135,18,14],
+              "pos": [0.105,0.515,0.115],
+              "rot": [0.08,0.22,-0.08],
+              "scale": [1.18,0.88,0.82],
+              "color": "#272a30",
+              "roughness": 0.66,
+              "metalness": 0.08
+            },
+            {
+              "name": "pec_L",
+              "shape": "sphere",
+              "size": [0.135,18,14],
+              "pos": [-0.105,0.515,0.115],
+              "rot": [0.08,-0.22,0.08],
+              "scale": [1.18,0.88,0.82],
+              "color": "#272a30",
+              "roughness": 0.66,
+              "metalness": 0.08
+            },
+            {
+              "name": "abs_upper_R",
+              "shape": "sphere",
+              "size": [0.058,14,10],
+              "pos": [0.052,0.395,0.142],
+              "scale": [1.15,0.82,0.65],
+              "color": "#272a30",
+              "roughness": 0.66,
+              "metalness": 0.08
+            },
+            {
+              "name": "abs_upper_L",
+              "shape": "sphere",
+              "size": [0.058,14,10],
+              "pos": [-0.052,0.395,0.142],
+              "scale": [1.15,0.82,0.65],
+              "color": "#272a30",
+              "roughness": 0.66,
+              "metalness": 0.08
+            },
+            {
+              "name": "abs_mid_R",
+              "shape": "sphere",
+              "size": [0.056,14,10],
+              "pos": [0.05,0.305,0.14],
+              "scale": [1.12,0.82,0.65],
+              "color": "#25282e",
+              "roughness": 0.68,
+              "metalness": 0.08
+            },
+            {
+              "name": "abs_mid_L",
+              "shape": "sphere",
+              "size": [0.056,14,10],
+              "pos": [-0.05,0.305,0.14],
+              "scale": [1.12,0.82,0.65],
+              "color": "#25282e",
+              "roughness": 0.68,
+              "metalness": 0.08
+            },
+            {
+              "name": "abs_lower_R",
+              "shape": "sphere",
+              "size": [0.052,14,10],
+              "pos": [0.046,0.215,0.134],
+              "scale": [1.1,0.85,0.62],
+              "color": "#23262b",
+              "roughness": 0.68,
+              "metalness": 0.08
+            },
+            {
+              "name": "abs_lower_L",
+              "shape": "sphere",
+              "size": [0.052,14,10],
+              "pos": [-0.046,0.215,0.134],
+              "scale": [1.1,0.85,0.62],
+              "color": "#23262b",
+              "roughness": 0.68,
+              "metalness": 0.08
+            },
+            {
+              "name": "oblique_R",
+              "shape": "sphere",
+              "size": [0.085,14,12],
+              "pos": [0.165,0.28,0.03],
+              "scale": [0.85,1.5,0.95],
+              "color": "#23262b",
+              "roughness": 0.68,
+              "metalness": 0.08
+            },
+            {
+              "name": "oblique_L",
+              "shape": "sphere",
+              "size": [0.085,14,12],
+              "pos": [-0.165,0.28,0.03],
+              "scale": [0.85,1.5,0.95],
+              "color": "#23262b",
+              "roughness": 0.68,
+              "metalness": 0.08
+            },
+            {
+              "name": "trap_R",
+              "shape": "sphere",
+              "size": [0.125,18,14],
+              "pos": [0.155,0.625,-0.025],
+              "rot": [0.12,0,-0.25],
+              "scale": [1.55,0.72,1.05],
+              "color": "#25282e",
+              "roughness": 0.68,
+              "metalness": 0.08
+            },
+            {
+              "name": "trap_L",
+              "shape": "sphere",
+              "size": [0.125,18,14],
+              "pos": [-0.155,0.625,-0.025],
+              "rot": [0.12,0,0.25],
+              "scale": [1.55,0.72,1.05],
+              "color": "#25282e",
+              "roughness": 0.68,
+              "metalness": 0.08
+            },
+            {
+              "name": "scapula_muscle_R",
+              "shape": "sphere",
+              "size": [0.13,16,12],
+              "pos": [0.125,0.51,-0.115],
+              "rot": [0.1,-0.25,-0.18],
+              "scale": [1.15,1.15,0.75],
+              "color": "#272a30",
+              "roughness": 0.66,
+              "metalness": 0.08
+            },
+            {
+              "name": "scapula_muscle_L",
+              "shape": "sphere",
+              "size": [0.13,16,12],
+              "pos": [-0.125,0.51,-0.115],
+              "rot": [0.1,0.25,0.18],
+              "scale": [1.15,1.15,0.75],
+              "color": "#272a30",
+              "roughness": 0.66,
+              "metalness": 0.08
+            },
+            {
+              "name": "lat_back_R",
+              "shape": "sphere",
+              "size": [0.115,16,12],
+              "pos": [0.17,0.39,-0.075],
+              "rot": [0.05,-0.3,-0.28],
+              "scale": [0.95,1.45,0.85],
+              "color": "#23262b",
+              "roughness": 0.68,
+              "metalness": 0.08
+            },
+            {
+              "name": "lat_back_L",
+              "shape": "sphere",
+              "size": [0.115,16,12],
+              "pos": [-0.17,0.39,-0.075],
+              "rot": [0.05,0.3,0.28],
+              "scale": [0.95,1.45,0.85],
+              "color": "#23262b",
+              "roughness": 0.68,
+              "metalness": 0.08
+            },
+            {
+              "name": "trap_spike_R_tip",
+              "shape": "cone",
+              "size": [0.018,0.0768,7],
+              "pos": [0.195,0.685,-0.035],
+              "rot": [-0.1419,0,-0.4012],
+              "color": "#7a6852",
+              "roughness": 0.45000000000000007,
+              "metalness": 0.1
+            },
+            {
+              "name": "trap_spike_L_tip",
+              "shape": "cone",
+              "size": [0.018,0.0768,7],
+              "pos": [-0.195,0.685,-0.035],
+              "rot": [-0.1419,0,0.4012],
+              "color": "#7a6852",
+              "roughness": 0.45000000000000007,
+              "metalness": 0.1
+            },
+            {
+              "name": "scapula_spike_R_tip",
+              "shape": "cone",
+              "size": [0.018,0.0825,7],
+              "pos": [0.21,0.59,-0.15],
+              "rot": [-0.588,0,-0.5064],
+              "color": "#7a6852",
+              "roughness": 0.45000000000000007,
+              "metalness": 0.1
+            },
+            {
+              "name": "scapula_spike_L_tip",
+              "shape": "cone",
+              "size": [0.018,0.0825,7],
+              "pos": [-0.21,0.59,-0.15],
+              "rot": [-0.588,0,0.5064],
+              "color": "#7a6852",
+              "roughness": 0.45000000000000007,
+              "metalness": 0.1
+            }
+          ],
+          "children": {
+            "head": {
+              "pos": [0,0.66,0.02],
+              "lockPos": true,
+              "limits": {
+                "x": [-50,60],
+                "y": [-80,80],
+                "z": [-35,35]
+              },
+              "meshes": [
+                {
+                  "name": "neck",
+                  "shape": "lathe",
+                  "size": [18],
+                  "points": [
+                    [0,-0.05],
+                    [0.112,-0.04],
+                    [0.105,0.02],
+                    [0.098,0.08],
+                    [0.094,0.13],
+                    [0,0.14]
+                  ],
+                  "pos": [0,0,-0.01],
+                  "scale": [1.05,1,1.02],
+                  "color": "#1f2126",
+                  "roughness": 0.7,
+                  "metalness": 0.08
+                },
+                {
+                  "name": "skull",
+                  "shape": "sphere",
+                  "size": [0.124,18,16],
+                  "pos": [0,0.2,-0.01],
+                  "scale": [0.96,1.05,1.04],
+                  "color": "#23262b",
+                  "roughness": 0.66,
+                  "metalness": 0.08
+                },
+                {
+                  "name": "jaw_heavy",
+                  "shape": "sphere",
+                  "size": [0.095,16,14],
+                  "pos": [0,0.138,0.032],
+                  "scale": [1.04,0.92,1.02],
+                  "color": "#1f2126",
+                  "roughness": 0.68,
+                  "metalness": 0.08
+                },
+                {
+                  "name": "chin_block",
+                  "shape": "box",
+                  "size": [0.068,0.045,0.055],
+                  "pos": [0,0.1,0.078],
+                  "rot": [0.1,0,0],
+                  "color": "#25282e",
+                  "roughness": 0.66,
+                  "metalness": 0.08
+                },
+                {
+                  "name": "cheekbone_R",
+                  "shape": "sphere",
+                  "size": [0.048,12,10],
+                  "pos": [0.064,0.172,0.064],
+                  "scale": [1.1,0.85,1.15],
+                  "color": "#272a30",
+                  "roughness": 0.66,
+                  "metalness": 0.08
+                },
+                {
+                  "name": "cheekbone_L",
+                  "shape": "sphere",
+                  "size": [0.048,12,10],
+                  "pos": [-0.064,0.172,0.064],
+                  "scale": [1.1,0.85,1.15],
+                  "color": "#272a30",
+                  "roughness": 0.66,
+                  "metalness": 0.08
+                },
+                {
+                  "name": "brow_scowl_R",
+                  "shape": "box",
+                  "size": [0.062,0.024,0.048],
+                  "pos": [0.042,0.218,0.092],
+                  "rot": [0.18,-0.22,0.28],
+                  "color": "#181a1e",
+                  "roughness": 0.7,
+                  "metalness": 0.08
+                },
+                {
+                  "name": "brow_scowl_L",
+                  "shape": "box",
+                  "size": [0.062,0.024,0.048],
+                  "pos": [-0.042,0.218,0.092],
+                  "rot": [0.18,0.22,-0.28],
+                  "color": "#181a1e",
+                  "roughness": 0.7,
+                  "metalness": 0.08
+                },
+                {
+                  "name": "glabella_frown",
+                  "shape": "box",
+                  "size": [0.032,0.03,0.045],
+                  "pos": [0,0.214,0.096],
+                  "rot": [0.2,0,0],
+                  "color": "#181a1e",
+                  "roughness": 0.7
+                },
+                {
+                  "name": "eye_socket_R",
+                  "shape": "sphere",
+                  "size": [0.024,10,8],
+                  "pos": [0.042,0.198,0.088],
+                  "scale": [1.2,0.75,0.8],
+                  "color": "#0d0e11",
+                  "roughness": 0.85
+                },
+                {
+                  "name": "eye_socket_L",
+                  "shape": "sphere",
+                  "size": [0.024,10,8],
+                  "pos": [-0.042,0.198,0.088],
+                  "scale": [1.2,0.75,0.8],
+                  "color": "#0d0e11",
+                  "roughness": 0.85
+                },
+                {
+                  "name": "eye_red_R",
+                  "shape": "sphere",
+                  "size": [0.016,10,8],
+                  "pos": [0.042,0.198,0.098],
+                  "rot": [0,0.18,0.2],
+                  "scale": [1.25,0.68,0.75],
+                  "color": "#ef4444",
+                  "roughness": 0.12,
+                  "metalness": 0.05
+                },
+                {
+                  "name": "eye_red_L",
+                  "shape": "sphere",
+                  "size": [0.016,10,8],
+                  "pos": [-0.042,0.198,0.098],
+                  "rot": [0,-0.18,-0.2],
+                  "scale": [1.25,0.68,0.75],
+                  "color": "#ef4444",
+                  "roughness": 0.12,
+                  "metalness": 0.05
+                },
+                {
+                  "name": "eye_glow_core_R",
+                  "shape": "sphere",
+                  "size": [0.009,8,8],
+                  "pos": [0.043,0.198,0.106],
+                  "color": "#fca5a5",
+                  "roughness": 0.05
+                },
+                {
+                  "name": "eye_glow_core_L",
+                  "shape": "sphere",
+                  "size": [0.009,8,8],
+                  "pos": [-0.043,0.198,0.106],
+                  "color": "#fca5a5",
+                  "roughness": 0.05
+                },
+                {
+                  "name": "nose_bridge",
+                  "shape": "box",
+                  "size": [0.034,0.052,0.045],
+                  "pos": [0,0.182,0.102],
+                  "rot": [-0.22,0,0],
+                  "color": "#272a30",
+                  "roughness": 0.66
+                },
+                {
+                  "name": "nostril_R",
+                  "shape": "sphere",
+                  "size": [0.018,10,8],
+                  "pos": [0.018,0.162,0.106],
+                  "color": "#1f2126",
+                  "roughness": 0.7
+                },
+                {
+                  "name": "nostril_L",
+                  "shape": "sphere",
+                  "size": [0.018,10,8],
+                  "pos": [-0.018,0.162,0.106],
+                  "color": "#1f2126",
+                  "roughness": 0.7
+                },
+                {
+                  "name": "mouth_scowl_upper",
+                  "shape": "box",
+                  "size": [0.068,0.022,0.042],
+                  "pos": [0,0.138,0.095],
+                  "rot": [0.1,0,0],
+                  "color": "#16181c",
+                  "roughness": 0.75
+                },
+                {
+                  "name": "mouth_lower_lip",
+                  "shape": "box",
+                  "size": [0.062,0.018,0.042],
+                  "pos": [0,0.124,0.094],
+                  "color": "#25282e",
+                  "roughness": 0.68
+                },
+                {
+                  "name": "ear_R",
+                  "shape": "cone",
+                  "size": [0.026,0.085,6],
+                  "pos": [0.135,0.185,-0.01],
+                  "rot": [0,0,-1.45],
+                  "scale": [0.65,1,1.15],
+                  "color": "#1f2126",
+                  "roughness": 0.7
+                },
+                {
+                  "name": "ear_L",
+                  "shape": "cone",
+                  "size": [0.026,0.085,6],
+                  "pos": [-0.135,0.185,-0.01],
+                  "rot": [0,0,1.45],
+                  "scale": [0.65,1,1.15],
+                  "color": "#1f2126",
+                  "roughness": 0.7
+                },
+                {
+                  "name": "horn_collar_R",
+                  "shape": "torus",
+                  "size": [0.055,0.014,12,8],
+                  "pos": [0.092,0.238,-0.008],
+                  "rot": [0.2,1.45,0.15],
+                  "color": "#382f27",
+                  "roughness": 0.75
+                },
+                {
+                  "name": "horn_collar_L",
+                  "shape": "torus",
+                  "size": [0.055,0.014,12,8],
+                  "pos": [-0.092,0.238,-0.008],
+                  "rot": [0.2,-1.45,-0.15],
+                  "color": "#382f27",
+                  "roughness": 0.75
+                },
+                {
+                  "name": "bull_horn_R_seg_0",
+                  "shape": "cylinder",
+                  "size": [0.047,0.056,0.1103,12],
+                  "pos": [0.1335,0.231,0.0075],
+                  "rot": [2.0458,0,-1.2058],
+                  "color": "#4a3f35",
+                  "roughness": 0.58,
+                  "metalness": 0.08
+                },
+                {
+                  "name": "bull_horn_R_joint_1",
+                  "shape": "sphere",
+                  "size": [0.0479,12,10],
+                  "pos": [0.185,0.222,0.025],
+                  "color": "#695849",
+                  "roughness": 0.58,
+                  "metalness": 0.08
+                },
+                {
+                  "name": "bull_horn_R_seg_1",
+                  "shape": "cylinder",
+                  "size": [0.039,0.047,0.123,12],
+                  "pos": [0.24,0.22,0.0525],
+                  "rot": [1.6434,0,-1.1061],
+                  "color": "#695849",
+                  "roughness": 0.58,
+                  "metalness": 0.08
+                },
+                {
+                  "name": "bull_horn_R_joint_2",
+                  "shape": "sphere",
+                  "size": [0.0398,12,10],
+                  "pos": [0.295,0.218,0.08],
+                  "color": "#87735f",
+                  "roughness": 0.58,
+                  "metalness": 0.08
+                },
+                {
+                  "name": "bull_horn_R_seg_2",
+                  "shape": "cylinder",
+                  "size": [0.031,0.039,0.0957,12],
+                  "pos": [0.33,0.239,0.105],
+                  "rot": [0.8721,0,-0.8201],
+                  "color": "#87735f",
+                  "roughness": 0.58,
+                  "metalness": 0.08
+                },
+                {
+                  "name": "bull_horn_R_joint_3",
+                  "shape": "sphere",
+                  "size": [0.0316,12,10],
+                  "pos": [0.365,0.26,0.13],
+                  "color": "#a38e76",
+                  "roughness": 0.58,
+                  "metalness": 0.08
+                },
+                {
+                  "name": "bull_horn_R_seg_3",
+                  "shape": "cylinder",
+                  "size": [0.022,0.031,0.0831,12],
+                  "pos": [0.37,0.3,0.14],
+                  "rot": [0.245,0,-0.1207],
+                  "color": "#a38e76",
+                  "roughness": 0.58,
+                  "metalness": 0.08
+                },
+                {
+                  "name": "bull_horn_R_joint_4",
+                  "shape": "sphere",
+                  "size": [0.0224,12,10],
+                  "pos": [0.375,0.34,0.15],
+                  "color": "#bda78e",
+                  "roughness": 0.58,
+                  "metalness": 0.08
+                },
+                {
+                  "name": "bull_horn_R_seg_4",
+                  "shape": "cylinder",
+                  "size": [0.013,0.022,0.0907,12],
+                  "pos": [0.35,0.3775,0.145],
+                  "rot": [-0.1326,0,0.5839],
+                  "color": "#bda78e",
+                  "roughness": 0.58,
+                  "metalness": 0.08
+                },
+                {
+                  "name": "bull_horn_R_joint_5",
+                  "shape": "sphere",
+                  "size": [0.0133,12,10],
+                  "pos": [0.325,0.415,0.14],
+                  "color": "#d4c2aa",
+                  "roughness": 0.58,
+                  "metalness": 0.08
+                },
+                {
+                  "name": "bull_horn_R_tip",
+                  "shape": "cone",
+                  "size": [0.013,0.0885,12],
+                  "pos": [0.29,0.4375,0.125],
+                  "rot": [-0.588,0,0.913],
+                  "color": "#d4c2aa",
+                  "roughness": 0.48,
+                  "metalness": 0.1
+                },
+                {
+                  "name": "bull_horn_L_seg_0",
+                  "shape": "cylinder",
+                  "size": [0.047,0.056,0.1103,12],
+                  "pos": [-0.1335,0.231,0.0075],
+                  "rot": [2.0458,0,1.2058],
+                  "color": "#4a3f35",
+                  "roughness": 0.58,
+                  "metalness": 0.08
+                },
+                {
+                  "name": "bull_horn_L_joint_1",
+                  "shape": "sphere",
+                  "size": [0.0479,12,10],
+                  "pos": [-0.185,0.222,0.025],
+                  "color": "#695849",
+                  "roughness": 0.58,
+                  "metalness": 0.08
+                },
+                {
+                  "name": "bull_horn_L_seg_1",
+                  "shape": "cylinder",
+                  "size": [0.039,0.047,0.123,12],
+                  "pos": [-0.24,0.22,0.0525],
+                  "rot": [1.6434,0,1.1061],
+                  "color": "#695849",
+                  "roughness": 0.58,
+                  "metalness": 0.08
+                },
+                {
+                  "name": "bull_horn_L_joint_2",
+                  "shape": "sphere",
+                  "size": [0.0398,12,10],
+                  "pos": [-0.295,0.218,0.08],
+                  "color": "#87735f",
+                  "roughness": 0.58,
+                  "metalness": 0.08
+                },
+                {
+                  "name": "bull_horn_L_seg_2",
+                  "shape": "cylinder",
+                  "size": [0.031,0.039,0.0957,12],
+                  "pos": [-0.33,0.239,0.105],
+                  "rot": [0.8721,0,0.8201],
+                  "color": "#87735f",
+                  "roughness": 0.58,
+                  "metalness": 0.08
+                },
+                {
+                  "name": "bull_horn_L_joint_3",
+                  "shape": "sphere",
+                  "size": [0.0316,12,10],
+                  "pos": [-0.365,0.26,0.13],
+                  "color": "#a38e76",
+                  "roughness": 0.58,
+                  "metalness": 0.08
+                },
+                {
+                  "name": "bull_horn_L_seg_3",
+                  "shape": "cylinder",
+                  "size": [0.022,0.031,0.0831,12],
+                  "pos": [-0.37,0.3,0.14],
+                  "rot": [0.245,0,0.1207],
+                  "color": "#a38e76",
+                  "roughness": 0.58,
+                  "metalness": 0.08
+                },
+                {
+                  "name": "bull_horn_L_joint_4",
+                  "shape": "sphere",
+                  "size": [0.0224,12,10],
+                  "pos": [-0.375,0.34,0.15],
+                  "color": "#bda78e",
+                  "roughness": 0.58,
+                  "metalness": 0.08
+                },
+                {
+                  "name": "bull_horn_L_seg_4",
+                  "shape": "cylinder",
+                  "size": [0.013,0.022,0.0907,12],
+                  "pos": [-0.35,0.3775,0.145],
+                  "rot": [-0.1326,0,-0.5839],
+                  "color": "#bda78e",
+                  "roughness": 0.58,
+                  "metalness": 0.08
+                },
+                {
+                  "name": "bull_horn_L_joint_5",
+                  "shape": "sphere",
+                  "size": [0.0133,12,10],
+                  "pos": [-0.325,0.415,0.14],
+                  "color": "#d4c2aa",
+                  "roughness": 0.58,
+                  "metalness": 0.08
+                },
+                {
+                  "name": "bull_horn_L_tip",
+                  "shape": "cone",
+                  "size": [0.013,0.0885,12],
+                  "pos": [-0.29,0.4375,0.125],
+                  "rot": [-0.588,0,-0.913],
+                  "color": "#d4c2aa",
+                  "roughness": 0.48,
+                  "metalness": 0.1
+                }
+              ]
+            },
+            "arm_R": {
+              "pos": [0.335,0.57,0],
+              "lockPos": true,
+              "limits": {
+                "x": [-180,60],
+                "y": [-90,90],
+                "z": [-30,170]
+              },
+              "meshes": [
+                {
+                  "name": "deltoid_R",
+                  "shape": "sphere",
+                  "size": [0.125,16,14],
+                  "pos": [0.015,-0.035,0],
+                  "scale": [1.05,1.18,1.08],
+                  "color": "#25282e",
+                  "roughness": 0.68,
+                  "metalness": 0.08
+                },
+                {
+                  "name": "upper_arm_R",
+                  "shape": "lathe",
+                  "size": [16],
+                  "points": [
+                    [0,-0.33],
+                    [0.068,-0.32],
+                    [0.082,-0.24],
+                    [0.098,-0.15],
+                    [0.105,-0.07],
+                    [0.095,0.02],
+                    [0,0.04]
+                  ],
+                  "pos": [0,0,0],
+                  "color": "#1f2126",
+                  "roughness": 0.7,
+                  "metalness": 0.08
+                },
+                {
+                  "name": "bicep_bulge_R",
+                  "shape": "sphere",
+                  "size": [0.068,14,12],
+                  "pos": [-0.008,-0.175,0.042],
+                  "scale": [0.95,1.55,0.9],
+                  "color": "#272a30",
+                  "roughness": 0.66,
+                  "metalness": 0.08
+                },
+                {
+                  "name": "tricep_bulge_R",
+                  "shape": "sphere",
+                  "size": [0.065,14,12],
+                  "pos": [0.015,-0.145,-0.048],
+                  "scale": [1,1.75,0.9],
+                  "color": "#23262b",
+                  "roughness": 0.68,
+                  "metalness": 0.08
+                },
+                {
+                  "name": "shoulder_spike_main_R_seg_0",
+                  "shape": "cylinder",
+                  "size": [0.025,0.034,0.0783,8],
+                  "pos": [0.08,0.045,-0.0075],
+                  "rot": [-0.0831,0,-0.693],
+                  "color": "#5c4d3c",
+                  "roughness": 0.55,
+                  "metalness": 0.08
+                },
+                {
+                  "name": "shoulder_spike_main_R_joint_1",
+                  "shape": "sphere",
+                  "size": [0.0255,8,6],
+                  "pos": [0.105,0.075,-0.01],
+                  "color": "#8c7760",
+                  "roughness": 0.55,
+                  "metalness": 0.08
+                },
+                {
+                  "name": "shoulder_spike_main_R_seg_1",
+                  "shape": "cylinder",
+                  "size": [0.015,0.025,0.0895,8],
+                  "pos": [0.125,0.115,-0.011],
+                  "rot": [-0.025,0,-0.4635],
+                  "color": "#8c7760",
+                  "roughness": 0.55,
+                  "metalness": 0.08
+                },
+                {
+                  "name": "shoulder_spike_main_R_joint_2",
+                  "shape": "sphere",
+                  "size": [0.0153,8,6],
+                  "pos": [0.145,0.155,-0.012],
+                  "color": "#b59e82",
+                  "roughness": 0.55,
+                  "metalness": 0.08
+                },
+                {
+                  "name": "shoulder_spike_main_R_tip",
+                  "shape": "cone",
+                  "size": [0.015,0.0922,8],
+                  "pos": [0.155,0.2,-0.011],
+                  "rot": [0.0222,0,-0.2186],
+                  "color": "#b59e82",
+                  "roughness": 0.45000000000000007,
+                  "metalness": 0.1
+                },
+                {
+                  "name": "shoulder_spike_mid_R_seg_0",
+                  "shape": "cylinder",
+                  "size": [0.014,0.024,0.0611,8],
+                  "pos": [0.1085,-0.05,-0.0025],
+                  "rot": [-0.1651,0,-1.0498],
+                  "color": "#5c4d3c",
+                  "roughness": 0.55,
+                  "metalness": 0.08
+                },
+                {
+                  "name": "shoulder_spike_mid_R_joint_1",
+                  "shape": "sphere",
+                  "size": [0.0143,8,6],
+                  "pos": [0.135,-0.035,-0.005],
+                  "color": "#8c7760",
+                  "roughness": 0.55,
+                  "metalness": 0.08
+                },
+                {
+                  "name": "shoulder_spike_mid_R_tip",
+                  "shape": "cone",
+                  "size": [0.014,0.064,8],
+                  "pos": [0.155,-0.01,-0.005],
+                  "rot": [0,0,-0.6747],
+                  "color": "#8c7760",
+                  "roughness": 0.45000000000000007,
+                  "metalness": 0.1
+                },
+                {
+                  "name": "shoulder_spike_front_R_tip",
+                  "shape": "cone",
+                  "size": [0.016,0.0591,7],
+                  "pos": [0.05,-0.0075,0.0865],
+                  "rot": [0.8132,0,-0.5323],
+                  "color": "#7a6852",
+                  "roughness": 0.45000000000000007,
+                  "metalness": 0.1
+                },
+                {
+                  "name": "shoulder_spike_rear_R_tip",
+                  "shape": "cone",
+                  "size": [0.017,0.0688,7],
+                  "pos": [0.0635,-0.01,-0.089],
+                  "rot": [-0.8098,0,-0.5678],
+                  "color": "#7a6852",
+                  "roughness": 0.45000000000000007,
+                  "metalness": 0.1
+                }
+              ],
+              "children": {
+                "forearm_R": {
+                  "pos": [0,-0.33,0],
+                  "lockPos": true,
+                  "limits": {
+                    "x": [-145,5],
+                    "y": [-80,80],
+                    "z": [-3,3]
+                  },
+                  "meshes": [
+                    {
+                      "name": "elbow_R",
+                      "shape": "sphere",
+                      "size": [0.068,14,12],
+                      "pos": [0,0,-0.008],
+                      "color": "#1f2126",
+                      "roughness": 0.7,
+                      "metalness": 0.08
+                    },
+                    {
+                      "name": "forearm_muscle_R",
+                      "shape": "lathe",
+                      "size": [16],
+                      "points": [
+                        [0,-0.29],
+                        [0.048,-0.28],
+                        [0.058,-0.2],
+                        [0.076,-0.11],
+                        [0.084,-0.05],
+                        [0.072,0],
+                        [0,0.02]
+                      ],
+                      "pos": [0,0,0],
+                      "color": "#23262b",
+                      "roughness": 0.68,
+                      "metalness": 0.08
+                    },
+                    {
+                      "name": "bracer_guard_R",
+                      "shape": "lathe",
+                      "size": [14],
+                      "points": [
+                        [0,-0.265],
+                        [0.053,-0.265],
+                        [0.061,-0.19],
+                        [0.074,-0.11],
+                        [0.081,-0.055],
+                        [0,-0.055]
+                      ],
+                      "pos": [0,0,0],
+                      "color": "#3d281a",
+                      "roughness": 0.85,
+                      "metalness": 0.05
+                    },
+                    {
+                      "name": "bracer_trim_top_R",
+                      "shape": "torus",
+                      "size": [0.079,0.008,14,8],
+                      "pos": [0,-0.06,0],
+                      "rot": [1.5708,0,0],
+                      "color": "#4a453e",
+                      "roughness": 0.45,
+                      "metalness": 0.65
+                    },
+                    {
+                      "name": "bracer_trim_bot_R",
+                      "shape": "torus",
+                      "size": [0.054,0.007,14,8],
+                      "pos": [0,-0.26,0],
+                      "rot": [1.5708,0,0],
+                      "color": "#4a453e",
+                      "roughness": 0.45,
+                      "metalness": 0.65
+                    },
+                    {
+                      "name": "bracer_wrap_1_R",
+                      "shape": "torus",
+                      "size": [0.068,0.007,14,8],
+                      "pos": [0,-0.13,0],
+                      "rot": [1.65,0.12,0],
+                      "color": "#543824",
+                      "roughness": 0.88,
+                      "metalness": 0.02
+                    },
+                    {
+                      "name": "bracer_wrap_2_R",
+                      "shape": "torus",
+                      "size": [0.06,0.007,14,8],
+                      "pos": [0,-0.195,0],
+                      "rot": [1.5,-0.12,0],
+                      "color": "#543824",
+                      "roughness": 0.88,
+                      "metalness": 0.02
+                    },
+                    {
+                      "name": "forearm_spike_upper_R_seg_0",
+                      "shape": "cylinder",
+                      "size": [0.018,0.025,0.0819,8],
+                      "pos": [0.0715,-0.045,-0.04],
+                      "rot": [-0.4636,0,-0.6112],
+                      "color": "#5c4d3c",
+                      "roughness": 0.55,
+                      "metalness": 0.08
+                    },
+                    {
+                      "name": "forearm_spike_upper_R_joint_1",
+                      "shape": "sphere",
+                      "size": [0.0184,8,6],
+                      "pos": [0.095,-0.015,-0.055],
+                      "color": "#8c7760",
+                      "roughness": 0.55,
+                      "metalness": 0.08
+                    },
+                    {
+                      "name": "forearm_spike_upper_R_seg_1",
+                      "shape": "cylinder",
+                      "size": [0.01,0.018,0.0943,8],
+                      "pos": [0.115,0.025,-0.07],
+                      "rot": [-0.3588,0,-0.4379],
+                      "color": "#8c7760",
+                      "roughness": 0.55,
+                      "metalness": 0.08
+                    },
+                    {
+                      "name": "forearm_spike_upper_R_joint_2",
+                      "shape": "sphere",
+                      "size": [0.0102,8,6],
+                      "pos": [0.135,0.065,-0.085],
+                      "color": "#b59e82",
+                      "roughness": 0.55,
+                      "metalness": 0.08
+                    },
+                    {
+                      "name": "forearm_spike_upper_R_tip",
+                      "shape": "cone",
+                      "size": [0.01,0.0849,8],
+                      "pos": [0.145,0.105,-0.095],
+                      "rot": [-0.245,0,-0.2379],
+                      "color": "#b59e82",
+                      "roughness": 0.45000000000000007,
+                      "metalness": 0.1
+                    },
+                    {
+                      "name": "forearm_spike_lower_R_seg_0",
+                      "shape": "cylinder",
+                      "size": [0.012,0.02,0.0652,8],
+                      "pos": [0.065,-0.1225,-0.0325],
+                      "rot": [-0.5071,0,-0.6606],
+                      "color": "#5c4d3c",
+                      "roughness": 0.55,
+                      "metalness": 0.08
+                    },
+                    {
+                      "name": "forearm_spike_lower_R_joint_1",
+                      "shape": "sphere",
+                      "size": [0.0122,8,6],
+                      "pos": [0.085,-0.1,-0.045],
+                      "color": "#8c7760",
+                      "roughness": 0.55,
+                      "metalness": 0.08
+                    },
+                    {
+                      "name": "forearm_spike_lower_R_tip",
+                      "shape": "cone",
+                      "size": [0.012,0.0709,8],
+                      "pos": [0.1,-0.07,-0.0565],
+                      "rot": [-0.3661,0,-0.4368],
+                      "color": "#8c7760",
+                      "roughness": 0.45000000000000007,
+                      "metalness": 0.1
+                    }
+                  ],
+                  "children": {
+                    "hand_R": {
+                      "pos": [0,-0.29,0],
+                      "lockPos": true,
+                      "limits": {
+                        "x": [-70,70],
+                        "y": [-30,30],
+                        "z": [-25,25]
+                      },
+                      "meshes": [
+                        {
+                          "name": "wrist_R",
+                          "shape": "sphere",
+                          "size": [0.048,14,10],
+                          "pos": [0,0,0],
+                          "color": "#1f2126",
+                          "roughness": 0.7,
+                          "metalness": 0.08
+                        },
+                        {
+                          "name": "palm_R",
+                          "shape": "sphere",
+                          "size": [0.058,14,12],
+                          "pos": [0,-0.06,0],
+                          "scale": [0.68,1.15,1.05],
+                          "color": "#23262b",
+                          "roughness": 0.68,
+                          "metalness": 0.08
+                        }
+                      ],
+                      "children": {
+                        "weapon_socket_R": {
+                          "pos": [0,-0.09,0.048],
+                          "meshes": []
+                        },
+                        "index_R": {
+                          "pos": [0,-0.105,0.034],
+                          "rot": [0,0,-0.22],
+                          "lockPos": true,
+                          "limits": {
+                            "x": [-8,8],
+                            "y": [-8,8],
+                            "z": [-100,15]
+                          },
+                          "meshes": [
+                            {
+                              "name": "index_knuckle_R",
+                              "shape": "sphere",
+                              "size": [0.016,10,8],
+                              "pos": [0,0,0],
+                              "color": "#23262b",
+                              "roughness": 0.68,
+                              "metalness": 0.08
+                            },
+                            {
+                              "name": "index_a_R",
+                              "shape": "cylinder",
+                              "size": [0.01312,0.0152,0.038,8],
+                              "pos": [0,-0.019,0],
+                              "color": "#1f2126",
+                              "roughness": 0.7,
+                              "metalness": 0.08
+                            }
+                          ],
+                          "children": {
+                            "index2_R": {
+                              "pos": [0,-0.038,0],
+                              "rot": [0,0,-0.35],
+                              "lockPos": true,
+                              "limits": {
+                                "x": [-3,3],
+                                "y": [-3,3],
+                                "z": [-100,5]
+                              },
+                              "meshes": [
+                                {
+                                  "name": "index_joint_R",
+                                  "shape": "sphere",
+                                  "size": [0.01312,8,8],
+                                  "pos": [0,0,0],
+                                  "color": "#23262b",
+                                  "roughness": 0.68,
+                                  "metalness": 0.08
+                                },
+                                {
+                                  "name": "index_b_R",
+                                  "shape": "cylinder",
+                                  "size": [0.00992,0.0128,0.03,8],
+                                  "pos": [0,-0.015,0],
+                                  "color": "#181a1e",
+                                  "roughness": 0.65,
+                                  "metalness": 0.1
+                                }
+                              ]
+                            }
+                          }
+                        },
+                        "middle_R": {
+                          "pos": [0,-0.105,0.012],
+                          "rot": [0,0,-0.22],
+                          "lockPos": true,
+                          "limits": {
+                            "x": [-8,8],
+                            "y": [-8,8],
+                            "z": [-100,15]
+                          },
+                          "meshes": [
+                            {
+                              "name": "middle_knuckle_R",
+                              "shape": "sphere",
+                              "size": [0.0165,10,8],
+                              "pos": [0,0,0],
+                              "color": "#23262b",
+                              "roughness": 0.68,
+                              "metalness": 0.08
+                            },
+                            {
+                              "name": "middle_a_R",
+                              "shape": "cylinder",
+                              "size": [0.01353,0.015675,0.043,8],
+                              "pos": [0,-0.0215,0],
+                              "color": "#1f2126",
+                              "roughness": 0.7,
+                              "metalness": 0.08
+                            }
+                          ],
+                          "children": {
+                            "middle2_R": {
+                              "pos": [0,-0.043,0],
+                              "rot": [0,0,-0.35],
+                              "lockPos": true,
+                              "limits": {
+                                "x": [-3,3],
+                                "y": [-3,3],
+                                "z": [-100,5]
+                              },
+                              "meshes": [
+                                {
+                                  "name": "middle_joint_R",
+                                  "shape": "sphere",
+                                  "size": [0.01353,8,8],
+                                  "pos": [0,0,0],
+                                  "color": "#23262b",
+                                  "roughness": 0.68,
+                                  "metalness": 0.08
+                                },
+                                {
+                                  "name": "middle_b_R",
+                                  "shape": "cylinder",
+                                  "size": [0.010230000000000001,0.013200000000000002,0.034,8],
+                                  "pos": [0,-0.017,0],
+                                  "color": "#181a1e",
+                                  "roughness": 0.65,
+                                  "metalness": 0.1
+                                }
+                              ]
+                            }
+                          }
+                        },
+                        "ring_R": {
+                          "pos": [0,-0.105,-0.012],
+                          "rot": [0,0,-0.22],
+                          "lockPos": true,
+                          "limits": {
+                            "x": [-8,8],
+                            "y": [-8,8],
+                            "z": [-100,15]
+                          },
+                          "meshes": [
+                            {
+                              "name": "ring_knuckle_R",
+                              "shape": "sphere",
+                              "size": [0.016,10,8],
+                              "pos": [0,0,0],
+                              "color": "#23262b",
+                              "roughness": 0.68,
+                              "metalness": 0.08
+                            },
+                            {
+                              "name": "ring_a_R",
+                              "shape": "cylinder",
+                              "size": [0.01312,0.0152,0.039,8],
+                              "pos": [0,-0.0195,0],
+                              "color": "#1f2126",
+                              "roughness": 0.7,
+                              "metalness": 0.08
+                            }
+                          ],
+                          "children": {
+                            "ring2_R": {
+                              "pos": [0,-0.039,0],
+                              "rot": [0,0,-0.35],
+                              "lockPos": true,
+                              "limits": {
+                                "x": [-3,3],
+                                "y": [-3,3],
+                                "z": [-100,5]
+                              },
+                              "meshes": [
+                                {
+                                  "name": "ring_joint_R",
+                                  "shape": "sphere",
+                                  "size": [0.01312,8,8],
+                                  "pos": [0,0,0],
+                                  "color": "#23262b",
+                                  "roughness": 0.68,
+                                  "metalness": 0.08
+                                },
+                                {
+                                  "name": "ring_b_R",
+                                  "shape": "cylinder",
+                                  "size": [0.00992,0.0128,0.031,8],
+                                  "pos": [0,-0.0155,0],
+                                  "color": "#181a1e",
+                                  "roughness": 0.65,
+                                  "metalness": 0.1
+                                }
+                              ]
+                            }
+                          }
+                        },
+                        "pinky_R": {
+                          "pos": [0,-0.105,-0.034],
+                          "rot": [0,0,-0.22],
+                          "lockPos": true,
+                          "limits": {
+                            "x": [-8,8],
+                            "y": [-8,8],
+                            "z": [-100,15]
+                          },
+                          "meshes": [
+                            {
+                              "name": "pinky_knuckle_R",
+                              "shape": "sphere",
+                              "size": [0.015,10,8],
+                              "pos": [0,0,0],
+                              "color": "#23262b",
+                              "roughness": 0.68,
+                              "metalness": 0.08
+                            },
+                            {
+                              "name": "pinky_a_R",
+                              "shape": "cylinder",
+                              "size": [0.012299999999999998,0.014249999999999999,0.032,8],
+                              "pos": [0,-0.016,0],
+                              "color": "#1f2126",
+                              "roughness": 0.7,
+                              "metalness": 0.08
+                            }
+                          ],
+                          "children": {
+                            "pinky2_R": {
+                              "pos": [0,-0.032,0],
+                              "rot": [0,0,-0.35],
+                              "lockPos": true,
+                              "limits": {
+                                "x": [-3,3],
+                                "y": [-3,3],
+                                "z": [-100,5]
+                              },
+                              "meshes": [
+                                {
+                                  "name": "pinky_joint_R",
+                                  "shape": "sphere",
+                                  "size": [0.012299999999999998,8,8],
+                                  "pos": [0,0,0],
+                                  "color": "#23262b",
+                                  "roughness": 0.68,
+                                  "metalness": 0.08
+                                },
+                                {
+                                  "name": "pinky_b_R",
+                                  "shape": "cylinder",
+                                  "size": [0.0093,0.012,0.025,8],
+                                  "pos": [0,-0.0125,0],
+                                  "color": "#181a1e",
+                                  "roughness": 0.65,
+                                  "metalness": 0.1
+                                }
+                              ]
+                            }
+                          }
+                        },
+                        "thumb_R": {
+                          "pos": [-0.032,-0.048,0.038],
+                          "rot": [-0.32,0,-0.18],
+                          "lockPos": true,
+                          "limits": {
+                            "x": [-8,8],
+                            "y": [-8,8],
+                            "z": [-100,15]
+                          },
+                          "meshes": [
+                            {
+                              "name": "thumb_base_R",
+                              "shape": "sphere",
+                              "size": [0.022,10,8],
+                              "pos": [0,0,0],
+                              "color": "#23262b",
+                              "roughness": 0.68,
+                              "metalness": 0.08
+                            },
+                            {
+                              "name": "thumb_a_R",
+                              "shape": "cylinder",
+                              "size": [0.015,0.019,0.036,8],
+                              "pos": [0,-0.018,0],
+                              "color": "#1f2126",
+                              "roughness": 0.7,
+                              "metalness": 0.08
+                            }
+                          ],
+                          "children": {
+                            "thumb2_R": {
+                              "pos": [0,-0.036,0],
+                              "rot": [0,0,-0.25],
+                              "lockPos": true,
+                              "limits": {
+                                "x": [-3,3],
+                                "y": [-3,3],
+                                "z": [-100,5]
+                              },
+                              "meshes": [
+                                {
+                                  "name": "thumb_joint_R",
+                                  "shape": "sphere",
+                                  "size": [0.015,8,8],
+                                  "pos": [0,0,0],
+                                  "color": "#23262b",
+                                  "roughness": 0.68,
+                                  "metalness": 0.08
+                                },
+                                {
+                                  "name": "thumb_b_R",
+                                  "shape": "cylinder",
+                                  "size": [0.011,0.015,0.03,8],
+                                  "pos": [0,-0.015,0],
+                                  "color": "#181a1e",
+                                  "roughness": 0.65,
+                                  "metalness": 0.1
+                                }
+                              ]
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "arm_L": {
+              "pos": [-0.335,0.57,0],
+              "lockPos": true,
+              "limits": {
+                "x": [-180,60],
+                "y": [-90,90],
+                "z": [-170,30]
+              },
+              "meshes": [
+                {
+                  "name": "deltoid_L",
+                  "shape": "sphere",
+                  "size": [0.125,16,14],
+                  "pos": [-0.015,-0.035,0],
+                  "scale": [1.05,1.18,1.08],
+                  "color": "#25282e",
+                  "roughness": 0.68,
+                  "metalness": 0.08
+                },
+                {
+                  "name": "upper_arm_L",
+                  "shape": "lathe",
+                  "size": [16],
+                  "points": [
+                    [0,-0.33],
+                    [0.068,-0.32],
+                    [0.082,-0.24],
+                    [0.098,-0.15],
+                    [0.105,-0.07],
+                    [0.095,0.02],
+                    [0,0.04]
+                  ],
+                  "pos": [0,0,0],
+                  "color": "#1f2126",
+                  "roughness": 0.7,
+                  "metalness": 0.08
+                },
+                {
+                  "name": "bicep_bulge_L",
+                  "shape": "sphere",
+                  "size": [0.068,14,12],
+                  "pos": [0.008,-0.175,0.042],
+                  "scale": [0.95,1.55,0.9],
+                  "color": "#272a30",
+                  "roughness": 0.66,
+                  "metalness": 0.08
+                },
+                {
+                  "name": "tricep_bulge_L",
+                  "shape": "sphere",
+                  "size": [0.065,14,12],
+                  "pos": [-0.015,-0.145,-0.048],
+                  "scale": [1,1.75,0.9],
+                  "color": "#23262b",
+                  "roughness": 0.68,
+                  "metalness": 0.08
+                },
+                {
+                  "name": "shoulder_spike_main_L_seg_0",
+                  "shape": "cylinder",
+                  "size": [0.025,0.034,0.0783,8],
+                  "pos": [-0.08,0.045,-0.0075],
+                  "rot": [-0.0831,0,0.693],
+                  "color": "#5c4d3c",
+                  "roughness": 0.55,
+                  "metalness": 0.08
+                },
+                {
+                  "name": "shoulder_spike_main_L_joint_1",
+                  "shape": "sphere",
+                  "size": [0.0255,8,6],
+                  "pos": [-0.105,0.075,-0.01],
+                  "color": "#8c7760",
+                  "roughness": 0.55,
+                  "metalness": 0.08
+                },
+                {
+                  "name": "shoulder_spike_main_L_seg_1",
+                  "shape": "cylinder",
+                  "size": [0.015,0.025,0.0895,8],
+                  "pos": [-0.125,0.115,-0.011],
+                  "rot": [-0.025,0,0.4635],
+                  "color": "#8c7760",
+                  "roughness": 0.55,
+                  "metalness": 0.08
+                },
+                {
+                  "name": "shoulder_spike_main_L_joint_2",
+                  "shape": "sphere",
+                  "size": [0.0153,8,6],
+                  "pos": [-0.145,0.155,-0.012],
+                  "color": "#b59e82",
+                  "roughness": 0.55,
+                  "metalness": 0.08
+                },
+                {
+                  "name": "shoulder_spike_main_L_tip",
+                  "shape": "cone",
+                  "size": [0.015,0.0922,8],
+                  "pos": [-0.155,0.2,-0.011],
+                  "rot": [0.0222,0,0.2186],
+                  "color": "#b59e82",
+                  "roughness": 0.45000000000000007,
+                  "metalness": 0.1
+                },
+                {
+                  "name": "shoulder_spike_mid_L_seg_0",
+                  "shape": "cylinder",
+                  "size": [0.014,0.024,0.0611,8],
+                  "pos": [-0.1085,-0.05,-0.0025],
+                  "rot": [-0.1651,0,1.0498],
+                  "color": "#5c4d3c",
+                  "roughness": 0.55,
+                  "metalness": 0.08
+                },
+                {
+                  "name": "shoulder_spike_mid_L_joint_1",
+                  "shape": "sphere",
+                  "size": [0.0143,8,6],
+                  "pos": [-0.135,-0.035,-0.005],
+                  "color": "#8c7760",
+                  "roughness": 0.55,
+                  "metalness": 0.08
+                },
+                {
+                  "name": "shoulder_spike_mid_L_tip",
+                  "shape": "cone",
+                  "size": [0.014,0.064,8],
+                  "pos": [-0.155,-0.01,-0.005],
+                  "rot": [0,0,0.6747],
+                  "color": "#8c7760",
+                  "roughness": 0.45000000000000007,
+                  "metalness": 0.1
+                },
+                {
+                  "name": "shoulder_spike_front_L_tip",
+                  "shape": "cone",
+                  "size": [0.016,0.0591,7],
+                  "pos": [-0.05,-0.0075,0.0865],
+                  "rot": [0.8132,0,0.5323],
+                  "color": "#7a6852",
+                  "roughness": 0.45000000000000007,
+                  "metalness": 0.1
+                },
+                {
+                  "name": "shoulder_spike_rear_L_tip",
+                  "shape": "cone",
+                  "size": [0.017,0.0688,7],
+                  "pos": [-0.0635,-0.01,-0.089],
+                  "rot": [-0.8098,0,0.5678],
+                  "color": "#7a6852",
+                  "roughness": 0.45000000000000007,
+                  "metalness": 0.1
+                }
+              ],
+              "children": {
+                "forearm_L": {
+                  "pos": [0,-0.33,0],
+                  "lockPos": true,
+                  "limits": {
+                    "x": [-145,5],
+                    "y": [-80,80],
+                    "z": [-3,3]
+                  },
+                  "meshes": [
+                    {
+                      "name": "elbow_L",
+                      "shape": "sphere",
+                      "size": [0.068,14,12],
+                      "pos": [0,0,-0.008],
+                      "color": "#1f2126",
+                      "roughness": 0.7,
+                      "metalness": 0.08
+                    },
+                    {
+                      "name": "forearm_muscle_L",
+                      "shape": "lathe",
+                      "size": [16],
+                      "points": [
+                        [0,-0.29],
+                        [0.048,-0.28],
+                        [0.058,-0.2],
+                        [0.076,-0.11],
+                        [0.084,-0.05],
+                        [0.072,0],
+                        [0,0.02]
+                      ],
+                      "pos": [0,0,0],
+                      "color": "#23262b",
+                      "roughness": 0.68,
+                      "metalness": 0.08
+                    },
+                    {
+                      "name": "bracer_guard_L",
+                      "shape": "lathe",
+                      "size": [14],
+                      "points": [
+                        [0,-0.265],
+                        [0.053,-0.265],
+                        [0.061,-0.19],
+                        [0.074,-0.11],
+                        [0.081,-0.055],
+                        [0,-0.055]
+                      ],
+                      "pos": [0,0,0],
+                      "color": "#3d281a",
+                      "roughness": 0.85,
+                      "metalness": 0.05
+                    },
+                    {
+                      "name": "bracer_trim_top_L",
+                      "shape": "torus",
+                      "size": [0.079,0.008,14,8],
+                      "pos": [0,-0.06,0],
+                      "rot": [1.5708,0,0],
+                      "color": "#4a453e",
+                      "roughness": 0.45,
+                      "metalness": 0.65
+                    },
+                    {
+                      "name": "bracer_trim_bot_L",
+                      "shape": "torus",
+                      "size": [0.054,0.007,14,8],
+                      "pos": [0,-0.26,0],
+                      "rot": [1.5708,0,0],
+                      "color": "#4a453e",
+                      "roughness": 0.45,
+                      "metalness": 0.65
+                    },
+                    {
+                      "name": "bracer_wrap_1_L",
+                      "shape": "torus",
+                      "size": [0.068,0.007,14,8],
+                      "pos": [0,-0.13,0],
+                      "rot": [1.65,-0.12,0],
+                      "color": "#543824",
+                      "roughness": 0.88,
+                      "metalness": 0.02
+                    },
+                    {
+                      "name": "bracer_wrap_2_L",
+                      "shape": "torus",
+                      "size": [0.06,0.007,14,8],
+                      "pos": [0,-0.195,0],
+                      "rot": [1.5,0.12,0],
+                      "color": "#543824",
+                      "roughness": 0.88,
+                      "metalness": 0.02
+                    },
+                    {
+                      "name": "forearm_spike_upper_L_seg_0",
+                      "shape": "cylinder",
+                      "size": [0.018,0.025,0.0819,8],
+                      "pos": [-0.0715,-0.045,-0.04],
+                      "rot": [-0.4636,0,0.6112],
+                      "color": "#5c4d3c",
+                      "roughness": 0.55,
+                      "metalness": 0.08
+                    },
+                    {
+                      "name": "forearm_spike_upper_L_joint_1",
+                      "shape": "sphere",
+                      "size": [0.0184,8,6],
+                      "pos": [-0.095,-0.015,-0.055],
+                      "color": "#8c7760",
+                      "roughness": 0.55,
+                      "metalness": 0.08
+                    },
+                    {
+                      "name": "forearm_spike_upper_L_seg_1",
+                      "shape": "cylinder",
+                      "size": [0.01,0.018,0.0943,8],
+                      "pos": [-0.115,0.025,-0.07],
+                      "rot": [-0.3588,0,0.4379],
+                      "color": "#8c7760",
+                      "roughness": 0.55,
+                      "metalness": 0.08
+                    },
+                    {
+                      "name": "forearm_spike_upper_L_joint_2",
+                      "shape": "sphere",
+                      "size": [0.0102,8,6],
+                      "pos": [-0.135,0.065,-0.085],
+                      "color": "#b59e82",
+                      "roughness": 0.55,
+                      "metalness": 0.08
+                    },
+                    {
+                      "name": "forearm_spike_upper_L_tip",
+                      "shape": "cone",
+                      "size": [0.01,0.0849,8],
+                      "pos": [-0.145,0.105,-0.095],
+                      "rot": [-0.245,0,0.2379],
+                      "color": "#b59e82",
+                      "roughness": 0.45000000000000007,
+                      "metalness": 0.1
+                    },
+                    {
+                      "name": "forearm_spike_lower_L_seg_0",
+                      "shape": "cylinder",
+                      "size": [0.012,0.02,0.0652,8],
+                      "pos": [-0.065,-0.1225,-0.0325],
+                      "rot": [-0.5071,0,0.6606],
+                      "color": "#5c4d3c",
+                      "roughness": 0.55,
+                      "metalness": 0.08
+                    },
+                    {
+                      "name": "forearm_spike_lower_L_joint_1",
+                      "shape": "sphere",
+                      "size": [0.0122,8,6],
+                      "pos": [-0.085,-0.1,-0.045],
+                      "color": "#8c7760",
+                      "roughness": 0.55,
+                      "metalness": 0.08
+                    },
+                    {
+                      "name": "forearm_spike_lower_L_tip",
+                      "shape": "cone",
+                      "size": [0.012,0.0709,8],
+                      "pos": [-0.1,-0.07,-0.0565],
+                      "rot": [-0.3661,0,0.4368],
+                      "color": "#8c7760",
+                      "roughness": 0.45000000000000007,
+                      "metalness": 0.1
+                    }
+                  ],
+                  "children": {
+                    "hand_L": {
+                      "pos": [0,-0.29,0],
+                      "lockPos": true,
+                      "limits": {
+                        "x": [-70,70],
+                        "y": [-30,30],
+                        "z": [-25,25]
+                      },
+                      "meshes": [
+                        {
+                          "name": "wrist_L",
+                          "shape": "sphere",
+                          "size": [0.048,14,10],
+                          "pos": [0,0,0],
+                          "color": "#1f2126",
+                          "roughness": 0.7,
+                          "metalness": 0.08
+                        },
+                        {
+                          "name": "palm_L",
+                          "shape": "sphere",
+                          "size": [0.058,14,12],
+                          "pos": [0,-0.06,0],
+                          "scale": [0.68,1.15,1.05],
+                          "color": "#23262b",
+                          "roughness": 0.68,
+                          "metalness": 0.08
+                        }
+                      ],
+                      "children": {
+                        "weapon_socket_L": {
+                          "pos": [0,-0.09,0.048],
+                          "meshes": []
+                        },
+                        "index_L": {
+                          "pos": [0,-0.105,0.034],
+                          "rot": [0,0,0.22],
+                          "lockPos": true,
+                          "limits": {
+                            "x": [-8,8],
+                            "y": [-8,8],
+                            "z": [-15,100]
+                          },
+                          "meshes": [
+                            {
+                              "name": "index_knuckle_L",
+                              "shape": "sphere",
+                              "size": [0.016,10,8],
+                              "pos": [0,0,0],
+                              "color": "#23262b",
+                              "roughness": 0.68,
+                              "metalness": 0.08
+                            },
+                            {
+                              "name": "index_a_L",
+                              "shape": "cylinder",
+                              "size": [0.01312,0.0152,0.038,8],
+                              "pos": [0,-0.019,0],
+                              "color": "#1f2126",
+                              "roughness": 0.7,
+                              "metalness": 0.08
+                            }
+                          ],
+                          "children": {
+                            "index2_L": {
+                              "pos": [0,-0.038,0],
+                              "rot": [0,0,0.35],
+                              "lockPos": true,
+                              "limits": {
+                                "x": [-3,3],
+                                "y": [-3,3],
+                                "z": [-5,100]
+                              },
+                              "meshes": [
+                                {
+                                  "name": "index_joint_L",
+                                  "shape": "sphere",
+                                  "size": [0.01312,8,8],
+                                  "pos": [0,0,0],
+                                  "color": "#23262b",
+                                  "roughness": 0.68,
+                                  "metalness": 0.08
+                                },
+                                {
+                                  "name": "index_b_L",
+                                  "shape": "cylinder",
+                                  "size": [0.00992,0.0128,0.03,8],
+                                  "pos": [0,-0.015,0],
+                                  "color": "#181a1e",
+                                  "roughness": 0.65,
+                                  "metalness": 0.1
+                                }
+                              ]
+                            }
+                          }
+                        },
+                        "middle_L": {
+                          "pos": [0,-0.105,0.012],
+                          "rot": [0,0,0.22],
+                          "lockPos": true,
+                          "limits": {
+                            "x": [-8,8],
+                            "y": [-8,8],
+                            "z": [-15,100]
+                          },
+                          "meshes": [
+                            {
+                              "name": "middle_knuckle_L",
+                              "shape": "sphere",
+                              "size": [0.0165,10,8],
+                              "pos": [0,0,0],
+                              "color": "#23262b",
+                              "roughness": 0.68,
+                              "metalness": 0.08
+                            },
+                            {
+                              "name": "middle_a_L",
+                              "shape": "cylinder",
+                              "size": [0.01353,0.015675,0.043,8],
+                              "pos": [0,-0.0215,0],
+                              "color": "#1f2126",
+                              "roughness": 0.7,
+                              "metalness": 0.08
+                            }
+                          ],
+                          "children": {
+                            "middle2_L": {
+                              "pos": [0,-0.043,0],
+                              "rot": [0,0,0.35],
+                              "lockPos": true,
+                              "limits": {
+                                "x": [-3,3],
+                                "y": [-3,3],
+                                "z": [-5,100]
+                              },
+                              "meshes": [
+                                {
+                                  "name": "middle_joint_L",
+                                  "shape": "sphere",
+                                  "size": [0.01353,8,8],
+                                  "pos": [0,0,0],
+                                  "color": "#23262b",
+                                  "roughness": 0.68,
+                                  "metalness": 0.08
+                                },
+                                {
+                                  "name": "middle_b_L",
+                                  "shape": "cylinder",
+                                  "size": [0.010230000000000001,0.013200000000000002,0.034,8],
+                                  "pos": [0,-0.017,0],
+                                  "color": "#181a1e",
+                                  "roughness": 0.65,
+                                  "metalness": 0.1
+                                }
+                              ]
+                            }
+                          }
+                        },
+                        "ring_L": {
+                          "pos": [0,-0.105,-0.012],
+                          "rot": [0,0,0.22],
+                          "lockPos": true,
+                          "limits": {
+                            "x": [-8,8],
+                            "y": [-8,8],
+                            "z": [-15,100]
+                          },
+                          "meshes": [
+                            {
+                              "name": "ring_knuckle_L",
+                              "shape": "sphere",
+                              "size": [0.016,10,8],
+                              "pos": [0,0,0],
+                              "color": "#23262b",
+                              "roughness": 0.68,
+                              "metalness": 0.08
+                            },
+                            {
+                              "name": "ring_a_L",
+                              "shape": "cylinder",
+                              "size": [0.01312,0.0152,0.039,8],
+                              "pos": [0,-0.0195,0],
+                              "color": "#1f2126",
+                              "roughness": 0.7,
+                              "metalness": 0.08
+                            }
+                          ],
+                          "children": {
+                            "ring2_L": {
+                              "pos": [0,-0.039,0],
+                              "rot": [0,0,0.35],
+                              "lockPos": true,
+                              "limits": {
+                                "x": [-3,3],
+                                "y": [-3,3],
+                                "z": [-5,100]
+                              },
+                              "meshes": [
+                                {
+                                  "name": "ring_joint_L",
+                                  "shape": "sphere",
+                                  "size": [0.01312,8,8],
+                                  "pos": [0,0,0],
+                                  "color": "#23262b",
+                                  "roughness": 0.68,
+                                  "metalness": 0.08
+                                },
+                                {
+                                  "name": "ring_b_L",
+                                  "shape": "cylinder",
+                                  "size": [0.00992,0.0128,0.031,8],
+                                  "pos": [0,-0.0155,0],
+                                  "color": "#181a1e",
+                                  "roughness": 0.65,
+                                  "metalness": 0.1
+                                }
+                              ]
+                            }
+                          }
+                        },
+                        "pinky_L": {
+                          "pos": [0,-0.105,-0.034],
+                          "rot": [0,0,0.22],
+                          "lockPos": true,
+                          "limits": {
+                            "x": [-8,8],
+                            "y": [-8,8],
+                            "z": [-15,100]
+                          },
+                          "meshes": [
+                            {
+                              "name": "pinky_knuckle_L",
+                              "shape": "sphere",
+                              "size": [0.015,10,8],
+                              "pos": [0,0,0],
+                              "color": "#23262b",
+                              "roughness": 0.68,
+                              "metalness": 0.08
+                            },
+                            {
+                              "name": "pinky_a_L",
+                              "shape": "cylinder",
+                              "size": [0.012299999999999998,0.014249999999999999,0.032,8],
+                              "pos": [0,-0.016,0],
+                              "color": "#1f2126",
+                              "roughness": 0.7,
+                              "metalness": 0.08
+                            }
+                          ],
+                          "children": {
+                            "pinky2_L": {
+                              "pos": [0,-0.032,0],
+                              "rot": [0,0,0.35],
+                              "lockPos": true,
+                              "limits": {
+                                "x": [-3,3],
+                                "y": [-3,3],
+                                "z": [-5,100]
+                              },
+                              "meshes": [
+                                {
+                                  "name": "pinky_joint_L",
+                                  "shape": "sphere",
+                                  "size": [0.012299999999999998,8,8],
+                                  "pos": [0,0,0],
+                                  "color": "#23262b",
+                                  "roughness": 0.68,
+                                  "metalness": 0.08
+                                },
+                                {
+                                  "name": "pinky_b_L",
+                                  "shape": "cylinder",
+                                  "size": [0.0093,0.012,0.025,8],
+                                  "pos": [0,-0.0125,0],
+                                  "color": "#181a1e",
+                                  "roughness": 0.65,
+                                  "metalness": 0.1
+                                }
+                              ]
+                            }
+                          }
+                        },
+                        "thumb_L": {
+                          "pos": [0.032,-0.048,0.038],
+                          "rot": [-0.32,0,0.18],
+                          "lockPos": true,
+                          "limits": {
+                            "x": [-8,8],
+                            "y": [-8,8],
+                            "z": [-15,100]
+                          },
+                          "meshes": [
+                            {
+                              "name": "thumb_base_L",
+                              "shape": "sphere",
+                              "size": [0.022,10,8],
+                              "pos": [0,0,0],
+                              "color": "#23262b",
+                              "roughness": 0.68,
+                              "metalness": 0.08
+                            },
+                            {
+                              "name": "thumb_a_L",
+                              "shape": "cylinder",
+                              "size": [0.015,0.019,0.036,8],
+                              "pos": [0,-0.018,0],
+                              "color": "#1f2126",
+                              "roughness": 0.7,
+                              "metalness": 0.08
+                            }
+                          ],
+                          "children": {
+                            "thumb2_L": {
+                              "pos": [0,-0.036,0],
+                              "rot": [0,0,0.25],
+                              "lockPos": true,
+                              "limits": {
+                                "x": [-3,3],
+                                "y": [-3,3],
+                                "z": [-5,100]
+                              },
+                              "meshes": [
+                                {
+                                  "name": "thumb_joint_L",
+                                  "shape": "sphere",
+                                  "size": [0.015,8,8],
+                                  "pos": [0,0,0],
+                                  "color": "#23262b",
+                                  "roughness": 0.68,
+                                  "metalness": 0.08
+                                },
+                                {
+                                  "name": "thumb_b_L",
+                                  "shape": "cylinder",
+                                  "size": [0.011,0.015,0.03,8],
+                                  "pos": [0,-0.015,0],
+                                  "color": "#181a1e",
+                                  "roughness": 0.65,
+                                  "metalness": 0.1
+                                }
+                              ]
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "stow_back": {
+              "pos": [0,0.35,-0.19]
+            }
+          }
+        },
+        "leg_R": {
+          "pos": [0.175,0,0],
+          "lockPos": true,
+          "limits": {
+            "x": [-120,35],
+            "y": [-45,45],
+            "z": [-30,60]
+          },
+          "meshes": [
+            {
+              "name": "shorts_leg_R",
+              "shape": "lathe",
+              "size": [16],
+              "points": [
+                [0,-0.2],
+                [0.142,-0.2],
+                [0.148,-0.12],
+                [0.152,-0.04],
+                [0.142,0.04],
+                [0,0.06]
+              ],
+              "pos": [0,0,0],
+              "color": "#2b211a",
+              "roughness": 0.88,
+              "metalness": 0.02
+            },
+            {
+              "name": "thigh_tatter_flap_R",
+              "shape": "extrude",
+              "points": [
+                [-0.08,-0.28],
+                [-0.02,-0.21],
+                [0.03,-0.31],
+                [0.09,-0.22],
+                [0.1,0.04],
+                [-0.09,0.04]
+              ],
+              "depth": 0.018,
+              "pos": [0.135,0,0],
+              "rot": [0,1.5708,-0.12],
+              "color": "team.primary",
+              "roughness": 0.88,
+              "metalness": 0.02
+            },
+            {
+              "name": "thigh_R",
+              "shape": "lathe",
+              "size": [18],
+              "points": [
+                [0,-0.48],
+                [0.082,-0.46],
+                [0.105,-0.36],
+                [0.132,-0.24],
+                [0.145,-0.12],
+                [0.138,0],
+                [0,0.04]
+              ],
+              "pos": [0,0,0],
+              "color": "#1f2126",
+              "roughness": 0.7,
+              "metalness": 0.08
+            },
+            {
+              "name": "quad_ tear_R",
+              "shape": "sphere",
+              "size": [0.088,16,12],
+              "pos": [0.015,-0.25,0.048],
+              "scale": [0.95,2.2,0.95],
+              "color": "#272a30",
+              "roughness": 0.66,
+              "metalness": 0.08
+            },
+            {
+              "name": "hamstring_R",
+              "shape": "sphere",
+              "size": [0.085,14,12],
+              "pos": [0,-0.24,-0.045],
+              "scale": [1,2.1,0.9],
+              "color": "#1c1e22",
+              "roughness": 0.7,
+              "metalness": 0.08
+            }
+          ],
+          "children": {
+            "shin_R": {
+              "pos": [0,-0.48,0],
+              "lockPos": true,
+              "limits": {
+                "x": [0,150],
+                "y": [-3,3],
+                "z": [-3,3]
+              },
+              "meshes": [
+                {
+                  "name": "knee_R",
+                  "shape": "sphere",
+                  "size": [0.082,16,12],
+                  "pos": [0,0,0.008],
+                  "color": "#23262b",
+                  "roughness": 0.68,
+                  "metalness": 0.08
+                },
+                {
+                  "name": "kneecap_R",
+                  "shape": "sphere",
+                  "size": [0.055,14,10],
+                  "pos": [0,-0.005,0.058],
+                  "scale": [1.05,1.15,0.65],
+                  "color": "#272a30",
+                  "roughness": 0.65,
+                  "metalness": 0.08
+                },
+                {
+                  "name": "calf_R",
+                  "shape": "lathe",
+                  "size": [18],
+                  "points": [
+                    [0,-0.44],
+                    [0.054,-0.43],
+                    [0.062,-0.34],
+                    [0.082,-0.24],
+                    [0.104,-0.15],
+                    [0.098,-0.07],
+                    [0.08,0],
+                    [0,0.02]
+                  ],
+                  "pos": [0,0,0],
+                  "color": "#1f2126",
+                  "roughness": 0.7,
+                  "metalness": 0.08
+                },
+                {
+                  "name": "calf_muscle_R",
+                  "shape": "sphere",
+                  "size": [0.072,14,12],
+                  "pos": [0,-0.15,-0.038],
+                  "scale": [1.08,1.75,0.95],
+                  "color": "#25282e",
+                  "roughness": 0.68,
+                  "metalness": 0.08
+                },
+                {
+                  "name": "upper_shin_strap_R",
+                  "shape": "cylinder",
+                  "size": [0.092,0.098,0.055,16],
+                  "pos": [0,-0.065,0],
+                  "color": "#3d281a",
+                  "roughness": 0.85,
+                  "metalness": 0.05
+                },
+                {
+                  "name": "lower_shin_wrap_R",
+                  "shape": "lathe",
+                  "size": [14],
+                  "points": [
+                    [0,-0.37],
+                    [0.062,-0.37],
+                    [0.068,-0.29],
+                    [0.082,-0.21],
+                    [0,-0.21]
+                  ],
+                  "pos": [0,0,0],
+                  "color": "#332216",
+                  "roughness": 0.88,
+                  "metalness": 0.04
+                },
+                {
+                  "name": "ankle_shackle_R",
+                  "shape": "cylinder",
+                  "size": [0.066,0.064,0.068,14],
+                  "pos": [0,-0.395,0],
+                  "color": "#3b3936",
+                  "roughness": 0.45,
+                  "metalness": 0.72
+                },
+                {
+                  "name": "knee_spike_R_seg_0",
+                  "shape": "cylinder",
+                  "size": [0.014,0.024,0.0743,8],
+                  "pos": [0.075,0.0075,0.06],
+                  "rot": [0.4993,0,-0.5682],
+                  "color": "#5c4d3c",
+                  "roughness": 0.55,
+                  "metalness": 0.08
+                },
+                {
+                  "name": "knee_spike_R_joint_1",
+                  "shape": "sphere",
+                  "size": [0.0143,8,6],
+                  "pos": [0.095,0.035,0.075],
+                  "color": "#8c7760",
+                  "roughness": 0.55,
+                  "metalness": 0.08
+                },
+                {
+                  "name": "knee_spike_R_tip",
+                  "shape": "cone",
+                  "size": [0.014,0.077,8],
+                  "pos": [0.1075,0.07,0.085],
+                  "rot": [0.2783,0,-0.3308],
+                  "color": "#8c7760",
+                  "roughness": 0.45000000000000007,
+                  "metalness": 0.1
+                }
+              ],
+              "children": {
+                "foot_R": {
+                  "pos": [0,-0.435,0],
+                  "lockPos": true,
+                  "limits": {
+                    "x": [-40,50],
+                    "y": [-15,15],
+                    "z": [-20,20]
+                  },
+                  "meshes": [
+                    {
+                      "name": "ankle_R",
+                      "shape": "sphere",
+                      "size": [0.054,14,10],
+                      "pos": [0,0,0],
+                      "color": "#1f2126",
+                      "roughness": 0.7,
+                      "metalness": 0.08
+                    },
+                    {
+                      "name": "foot_arch_R",
+                      "shape": "sphere",
+                      "size": [0.068,16,12],
+                      "pos": [0,-0.015,0.06],
+                      "scale": [1.05,0.52,1.95],
+                      "color": "#1f2126",
+                      "roughness": 0.7,
+                      "metalness": 0.08
+                    },
+                    {
+                      "name": "foot_wrap_strap_R",
+                      "shape": "box",
+                      "size": [0.125,0.042,0.11],
+                      "pos": [0,-0.008,0.045],
+                      "rot": [0.18,0,0],
+                      "color": "#3d281a",
+                      "roughness": 0.85,
+                      "metalness": 0.04
+                    },
+                    {
+                      "name": "heel_R",
+                      "shape": "sphere",
+                      "size": [0.054,14,10],
+                      "pos": [0,-0.015,-0.032],
+                      "scale": [1,0.72,1.05],
+                      "color": "#1f2126",
+                      "roughness": 0.7,
+                      "metalness": 0.08
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "leg_L": {
+          "pos": [-0.175,0,0],
+          "lockPos": true,
+          "limits": {
+            "x": [-120,35],
+            "y": [-45,45],
+            "z": [-60,30]
+          },
+          "meshes": [
+            {
+              "name": "shorts_leg_L",
+              "shape": "lathe",
+              "size": [16],
+              "points": [
+                [0,-0.2],
+                [0.142,-0.2],
+                [0.148,-0.12],
+                [0.152,-0.04],
+                [0.142,0.04],
+                [0,0.06]
+              ],
+              "pos": [0,0,0],
+              "color": "#2b211a",
+              "roughness": 0.88,
+              "metalness": 0.02
+            },
+            {
+              "name": "thigh_tatter_flap_L",
+              "shape": "extrude",
+              "points": [
+                [-0.08,-0.28],
+                [-0.02,-0.21],
+                [0.03,-0.31],
+                [0.09,-0.22],
+                [0.1,0.04],
+                [-0.09,0.04]
+              ],
+              "depth": 0.018,
+              "pos": [-0.135,0,0],
+              "rot": [0,-1.5708,0.12],
+              "color": "team.primary",
+              "roughness": 0.88,
+              "metalness": 0.02
+            },
+            {
+              "name": "thigh_L",
+              "shape": "lathe",
+              "size": [18],
+              "points": [
+                [0,-0.48],
+                [0.082,-0.46],
+                [0.105,-0.36],
+                [0.132,-0.24],
+                [0.145,-0.12],
+                [0.138,0],
+                [0,0.04]
+              ],
+              "pos": [0,0,0],
+              "color": "#1f2126",
+              "roughness": 0.7,
+              "metalness": 0.08
+            },
+            {
+              "name": "quad_ tear_L",
+              "shape": "sphere",
+              "size": [0.088,16,12],
+              "pos": [-0.015,-0.25,0.048],
+              "scale": [0.95,2.2,0.95],
+              "color": "#272a30",
+              "roughness": 0.66,
+              "metalness": 0.08
+            },
+            {
+              "name": "hamstring_L",
+              "shape": "sphere",
+              "size": [0.085,14,12],
+              "pos": [0,-0.24,-0.045],
+              "scale": [1,2.1,0.9],
+              "color": "#1c1e22",
+              "roughness": 0.7,
+              "metalness": 0.08
+            }
+          ],
+          "children": {
+            "shin_L": {
+              "pos": [0,-0.48,0],
+              "lockPos": true,
+              "limits": {
+                "x": [0,150],
+                "y": [-3,3],
+                "z": [-3,3]
+              },
+              "meshes": [
+                {
+                  "name": "knee_L",
+                  "shape": "sphere",
+                  "size": [0.082,16,12],
+                  "pos": [0,0,0.008],
+                  "color": "#23262b",
+                  "roughness": 0.68,
+                  "metalness": 0.08
+                },
+                {
+                  "name": "kneecap_L",
+                  "shape": "sphere",
+                  "size": [0.055,14,10],
+                  "pos": [0,-0.005,0.058],
+                  "scale": [1.05,1.15,0.65],
+                  "color": "#272a30",
+                  "roughness": 0.65,
+                  "metalness": 0.08
+                },
+                {
+                  "name": "calf_L",
+                  "shape": "lathe",
+                  "size": [18],
+                  "points": [
+                    [0,-0.44],
+                    [0.054,-0.43],
+                    [0.062,-0.34],
+                    [0.082,-0.24],
+                    [0.104,-0.15],
+                    [0.098,-0.07],
+                    [0.08,0],
+                    [0,0.02]
+                  ],
+                  "pos": [0,0,0],
+                  "color": "#1f2126",
+                  "roughness": 0.7,
+                  "metalness": 0.08
+                },
+                {
+                  "name": "calf_muscle_L",
+                  "shape": "sphere",
+                  "size": [0.072,14,12],
+                  "pos": [0,-0.15,-0.038],
+                  "scale": [1.08,1.75,0.95],
+                  "color": "#25282e",
+                  "roughness": 0.68,
+                  "metalness": 0.08
+                },
+                {
+                  "name": "upper_shin_strap_L",
+                  "shape": "cylinder",
+                  "size": [0.092,0.098,0.055,16],
+                  "pos": [0,-0.065,0],
+                  "color": "#3d281a",
+                  "roughness": 0.85,
+                  "metalness": 0.05
+                },
+                {
+                  "name": "lower_shin_wrap_L",
+                  "shape": "lathe",
+                  "size": [14],
+                  "points": [
+                    [0,-0.37],
+                    [0.062,-0.37],
+                    [0.068,-0.29],
+                    [0.082,-0.21],
+                    [0,-0.21]
+                  ],
+                  "pos": [0,0,0],
+                  "color": "#332216",
+                  "roughness": 0.88,
+                  "metalness": 0.04
+                },
+                {
+                  "name": "ankle_shackle_L",
+                  "shape": "cylinder",
+                  "size": [0.066,0.064,0.068,14],
+                  "pos": [0,-0.395,0],
+                  "color": "#3b3936",
+                  "roughness": 0.45,
+                  "metalness": 0.72
+                },
+                {
+                  "name": "knee_spike_L_seg_0",
+                  "shape": "cylinder",
+                  "size": [0.014,0.024,0.0743,8],
+                  "pos": [-0.075,0.0075,0.06],
+                  "rot": [0.4993,0,0.5682],
+                  "color": "#5c4d3c",
+                  "roughness": 0.55,
+                  "metalness": 0.08
+                },
+                {
+                  "name": "knee_spike_L_joint_1",
+                  "shape": "sphere",
+                  "size": [0.0143,8,6],
+                  "pos": [-0.095,0.035,0.075],
+                  "color": "#8c7760",
+                  "roughness": 0.55,
+                  "metalness": 0.08
+                },
+                {
+                  "name": "knee_spike_L_tip",
+                  "shape": "cone",
+                  "size": [0.014,0.077,8],
+                  "pos": [-0.1075,0.07,0.085],
+                  "rot": [0.2783,0,0.3308],
+                  "color": "#8c7760",
+                  "roughness": 0.45000000000000007,
+                  "metalness": 0.1
+                }
+              ],
+              "children": {
+                "foot_L": {
+                  "pos": [0,-0.435,0],
+                  "lockPos": true,
+                  "limits": {
+                    "x": [-40,50],
+                    "y": [-15,15],
+                    "z": [-20,20]
+                  },
+                  "meshes": [
+                    {
+                      "name": "ankle_L",
+                      "shape": "sphere",
+                      "size": [0.054,14,10],
+                      "pos": [0,0,0],
+                      "color": "#1f2126",
+                      "roughness": 0.7,
+                      "metalness": 0.08
+                    },
+                    {
+                      "name": "foot_arch_L",
+                      "shape": "sphere",
+                      "size": [0.068,16,12],
+                      "pos": [0,-0.015,0.06],
+                      "scale": [1.05,0.52,1.95],
+                      "color": "#1f2126",
+                      "roughness": 0.7,
+                      "metalness": 0.08
+                    },
+                    {
+                      "name": "foot_wrap_strap_L",
+                      "shape": "box",
+                      "size": [0.125,0.042,0.11],
+                      "pos": [0,-0.008,0.045],
+                      "rot": [0.18,0,0],
+                      "color": "#3d281a",
+                      "roughness": 0.85,
+                      "metalness": 0.04
+                    },
+                    {
+                      "name": "heel_L",
+                      "shape": "sphere",
+                      "size": [0.054,14,10],
+                      "pos": [0,-0.015,-0.032],
+                      "scale": [1,0.72,1.05],
+                      "color": "#1f2126",
+                      "roughness": 0.7,
+                      "metalness": 0.08
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "stow_hip_R": {
+          "pos": [0.23,-0.02,0]
+        },
+        "stow_hip_L": {
+          "pos": [-0.23,-0.02,0]
+        }
+      }
+    }
+  },
+  "colorOverrides": {},
+  "skins": {}
+}

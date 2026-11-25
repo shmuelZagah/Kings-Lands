@@ -1,0 +1,1096 @@
+{
+  "visuals": {
+    "katiler_wolf": {
+      "id": "katiler_wolf",
+      "race": "katiler",
+      "displayName": "Katiler Dire Wolf (Mount)",
+      "type": "procedural_3d",
+      "gltfUrl": null,
+      "scale": 1.35,
+      "selectionRingRadius": 1.25,
+      "bannerStyle": "royal_standard",
+      "locomotionAnim": "gallop",
+      "combatAnim": "attack_thrust",
+      "isMounted": false,
+      "equipment": {},
+      "hierarchy": {
+        "torso": {
+          "pos": [0,1.05,0],
+          "limits": {
+            "x": [-35,35],
+            "y": [-35,35],
+            "z": [-25,25]
+          },
+          "meshes": [
+            {
+              "name": "wolf_body_core",
+              "shape": "lathe",
+              "size": [22],
+              "points": [
+                [0,-0.92],
+                [0.18,-0.86],
+                [0.24,-0.7],
+                [0.255,-0.48],
+                [0.235,-0.2],
+                [0.28,0.08],
+                [0.35,0.34],
+                [0.365,0.58],
+                [0.31,0.78],
+                [0.2,0.89],
+                [0,0.92]
+              ],
+              "pos": [0,0.03,0],
+              "rot": [1.5708,0,0],
+              "scale": [0.86,1,1.08],
+              "color": "#8c7d6b",
+              "roughness": 0.88,
+              "metalness": 0.02,
+              "pattern": "fur",
+              "patternRepeat": [3,2]
+            },
+            {
+              "name": "wolf_dorsal_cape",
+              "shape": "lathe",
+              "size": [20],
+              "points": [
+                [0,-0.89],
+                [0.16,-0.81],
+                [0.215,-0.54],
+                [0.21,-0.2],
+                [0.255,0.14],
+                [0.31,0.43],
+                [0.325,0.65],
+                [0.24,0.84],
+                [0,0.89]
+              ],
+              "pos": [0,0.15,0.015],
+              "rot": [1.55,0,0],
+              "scale": [0.82,1,0.72],
+              "color": "#3d3934",
+              "roughness": 0.92,
+              "metalness": 0.02,
+              "pattern": "fur",
+              "patternRepeat": [3,2]
+            },
+            {
+              "name": "wolf_shoulder_hump",
+              "shape": "sphere",
+              "size": [0.32,18,14],
+              "pos": [0,0.19,0.46],
+              "scale": [0.82,0.78,1.25],
+              "color": "#35312d",
+              "roughness": 0.92,
+              "metalness": 0.02,
+              "pattern": "fur",
+              "patternRepeat": [2,2]
+            },
+            {
+              "name": "wolf_underbelly",
+              "shape": "lathe",
+              "size": [18],
+              "points": [
+                [0,-0.76],
+                [0.135,-0.68],
+                [0.175,-0.4],
+                [0.18,-0.14],
+                [0.23,0.16],
+                [0.285,0.43],
+                [0.255,0.68],
+                [0.15,0.78],
+                [0,0.81]
+              ],
+              "pos": [0,-0.12,0.03],
+              "rot": [1.62,0,0],
+              "scale": [0.76,1,0.78],
+              "color": "#dcd5c9",
+              "roughness": 0.88,
+              "metalness": 0.02,
+              "pattern": "fur",
+              "patternRepeat": [3,2]
+            },
+            {
+              "name": "wolf_chest_keel",
+              "shape": "sphere",
+              "size": [0.31,18,14],
+              "pos": [0,-0.07,0.61],
+              "scale": [0.78,1.05,1.15],
+              "color": "#e5dfd5",
+              "roughness": 0.88,
+              "metalness": 0.02,
+              "pattern": "fur",
+              "patternRepeat": [2,2]
+            },
+            {
+              "name": "wolf_chest_ruff_collar",
+              "shape": "lathe",
+              "size": [20],
+              "points": [
+                [0,-0.28],
+                [0.31,-0.22],
+                [0.35,-0.04],
+                [0.31,0.14],
+                [0.23,0.25],
+                [0,0.28]
+              ],
+              "pos": [0,0.14,0.72],
+              "rot": [1.08,0,0],
+              "scale": [0.9,1,1.02],
+              "color": "#9a8b78",
+              "roughness": 0.9,
+              "metalness": 0.02,
+              "pattern": "fur",
+              "patternRepeat": [2,2]
+            }
+          ],
+          "children": {
+            "neck": {
+              "pos": [0,0.28,0.82],
+              "lockPos": true,
+              "limits": {
+                "x": [-35,45],
+                "y": [-45,45],
+                "z": [-25,25]
+              },
+              "meshes": [
+                {
+                  "name": "wolf_neck_main",
+                  "shape": "lathe",
+                  "size": [18],
+                  "points": [
+                    [0,-0.18],
+                    [0.25,-0.14],
+                    [0.24,0.02],
+                    [0.21,0.18],
+                    [0.18,0.3],
+                    [0,0.33]
+                  ],
+                  "pos": [0,0.09,0.1],
+                  "rot": [0.74,0,0],
+                  "scale": [0.86,1,0.95],
+                  "color": "#7d7061",
+                  "roughness": 0.9,
+                  "metalness": 0.02,
+                  "pattern": "fur",
+                  "patternRepeat": [2,1.5]
+                },
+                {
+                  "name": "wolf_neck_nape_dark",
+                  "shape": "sphere",
+                  "size": [0.2,16,12],
+                  "pos": [0,0.2,0.06],
+                  "rot": [0.74,0,0],
+                  "scale": [0.74,1.35,0.7],
+                  "color": "#383430",
+                  "roughness": 0.92,
+                  "metalness": 0.02,
+                  "pattern": "fur",
+                  "patternRepeat": [2,1.5]
+                },
+                {
+                  "name": "wolf_throat_white",
+                  "shape": "sphere",
+                  "size": [0.185,16,12],
+                  "pos": [0,0.02,0.19],
+                  "rot": [0.74,0,0],
+                  "scale": [0.72,1.28,0.72],
+                  "color": "#e5dfd5",
+                  "roughness": 0.88,
+                  "metalness": 0.02,
+                  "pattern": "fur",
+                  "patternRepeat": [2,1.5]
+                }
+              ],
+              "children": {
+                "head": {
+                  "pos": [0,0.25,0.26],
+                  "lockPos": true,
+                  "limits": {
+                    "x": [-40,45],
+                    "y": [-60,60],
+                    "z": [-30,30]
+                  },
+                  "meshes": [
+                    {
+                      "name": "wolf_cranium",
+                      "shape": "lathe",
+                      "size": [18],
+                      "points": [
+                        [0,-0.22],
+                        [0.16,-0.19],
+                        [0.215,-0.08],
+                        [0.21,0.05],
+                        [0.175,0.16],
+                        [0.125,0.23],
+                        [0,0.25]
+                      ],
+                      "pos": [0,0.06,0.06],
+                      "rot": [1.62,0,0],
+                      "scale": [0.96,1,0.88],
+                      "color": "#6e6357",
+                      "roughness": 0.88,
+                      "metalness": 0.02,
+                      "pattern": "fur",
+                      "patternRepeat": [2,2]
+                    },
+                    {
+                      "name": "wolf_forehead_crown",
+                      "shape": "sphere",
+                      "size": [0.175,14,12],
+                      "pos": [0,0.115,0.065],
+                      "rot": [0.18,0,0],
+                      "scale": [0.88,0.62,1.08],
+                      "color": "#383430",
+                      "roughness": 0.9,
+                      "metalness": 0.02,
+                      "pattern": "fur",
+                      "patternRepeat": [2,2]
+                    },
+                    {
+                      "name": "wolf_cheek_ruff_R",
+                      "shape": "lathe",
+                      "size": [12],
+                      "points": [
+                        [0,-0.16],
+                        [0.04,-0.14],
+                        [0.095,-0.04],
+                        [0.11,0.06],
+                        [0.07,0.13],
+                        [0,0.15]
+                      ],
+                      "pos": [0.145,0.005,0.02],
+                      "rot": [0.25,0.15,-0.42],
+                      "scale": [0.55,1.05,1.15],
+                      "color": "#cfc6b8",
+                      "roughness": 0.9,
+                      "metalness": 0.02,
+                      "pattern": "fur",
+                      "patternRepeat": [1.5,1.5]
+                    },
+                    {
+                      "name": "wolf_cheek_ruff_L",
+                      "shape": "lathe",
+                      "size": [12],
+                      "points": [
+                        [0,-0.16],
+                        [0.04,-0.14],
+                        [0.095,-0.04],
+                        [0.11,0.06],
+                        [0.07,0.13],
+                        [0,0.15]
+                      ],
+                      "pos": [-0.145,0.005,0.02],
+                      "rot": [0.25,-0.15,0.42],
+                      "scale": [0.55,1.05,1.15],
+                      "color": "#cfc6b8",
+                      "roughness": 0.9,
+                      "metalness": 0.02,
+                      "pattern": "fur",
+                      "patternRepeat": [1.5,1.5]
+                    },
+                    {
+                      "name": "wolf_snout_upper",
+                      "shape": "lathe",
+                      "size": [16],
+                      "points": [
+                        [0,-0.18],
+                        [0.125,-0.15],
+                        [0.105,0],
+                        [0.082,0.14],
+                        [0.058,0.22],
+                        [0,0.24]
+                      ],
+                      "pos": [0,0.015,0.285],
+                      "rot": [1.66,0,0],
+                      "scale": [0.86,1,0.76],
+                      "color": "#8c7d6b",
+                      "roughness": 0.85,
+                      "metalness": 0.02,
+                      "pattern": "fur",
+                      "patternRepeat": [1.5,1.5]
+                    },
+                    {
+                      "name": "wolf_snout_bridge_dark",
+                      "shape": "lathe",
+                      "size": [12],
+                      "points": [
+                        [0,-0.17],
+                        [0.072,-0.14],
+                        [0.062,0],
+                        [0.048,0.14],
+                        [0.032,0.21],
+                        [0,0.23]
+                      ],
+                      "pos": [0,0.052,0.285],
+                      "rot": [1.64,0,0],
+                      "scale": [0.78,1,0.48],
+                      "color": "#35312d",
+                      "roughness": 0.9,
+                      "pattern": "fur",
+                      "patternRepeat": [1.5,1]
+                    },
+                    {
+                      "name": "wolf_muzzle_sides_white",
+                      "shape": "lathe",
+                      "size": [14],
+                      "points": [
+                        [0,-0.16],
+                        [0.11,-0.12],
+                        [0.096,0.02],
+                        [0.075,0.14],
+                        [0.05,0.2],
+                        [0,0.22]
+                      ],
+                      "pos": [0,-0.008,0.29],
+                      "rot": [1.68,0,0],
+                      "scale": [0.92,1,0.58],
+                      "color": "#dfd9ce",
+                      "roughness": 0.88,
+                      "pattern": "fur",
+                      "patternRepeat": [1.5,1]
+                    },
+                    {
+                      "name": "wolf_upper_fang_R",
+                      "shape": "cone",
+                      "size": [0.013,0.045,6],
+                      "pos": [0.044,-0.042,0.43],
+                      "rot": [3.08,0,0],
+                      "color": "#f8fafc",
+                      "roughness": 0.25
+                    },
+                    {
+                      "name": "wolf_upper_fang_L",
+                      "shape": "cone",
+                      "size": [0.013,0.045,6],
+                      "pos": [-0.044,-0.042,0.43],
+                      "rot": [3.08,0,0],
+                      "color": "#f8fafc",
+                      "roughness": 0.25
+                    },
+                    {
+                      "name": "wolf_nose_leather",
+                      "shape": "sphere",
+                      "size": [0.035,12,10],
+                      "pos": [0,0.026,0.505],
+                      "rot": [0.2,0,0],
+                      "scale": [1.08,0.72,0.78],
+                      "color": "#141414",
+                      "roughness": 0.5,
+                      "metalness": 0.08
+                    },
+                    {
+                      "name": "wolf_brow_scowl_R",
+                      "shape": "sphere",
+                      "size": [0.052,10,8],
+                      "pos": [0.086,0.102,0.228],
+                      "rot": [0.18,-0.22,0.42],
+                      "scale": [1.25,0.32,0.85],
+                      "color": "#383430",
+                      "roughness": 0.9,
+                      "pattern": "fur",
+                      "patternRepeat": [1,1]
+                    },
+                    {
+                      "name": "wolf_brow_scowl_L",
+                      "shape": "sphere",
+                      "size": [0.052,10,8],
+                      "pos": [-0.086,0.102,0.228],
+                      "rot": [0.18,0.22,-0.42],
+                      "scale": [1.25,0.32,0.85],
+                      "color": "#383430",
+                      "roughness": 0.9,
+                      "pattern": "fur",
+                      "patternRepeat": [1,1]
+                    },
+                    {
+                      "name": "wolf_eye_socket_R",
+                      "shape": "sphere",
+                      "size": [0.036,12,10],
+                      "pos": [0.088,0.082,0.222],
+                      "rot": [0.1,0.28,0.32],
+                      "scale": [1.05,0.58,0.82],
+                      "color": "#141210",
+                      "roughness": 0.85
+                    },
+                    {
+                      "name": "wolf_eye_socket_L",
+                      "shape": "sphere",
+                      "size": [0.036,12,10],
+                      "pos": [-0.088,0.082,0.222],
+                      "rot": [0.1,-0.28,-0.32],
+                      "scale": [1.05,0.58,0.82],
+                      "color": "#141210",
+                      "roughness": 0.85
+                    },
+                    {
+                      "name": "wolf_eye_R",
+                      "shape": "sphere",
+                      "size": [0.028,12,10],
+                      "pos": [0.092,0.082,0.234],
+                      "rot": [0.1,0.28,0.32],
+                      "scale": [1,0.55,0.78],
+                      "color": "#eab308",
+                      "roughness": 0.15,
+                      "metalness": 0.1
+                    },
+                    {
+                      "name": "wolf_pupil_R",
+                      "shape": "sphere",
+                      "size": [0.013,8,8],
+                      "pos": [0.098,0.082,0.251],
+                      "scale": [0.75,1,0.7],
+                      "color": "#09090b",
+                      "roughness": 0.1
+                    },
+                    {
+                      "name": "wolf_eye_L",
+                      "shape": "sphere",
+                      "size": [0.028,12,10],
+                      "pos": [-0.092,0.082,0.234],
+                      "rot": [0.1,-0.28,-0.32],
+                      "scale": [1,0.55,0.78],
+                      "color": "#eab308",
+                      "roughness": 0.15,
+                      "metalness": 0.1
+                    },
+                    {
+                      "name": "wolf_pupil_L",
+                      "shape": "sphere",
+                      "size": [0.013,8,8],
+                      "pos": [-0.098,0.082,0.251],
+                      "scale": [0.75,1,0.7],
+                      "color": "#09090b",
+                      "roughness": 0.1
+                    },
+                    {
+                      "name": "wolf_ear_outer_R",
+                      "shape": "cone",
+                      "size": [0.072,0.18,8],
+                      "pos": [0.132,0.225,-0.01],
+                      "rot": [0.12,0.1,-0.28],
+                      "scale": [0.88,1,0.68],
+                      "color": "#5c5043",
+                      "roughness": 0.9,
+                      "pattern": "fur",
+                      "patternRepeat": [1,1]
+                    },
+                    {
+                      "name": "wolf_ear_inner_R",
+                      "shape": "cone",
+                      "size": [0.044,0.13,6],
+                      "pos": [0.128,0.218,0.012],
+                      "rot": [0.12,0.1,-0.28],
+                      "scale": [0.75,1,0.42],
+                      "color": "#dcd5c9",
+                      "roughness": 0.88
+                    },
+                    {
+                      "name": "wolf_ear_outer_L",
+                      "shape": "cone",
+                      "size": [0.072,0.18,8],
+                      "pos": [-0.132,0.225,-0.01],
+                      "rot": [0.12,-0.1,0.28],
+                      "scale": [0.88,1,0.68],
+                      "color": "#5c5043",
+                      "roughness": 0.9,
+                      "pattern": "fur",
+                      "patternRepeat": [1,1]
+                    },
+                    {
+                      "name": "wolf_ear_inner_L",
+                      "shape": "cone",
+                      "size": [0.044,0.13,6],
+                      "pos": [-0.128,0.218,0.012],
+                      "rot": [0.12,-0.1,0.28],
+                      "scale": [0.75,1,0.42],
+                      "color": "#dcd5c9",
+                      "roughness": 0.88
+                    }
+                  ],
+                  "children": {
+                    "jaw": {
+                      "pos": [0,-0.035,0.11],
+                      "lockPos": true,
+                      "limits": {
+                        "x": [-5,55],
+                        "y": [-10,10],
+                        "z": [-8,8]
+                      },
+                      "meshes": [
+                        {
+                          "name": "wolf_jaw_lower",
+                          "shape": "lathe",
+                          "size": [14],
+                          "points": [
+                            [0,-0.15],
+                            [0.088,-0.12],
+                            [0.072,0.02],
+                            [0.05,0.15],
+                            [0,0.18]
+                          ],
+                          "pos": [0,-0.01,0.15],
+                          "rot": [1.65,0,0],
+                          "scale": [0.84,1,0.58],
+                          "color": "#dfd9ce",
+                          "roughness": 0.88,
+                          "metalness": 0.02,
+                          "pattern": "fur",
+                          "patternRepeat": [1,1]
+                        },
+                        {
+                          "name": "wolf_tongue",
+                          "shape": "box",
+                          "size": [0.062,0.016,0.2],
+                          "pos": [0,0.01,0.17],
+                          "rot": [0.06,0,0],
+                          "color": "#be123c",
+                          "roughness": 0.6
+                        },
+                        {
+                          "name": "wolf_lower_fang_R",
+                          "shape": "cone",
+                          "size": [0.012,0.04,6],
+                          "pos": [0.038,0.024,0.29],
+                          "rot": [0.12,0,0],
+                          "color": "#f8fafc",
+                          "roughness": 0.25
+                        },
+                        {
+                          "name": "wolf_lower_fang_L",
+                          "shape": "cone",
+                          "size": [0.012,0.04,6],
+                          "pos": [-0.038,0.024,0.29],
+                          "rot": [0.12,0,0],
+                          "color": "#f8fafc",
+                          "roughness": 0.25
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            },
+            "tail": {
+              "pos": [0,0.11,-0.84],
+              "lockPos": true,
+              "limits": {
+                "x": [-45,65],
+                "y": [-45,45],
+                "z": [-45,45]
+              },
+              "meshes": [
+                {
+                  "name": "wolf_tail_bush",
+                  "shape": "lathe",
+                  "size": [16],
+                  "points": [
+                    [0,-0.84],
+                    [0.052,-0.76],
+                    [0.115,-0.57],
+                    [0.142,-0.32],
+                    [0.128,-0.11],
+                    [0.092,0],
+                    [0,0.03]
+                  ],
+                  "pos": [0,-0.03,-0.055],
+                  "rot": [0.58,0,0],
+                  "color": "#6e6254",
+                  "roughness": 0.92,
+                  "metalness": 0.02,
+                  "pattern": "fur",
+                  "patternRepeat": [2,2]
+                },
+                {
+                  "name": "wolf_tail_tip_dark",
+                  "shape": "sphere",
+                  "size": [0.092,12,10],
+                  "pos": [0,-0.595,-0.43],
+                  "rot": [0.58,0,0],
+                  "scale": [0.85,1.75,0.85],
+                  "color": "#262320",
+                  "roughness": 0.92,
+                  "pattern": "fur",
+                  "patternRepeat": [1,1]
+                }
+              ]
+            },
+            "front_leg_L": {
+              "pos": [-0.21,-0.11,0.57],
+              "lockPos": true,
+              "limits": {
+                "x": [-85,75],
+                "y": [-25,25],
+                "z": [-25,25]
+              },
+              "meshes": [
+                {
+                  "name": "wolf_shoulder_FL",
+                  "shape": "sphere",
+                  "size": [0.155,14,12],
+                  "pos": [0,-0.055,0],
+                  "scale": [0.78,1.35,1.15],
+                  "color": "#9a8b78",
+                  "roughness": 0.88,
+                  "pattern": "fur",
+                  "patternRepeat": [1.5,1.5]
+                },
+                {
+                  "name": "wolf_upper_leg_FL",
+                  "shape": "lathe",
+                  "size": [14],
+                  "points": [
+                    [0,-0.46],
+                    [0.065,-0.43],
+                    [0.076,-0.24],
+                    [0.102,-0.055],
+                    [0.115,0.03],
+                    [0,0.055]
+                  ],
+                  "pos": [0,-0.055,0],
+                  "color": "#b8a996",
+                  "roughness": 0.88,
+                  "pattern": "fur",
+                  "patternRepeat": [1,1.5]
+                }
+              ],
+              "children": {
+                "front_shin_L": {
+                  "pos": [0,-0.485,0],
+                  "lockPos": true,
+                  "limits": {
+                    "x": [-10,110],
+                    "y": [-10,10],
+                    "z": [-10,10]
+                  },
+                  "meshes": [
+                    {
+                      "name": "wolf_knee_FL",
+                      "shape": "sphere",
+                      "size": [0.068,10,10],
+                      "pos": [0,0,0],
+                      "color": "#cfc6b8",
+                      "roughness": 0.88
+                    },
+                    {
+                      "name": "wolf_lower_leg_FL",
+                      "shape": "lathe",
+                      "size": [14],
+                      "points": [
+                        [0,-0.43],
+                        [0.048,-0.405],
+                        [0.054,-0.2],
+                        [0.065,0],
+                        [0,0.025]
+                      ],
+                      "pos": [0,0,0.012],
+                      "rot": [-0.06,0,0],
+                      "color": "#dcd5c9",
+                      "roughness": 0.88,
+                      "pattern": "fur",
+                      "patternRepeat": [1,1.5]
+                    }
+                  ],
+                  "children": {
+                    "front_paw_L": {
+                      "pos": [0,-0.42,0.035],
+                      "lockPos": true,
+                      "limits": {
+                        "x": [-45,55],
+                        "y": [-15,15],
+                        "z": [-15,15]
+                      },
+                      "meshes": [
+                        {
+                          "name": "wolf_paw_FL",
+                          "shape": "sphere",
+                          "size": [0.076,12,10],
+                          "pos": [0,-0.015,0.025],
+                          "scale": [0.88,0.52,1.35],
+                          "color": "#dcd5c9",
+                          "roughness": 0.9
+                        },
+                        {
+                          "name": "wolf_toes_FL",
+                          "shape": "box",
+                          "size": [0.088,0.034,0.054],
+                          "pos": [0,-0.035,0.095],
+                          "color": "#262320",
+                          "roughness": 0.7
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            },
+            "front_leg_R": {
+              "pos": [0.21,-0.11,0.57],
+              "lockPos": true,
+              "limits": {
+                "x": [-85,75],
+                "y": [-25,25],
+                "z": [-25,25]
+              },
+              "meshes": [
+                {
+                  "name": "wolf_shoulder_FR",
+                  "shape": "sphere",
+                  "size": [0.155,14,12],
+                  "pos": [0,-0.055,0],
+                  "scale": [0.78,1.35,1.15],
+                  "color": "#9a8b78",
+                  "roughness": 0.88,
+                  "pattern": "fur",
+                  "patternRepeat": [1.5,1.5]
+                },
+                {
+                  "name": "wolf_upper_leg_FR",
+                  "shape": "lathe",
+                  "size": [14],
+                  "points": [
+                    [0,-0.46],
+                    [0.065,-0.43],
+                    [0.076,-0.24],
+                    [0.102,-0.055],
+                    [0.115,0.03],
+                    [0,0.055]
+                  ],
+                  "pos": [0,-0.055,0],
+                  "color": "#b8a996",
+                  "roughness": 0.88,
+                  "pattern": "fur",
+                  "patternRepeat": [1,1.5]
+                }
+              ],
+              "children": {
+                "front_shin_R": {
+                  "pos": [0,-0.485,0],
+                  "lockPos": true,
+                  "limits": {
+                    "x": [-10,110],
+                    "y": [-10,10],
+                    "z": [-10,10]
+                  },
+                  "meshes": [
+                    {
+                      "name": "wolf_knee_FR",
+                      "shape": "sphere",
+                      "size": [0.068,10,10],
+                      "pos": [0,0,0],
+                      "color": "#cfc6b8",
+                      "roughness": 0.88
+                    },
+                    {
+                      "name": "wolf_lower_leg_FR",
+                      "shape": "lathe",
+                      "size": [14],
+                      "points": [
+                        [0,-0.43],
+                        [0.048,-0.405],
+                        [0.054,-0.2],
+                        [0.065,0],
+                        [0,0.025]
+                      ],
+                      "pos": [0,0,0.012],
+                      "rot": [-0.06,0,0],
+                      "color": "#dcd5c9",
+                      "roughness": 0.88,
+                      "pattern": "fur",
+                      "patternRepeat": [1,1.5]
+                    }
+                  ],
+                  "children": {
+                    "front_paw_R": {
+                      "pos": [0,-0.42,0.035],
+                      "lockPos": true,
+                      "limits": {
+                        "x": [-45,55],
+                        "y": [-15,15],
+                        "z": [-15,15]
+                      },
+                      "meshes": [
+                        {
+                          "name": "wolf_paw_FR",
+                          "shape": "sphere",
+                          "size": [0.076,12,10],
+                          "pos": [0,-0.015,0.025],
+                          "scale": [0.88,0.52,1.35],
+                          "color": "#dcd5c9",
+                          "roughness": 0.9
+                        },
+                        {
+                          "name": "wolf_toes_FR",
+                          "shape": "box",
+                          "size": [0.088,0.034,0.054],
+                          "pos": [0,-0.035,0.095],
+                          "color": "#262320",
+                          "roughness": 0.7
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            },
+            "back_leg_L": {
+              "pos": [-0.202,-0.055,-0.58],
+              "lockPos": true,
+              "limits": {
+                "x": [-85,75],
+                "y": [-25,25],
+                "z": [-25,25]
+              },
+              "meshes": [
+                {
+                  "name": "wolf_thigh_BL",
+                  "shape": "lathe",
+                  "size": [16],
+                  "points": [
+                    [0,-0.34],
+                    [0.085,-0.3],
+                    [0.135,-0.18],
+                    [0.165,-0.04],
+                    [0.14,0.08],
+                    [0,0.12]
+                  ],
+                  "pos": [0,-0.02,0],
+                  "rot": [-0.26,0,0],
+                  "scale": [0.76,1,1.15],
+                  "color": "#8c7d6b",
+                  "roughness": 0.88,
+                  "pattern": "fur",
+                  "patternRepeat": [1.5,1.5]
+                },
+                {
+                  "name": "wolf_stifle_knee_BL",
+                  "shape": "sphere",
+                  "size": [0.082,12,10],
+                  "pos": [0,-0.3,0.08],
+                  "color": "#9a8b78",
+                  "roughness": 0.88,
+                  "pattern": "fur",
+                  "patternRepeat": [1,1]
+                },
+                {
+                  "name": "wolf_crus_BL",
+                  "shape": "lathe",
+                  "size": [14],
+                  "points": [
+                    [0,-0.37],
+                    [0.058,-0.34],
+                    [0.075,-0.18],
+                    [0.095,-0.02],
+                    [0,0.03]
+                  ],
+                  "pos": [0,-0.3,0.08],
+                  "rot": [0.5,0,0],
+                  "color": "#b8a996",
+                  "roughness": 0.88,
+                  "pattern": "fur",
+                  "patternRepeat": [1,1.5]
+                }
+              ],
+              "children": {
+                "back_shin_L": {
+                  "pos": [0,-0.6,-0.085],
+                  "lockPos": true,
+                  "limits": {
+                    "x": [-95,45],
+                    "y": [-10,10],
+                    "z": [-10,10]
+                  },
+                  "meshes": [
+                    {
+                      "name": "wolf_hock_joint_BL",
+                      "shape": "sphere",
+                      "size": [0.065,10,10],
+                      "pos": [0,0,0],
+                      "color": "#cfc6b8",
+                      "roughness": 0.88
+                    },
+                    {
+                      "name": "wolf_metatarsus_BL",
+                      "shape": "lathe",
+                      "size": [14],
+                      "points": [
+                        [0,-0.365],
+                        [0.048,-0.34],
+                        [0.054,-0.16],
+                        [0.061,0],
+                        [0,0.025]
+                      ],
+                      "pos": [0,0,0],
+                      "rot": [-0.14,0,0],
+                      "color": "#dcd5c9",
+                      "roughness": 0.88,
+                      "pattern": "fur",
+                      "patternRepeat": [1,1.5]
+                    }
+                  ],
+                  "children": {
+                    "back_paw_L": {
+                      "pos": [0,-0.35,0.05],
+                      "lockPos": true,
+                      "limits": {
+                        "x": [-45,55],
+                        "y": [-15,15],
+                        "z": [-15,15]
+                      },
+                      "meshes": [
+                        {
+                          "name": "wolf_paw_BL",
+                          "shape": "sphere",
+                          "size": [0.074,12,10],
+                          "pos": [0,-0.015,0.025],
+                          "scale": [0.86,0.52,1.32],
+                          "color": "#dcd5c9",
+                          "roughness": 0.9
+                        },
+                        {
+                          "name": "wolf_toes_BL",
+                          "shape": "box",
+                          "size": [0.084,0.034,0.054],
+                          "pos": [0,-0.035,0.092],
+                          "color": "#262320",
+                          "roughness": 0.7
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            },
+            "back_leg_R": {
+              "pos": [0.202,-0.055,-0.58],
+              "lockPos": true,
+              "limits": {
+                "x": [-85,75],
+                "y": [-25,25],
+                "z": [-25,25]
+              },
+              "meshes": [
+                {
+                  "name": "wolf_thigh_BR",
+                  "shape": "lathe",
+                  "size": [16],
+                  "points": [
+                    [0,-0.34],
+                    [0.085,-0.3],
+                    [0.135,-0.18],
+                    [0.165,-0.04],
+                    [0.14,0.08],
+                    [0,0.12]
+                  ],
+                  "pos": [0,-0.02,0],
+                  "rot": [-0.26,0,0],
+                  "scale": [0.76,1,1.15],
+                  "color": "#8c7d6b",
+                  "roughness": 0.88,
+                  "pattern": "fur",
+                  "patternRepeat": [1.5,1.5]
+                },
+                {
+                  "name": "wolf_stifle_knee_BR",
+                  "shape": "sphere",
+                  "size": [0.082,12,10],
+                  "pos": [0,-0.3,0.08],
+                  "color": "#9a8b78",
+                  "roughness": 0.88,
+                  "pattern": "fur",
+                  "patternRepeat": [1,1]
+                },
+                {
+                  "name": "wolf_crus_BR",
+                  "shape": "lathe",
+                  "size": [14],
+                  "points": [
+                    [0,-0.37],
+                    [0.058,-0.34],
+                    [0.075,-0.18],
+                    [0.095,-0.02],
+                    [0,0.03]
+                  ],
+                  "pos": [0,-0.3,0.08],
+                  "rot": [0.5,0,0],
+                  "color": "#b8a996",
+                  "roughness": 0.88,
+                  "pattern": "fur",
+                  "patternRepeat": [1,1.5]
+                }
+              ],
+              "children": {
+                "back_shin_R": {
+                  "pos": [0,-0.6,-0.085],
+                  "lockPos": true,
+                  "limits": {
+                    "x": [-95,45],
+                    "y": [-10,10],
+                    "z": [-10,10]
+                  },
+                  "meshes": [
+                    {
+                      "name": "wolf_hock_joint_BR",
+                      "shape": "sphere",
+                      "size": [0.065,10,10],
+                      "pos": [0,0,0],
+                      "color": "#cfc6b8",
+                      "roughness": 0.88
+                    },
+                    {
+                      "name": "wolf_metatarsus_BR",
+                      "shape": "lathe",
+                      "size": [14],
+                      "points": [
+                        [0,-0.365],
+                        [0.048,-0.34],
+                        [0.054,-0.16],
+                        [0.061,0],
+                        [0,0.025]
+                      ],
+                      "pos": [0,0,0],
+                      "rot": [-0.14,0,0],
+                      "color": "#dcd5c9",
+                      "roughness": 0.88,
+                      "pattern": "fur",
+                      "patternRepeat": [1,1.5]
+                    }
+                  ],
+                  "children": {
+                    "back_paw_R": {
+                      "pos": [0,-0.35,0.05],
+                      "lockPos": true,
+                      "limits": {
+                        "x": [-45,55],
+                        "y": [-15,15],
+                        "z": [-15,15]
+                      },
+                      "meshes": [
+                        {
+                          "name": "wolf_paw_BR",
+                          "shape": "sphere",
+                          "size": [0.074,12,10],
+                          "pos": [0,-0.015,0.025],
+                          "scale": [0.86,0.52,1.32],
+                          "color": "#dcd5c9",
+                          "roughness": 0.9
+                        },
+                        {
+                          "name": "wolf_toes_BR",
+                          "shape": "box",
+                          "size": [0.084,0.034,0.054],
+                          "pos": [0,-0.035,0.092],
+                          "color": "#262320",
+                          "roughness": 0.7
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "stats": {}
+}

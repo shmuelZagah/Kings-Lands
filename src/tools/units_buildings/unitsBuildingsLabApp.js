@@ -18,6 +18,7 @@
  *   - Contextual jump to Animation Lab (`contextualBuildingId`) with Building Animation Session clips (`build_construct`, `idle`, `level_up`, `recruit_spawn`, `damage_stage_1`, `damage_stage_2`, `collapse_destroy`).
  */
 
+import { ANIMATION_LAB_NAME, UNITS_BUILDINGS_LAB_NAME, HEROES_LAB_NAME } from '../../data/labNames.js';
 import { dataRegistry, DEFAULT_BASE_CHAR_ID } from '../../data/dataRegistry.js';
 import * as THREE from 'three';
 import { modelProvider } from '../../render/modelProvider.js';
@@ -155,7 +156,7 @@ export class UnitsBuildingsLabApp {
         <header class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 bg-slate-900/95 px-4 py-2">
           <div class="flex items-center gap-3">
             <h1 class="text-sm font-black uppercase tracking-wider text-amber-400">
-              ⚔️ Kings Lands • Units & Buildings Lab
+              ⚔️ Kings Lands • ${UNITS_BUILDINGS_LAB_NAME} Lab
             </h1>
             <div class="flex rounded-lg bg-slate-950 p-0.5 border border-slate-700">
               <button type="button" id="ub-tab-units" class="rounded-md px-3.5 py-1 text-xs font-extrabold transition cursor-pointer ${
@@ -178,10 +179,10 @@ export class UnitsBuildingsLabApp {
 
           <div class="flex items-center gap-1.5">
             <button type="button" id="ub-btn-open-studio" class="rounded-lg border border-sky-400/60 bg-sky-500/15 hover:bg-sky-500/25 px-3 py-1 text-xs font-bold text-sky-300 cursor-pointer">
-              🎬 Animation Lab
+              🎬 ${ANIMATION_LAB_NAME}
             </button>
             <button type="button" id="ub-btn-open-heroes" class="rounded-lg border border-amber-400/60 bg-amber-500/15 hover:bg-amber-500/25 px-3 py-1 text-xs font-bold text-amber-300 cursor-pointer">
-              👑 Hall of Heroes
+              👑 ${HEROES_LAB_NAME}
             </button>
             <button type="button" id="ub-btn-export" class="rounded-lg bg-emerald-600 hover:bg-emerald-500 px-3 py-1 text-xs font-bold text-slate-950 shadow cursor-pointer">
               Export JSON

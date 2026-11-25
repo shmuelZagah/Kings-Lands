@@ -34,6 +34,7 @@ if (typeof globalThis.document === 'undefined') {
   };
 }
 
+import { readEngineConfig } from '../helpers/loadData.mjs';
 import fs from 'node:fs';
 import { GameState } from '../../src/sim/gameState.js';
 import { CommandTypes } from '../../src/core/commandBus.js';
@@ -61,9 +62,7 @@ import {
 } from '../../src/tools/units_buildings/buildingsTabRenderer.js';
 import { BuildingModelFactory } from '../../src/render/buildingModelFactory.js';
 
-const engineConfig = JSON.parse(
-  fs.readFileSync(new URL('../../src/data/engineConfig.json', import.meta.url), 'utf8')
-);
+const engineConfig = readEngineConfig();
 
 export async function runUnitsBuildingsLabAndDoorTests() {
   console.log('=== Running Units & Buildings Lab (11 Fixes + 3 Enhancements), Doorway Economy & AI Suite ===');
@@ -390,9 +389,9 @@ export async function runUnitsBuildingsLabAndDoorTests() {
   });
   sm.saveAll();
 
-  const syncedCfg = loadUnitsBuildingsConfigFromStorage();
-  const gs = new GameState({ ...engineConfig, ...syncedCfg });
-  gs.syncUnitsBuildingsConfig(syncedCfg);
+  const { dataRegistry: simRegistry } = await import('../../src/data/dataRegistry.js');
+  const gs = new GameState({ ...engineConfig, simSnapshot: simRegistry.getSimSnapshot() });
+  gs.applySimConfig(simRegistry.getSimSnapshot());
 
   gs.constructionSystem.createBuilding({
     type: 'house',

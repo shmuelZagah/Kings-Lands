@@ -1,11 +1,12 @@
 import assert from 'assert';
+import { readEngineConfig } from '../helpers/loadData.mjs';
 import fs from 'fs';
 import { GameState, AnimState } from '../../src/sim/gameState.js';
 import { CommandTypes } from '../../src/core/commandBus.js';
 import { FX_ONE, fxHypot } from '../../src/core/fx.js';
 
 export async function runMovementTests() {
-  const config = JSON.parse(fs.readFileSync(new URL('../../src/data/engineConfig.json', import.meta.url), 'utf8'));
+  const config = readEngineConfig();
   const gs = new GameState(config);
   gs.enemyAi.setMode('off');
 

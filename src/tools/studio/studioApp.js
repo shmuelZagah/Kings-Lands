@@ -18,6 +18,7 @@
  *   - walk / run / gallop are procedural (parameters only). idle may be procedural and/or keyframed.
  */
 
+import { ANIMATION_LAB_NAME } from '../../data/labNames.js';
 import * as THREE from 'three';
 import { updateBowstringRig } from '../../render/modelFactory.js';
 import { modelProvider } from '../../render/modelProvider.js';
@@ -454,12 +455,12 @@ export class StudioApp {
           ? '← Back to Buildings Lab'
           : 'Back';
     const headerTitle = this.contextualHeroId
-      ? `Kings Lands • Hero Animation Lab (${activeDef?.displayName || this.contextualHeroId})`
+      ? `Kings Lands • Hero ${ANIMATION_LAB_NAME} (${activeDef?.displayName || this.contextualHeroId})`
       : this.contextualUnitId
-        ? `Kings Lands • Unit Animation Lab (${activeDef?.displayName || this.contextualUnitId})`
+        ? `Kings Lands • Unit ${ANIMATION_LAB_NAME} (${activeDef?.displayName || this.contextualUnitId})`
         : this.contextualBuildingId
-          ? `Kings Lands • Building Animation Lab (${activeDef?.displayName || this.contextualBuildingId})`
-          : 'Kings Lands • Animation Lab';
+          ? `Kings Lands • Building ${ANIMATION_LAB_NAME} (${activeDef?.displayName || this.contextualBuildingId})`
+          : `Kings Lands • ${ANIMATION_LAB_NAME}`;
 
     this.rootContainer.innerHTML = `
       <div class="fixed inset-0 z-40 flex flex-col bg-slate-950 text-slate-100 select-none overflow-hidden">

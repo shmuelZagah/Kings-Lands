@@ -9,7 +9,7 @@ import {
   fxCos,
   isqrt
 } from '../../core/fx.js';
-import unitStatsData from '../../data/unitStats.json';
+import { defaultUnitStats as unitStatsData } from '../../data/defaults.js';
 
 export const FormationTypes = Object.freeze({
   SQUARE: 'square',

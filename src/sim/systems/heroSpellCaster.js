@@ -15,7 +15,7 @@ import {
   toFx
 } from '../../core/fx.js';
 import { Company, CompanyOrderType, resolveDefaultFormation } from '../formations/company.js';
-import defaultHeroesJson from '../../data/heroes.json';
+import { defaultHeroesData as defaultHeroesJson } from '../../data/defaults.js';
 import { getSpellCastTimingProfile } from '../../render/heroSpellAnimations.js';
 const LEGACY_SPELL_ID_ALIASES = Object.freeze({
   iron_skin: 'iron_blood',

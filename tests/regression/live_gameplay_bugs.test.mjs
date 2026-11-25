@@ -1,11 +1,12 @@
 import assert from 'node:assert/strict';
+import { readEngineConfig, readUnitsJson } from '../helpers/loadData.mjs';
 import fs from 'node:fs';
 import { GameState } from '../../src/sim/gameState.js';
 import { CommandTypes } from '../../src/core/commandBus.js';
 import { sampleChannelInto, _sampleScratch } from '../../src/render/keyframeSampler.js';
 
-const engineConfig = JSON.parse(fs.readFileSync(new URL('../../src/data/engineConfig.json', import.meta.url), 'utf8'));
-const unitsJson = JSON.parse(fs.readFileSync(new URL('../../src/data/visuals/units.json', import.meta.url), 'utf8'));
+const engineConfig = readEngineConfig();
+const unitsJson = readUnitsJson();
 
 console.log('=== Running Live Gameplay Bug Regression Suite (6 User-Reported Bugs) ===');
 

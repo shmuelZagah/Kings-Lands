@@ -3,6 +3,7 @@ import {
   renderVisualIconPickerGridHtml,
   BUILT_IN_ICON_KEYS
 } from '../../ui/hud/unitIconsCatalog.js';
+import { ANIMATION_LAB_NAME } from '../../data/labNames.js';
 import { computeCapabilitiesForLoadout } from '../../sim/combatCapabilitiesRegistry.js';
 /**
  * Kings Lands — Warriors / Units Tab Renderer for Units & Buildings Lab
@@ -331,7 +332,7 @@ export function renderUnitRightInspectorHtml(stateManager, unitId, activeLoadout
               <div class="text-[10px] font-semibold text-slate-400">Base Character (Owned by Studio)</div>
               <div id="ub-unit-base-readonly" class="text-xs font-bold text-amber-200 truncate" title="${curBaseId}">${curBaseLabel}</div>
             </div>
-            <button type="button" id="ub-btn-edit-look-studio" class="shrink-0 rounded-lg border border-sky-400/60 bg-sky-500/15 hover:bg-sky-500/25 px-2.5 py-1 text-[10.5px] font-extrabold text-sky-300 cursor-pointer transition" title="Open Animation Studio to choose Base Character, Skins & Clothing">
+            <button type="button" id="ub-btn-edit-look-studio" class="shrink-0 rounded-lg border border-sky-400/60 bg-sky-500/15 hover:bg-sky-500/25 px-2.5 py-1 text-[10.5px] font-extrabold text-sky-300 cursor-pointer transition" title="Open ${ANIMATION_LAB_NAME} to choose Base Character, Skins & Clothing">
               🎬 Change Base &amp; Look in Studio
             </button>
           </div>
@@ -379,7 +380,7 @@ export function renderUnitRightInspectorHtml(stateManager, unitId, activeLoadout
       <div class="rounded-xl border border-violet-500/40 bg-slate-950/75 p-2.5 flex flex-col gap-2">
         <div class="flex items-center justify-between gap-2">
           <span class="text-xs font-black text-violet-300">Visual Appearance (Cosmetic)</span>
-          <button type="button" id="ub-btn-edit-cosmetic-studio" class="rounded-lg border border-violet-400/60 bg-violet-500/15 hover:bg-violet-500/25 px-2 py-0.5 text-[10px] font-extrabold text-violet-200 cursor-pointer transition" title="Customize look, skins, and fitted clothing in Animation Studio">
+          <button type="button" id="ub-btn-edit-cosmetic-studio" class="rounded-lg border border-violet-400/60 bg-violet-500/15 hover:bg-violet-500/25 px-2 py-0.5 text-[10px] font-extrabold text-violet-200 cursor-pointer transition" title="Customize look, skins, and fitted clothing in ${ANIMATION_LAB_NAME}">
             🎨 Edit Look &amp; Skins in Studio
           </button>
         </div>
@@ -462,7 +463,7 @@ export function renderUnitRightInspectorHtml(stateManager, unitId, activeLoadout
           <div class="flex items-center gap-1">
             <button type="button" id="ub-btn-add-default-library-icon" class="rounded-lg bg-emerald-500 hover:bg-emerald-400 px-2 py-1 text-[10px] font-black text-slate-950 shadow cursor-pointer transition" title="Add a custom icon image to the shared Default Icon Library for all 3 slots">+ Add Icon to Library</button>
             <input id="ub-input-add-default-library-icon" type="file" accept="image/*" class="hidden" />
-            <button type="button" id="ub-btn-pose-capture-studio" class="rounded-lg bg-amber-500 hover:bg-amber-400 px-2 py-1 text-[10px] font-black text-slate-950 shadow cursor-pointer transition" title="Open Animation Lab on the 📸 Icons tab so you can pose the unit on any frame before capturing!">
+            <button type="button" id="ub-btn-pose-capture-studio" class="rounded-lg bg-amber-500 hover:bg-amber-400 px-2 py-1 text-[10px] font-black text-slate-950 shadow cursor-pointer transition" title="Open ${ANIMATION_LAB_NAME} on the 📸 Icons tab so you can pose the unit on any frame before capturing!">
               🎬 Pose &amp; Capture
             </button>
           </div>

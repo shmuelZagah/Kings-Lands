@@ -2,9 +2,7 @@ import { TICK_MS, TICKS_PER_SEC } from '../core/fx.js';
 import { EventTypes } from '../core/eventBus.js';
 import { SimulationCore } from './simulationCore.js';
 import { SNAPSHOT_STRIDE } from './gameState.js';
-import { CommandTypes } from '../core/commandBus.js';
-import { loadHeroesDataFromStorage } from '../tools/heroes/heroStateManager.js';
-import { loadUnitsBuildingsConfigFromStorage } from '../tools/units_buildings/unitsBuildingsStateManager.js';
+import { dataRegistry } from '../data/dataRegistry.js';
 import { getActiveCustomMapState, serializeMapState } from '../tools/map_editor/mapStateManager.js';
 import { saveLearnedAiModel } from './ai/aiLearningModel.js';
 
@@ -52,20 +50,6 @@ export class SimBridge {
     }
 
     this._bindVisibilityRecovery();
-    if (typeof window !== 'undefined') {
-      this._onHeroesUpdated = (e) => {
-        const updated = e?.detail || loadHeroesDataFromStorage();
-        this.config = { ...this.config, heroesData: updated };
-        this.commandBus?.issue?.(CommandTypes.SYNC_HEROES_CONFIG, { heroesData: updated });
-      };
-      this._onUnitsBuildingsUpdated = () => {
-        const ubCfg = loadUnitsBuildingsConfigFromStorage();
-        this.config = { ...this.config, ...ubCfg };
-        this.commandBus?.issue?.(CommandTypes.SYNC_UNITS_BUILDINGS_CONFIG, ubCfg);
-      };
-      window.addEventListener('kings_lands_heroes_updated', this._onHeroesUpdated);
-      window.addEventListener('kings_lands_units_buildings_updated', this._onUnitsBuildingsUpdated);
-    }
   }
 
   _bindVisibilityRecovery() {
@@ -84,8 +68,7 @@ export class SimBridge {
     const activeMap = getActiveCustomMapState();
     this.config = {
       ...this.config,
-      heroesData: loadHeroesDataFromStorage(),
-      ...loadUnitsBuildingsConfigFromStorage(),
+      ...this._dataConfig(),
       customMapData: activeMap ? serializeMapState(activeMap) : null
     };
     this.localSim = new SimulationCore(this.config, (packet) => this._handlePacket(packet));
@@ -97,11 +80,16 @@ export class SimBridge {
     });
   }
 
+  /**
+   * Everything the sim reads from game data for THIS match: one frozen snapshot from the registry
+   * (see src/sim/simConfig.js). Lab edits made while the match runs apply to the next match, not this one.
+   */
+  _dataConfig() {
+    const simSnapshot = dataRegistry.getSimSnapshot();
+    return { simSnapshot, heroesData: simSnapshot.heroes };
+  }
+
   start() {
-    if (typeof window !== 'undefined' && this._onHeroesUpdated) {
-      window.removeEventListener('kings_lands_heroes_updated', this._onHeroesUpdated);
-      window.addEventListener('kings_lands_heroes_updated', this._onHeroesUpdated);
-    }
     if (this.isNoWorker) {
       this._startLocalFallback();
       return;
@@ -119,8 +107,7 @@ export class SimBridge {
       const activeMap = getActiveCustomMapState();
       this.config = {
         ...this.config,
-        heroesData: loadHeroesDataFromStorage(),
-        ...loadUnitsBuildingsConfigFromStorage(),
+        ...this._dataConfig(),
         customMapData: activeMap ? serializeMapState(activeMap) : null
       };
       this.worker.postMessage({ type: 'INIT', config: this.config });
@@ -159,9 +146,6 @@ export class SimBridge {
     if (this.localSim) {
       this.localSim.stop();
       this.localSim = null;
-    }
-    if (typeof window !== 'undefined' && this._onHeroesUpdated) {
-      window.removeEventListener('kings_lands_heroes_updated', this._onHeroesUpdated);
     }
   }
 

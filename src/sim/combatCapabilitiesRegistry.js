@@ -11,8 +11,8 @@
  *    Units & Buildings Lab (`UnitsBuildingsLabApp`), and Animation Lab (`StudioApp`).
  */
 
-import defaultUnitStats from '../data/unitStats.json';
-import defaultUnitsVisuals from '../data/visuals/units.json';
+import { defaultUnitStats } from '../data/defaults.js';
+import { defaultUnitsVisuals } from '../data/defaults.js';
 import { MAIN_LOADOUT, loadoutsOf, asLoadout, heldItems, weaponTypeOf } from '../tools/studio/weaponRules.js';
 
 export const COMBAT_MODES_CATALOG = Object.freeze({

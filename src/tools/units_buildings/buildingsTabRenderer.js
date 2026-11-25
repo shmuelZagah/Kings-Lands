@@ -1,4 +1,5 @@
 import { dataRegistry } from '../../data/dataRegistry.js';
+import { ANIMATION_LAB_NAME } from '../../data/labNames.js';
 import { BUILDING_LEVEL_UPGRADE_FEATURES, ensureBuildingLevelUpgradesConfig, getCumulativeBuildingUpgradesAtLevel } from './buildingStudioAdapter.js';
 /**
  * Kings Lands — Buildings Tab Renderer for Units & Buildings Lab
@@ -280,7 +281,7 @@ export function renderBuildingRightInspectorHtml(stateManager, buildingId, previ
             <option value="default" ${activeId === 'default' ? 'selected' : ''}>Default look</option>
             ${items.map(([sid, it]) => `<option value="${esc(sid)}" ${activeId === sid ? 'selected' : ''}>${esc(it.name || sid)}</option>`).join('')}
           </select>
-          ${!items.length ? `<div class="text-[10.5px] text-slate-400">Import custom .glb skins in Animation Studio to add more looks.</div>` : ''}
+          ${!items.length ? `<div class="text-[10.5px] text-slate-400">Import custom .glb skins in ${ANIMATION_LAB_NAME} to add more looks.</div>` : ''}
         </div>`;
       })()}
 

@@ -2,14 +2,14 @@
  * Kings Lands — Single Game Data Registry (src/data/dataRegistry.js)
  *
  * The ONLY module that reads/writes game data and persists user overrides in localStorage:
- *   - units (src/data/visuals/units.json + src/data/unitStats.json)
+ *   - units (assembled from src/data/races/** + bases/** + shared/**, see src/data/DATA_LAYOUT.md)
  *   - bases (derived dynamically from units data — no hardcoded template lists)
  *   - gear / prefabs (units + heroes prefabs)
  *   - animations (units, buildings, heroes keyframes & procedural clips)
  *   - skins (unit faction/look skins & imported building skins)
  *   - races / factions
- *   - buildings (src/data/buildings.json + src/data/buildingVisuals.json)
- *   - heroes (src/data/heroes.json)
+ *   - buildings (src/data/shared/buildings.json + buildingVisuals.json)
+ *   - heroes (src/data/races/<race>/heroes.json + shared/heroesMeta.json)
  *
  * Every getter returns deep-cloned data (never a mutable shared object).
  * Every save / transaction runs full cross-reference & structural validation (`validateRegistryState`)
@@ -18,16 +18,18 @@
  * file version stamps, migrating all legacy draft keys automatically without dropping user work.
  */
 
-import defaultUnitsVisuals from './visuals/units.json';
-import defaultUnitStats from './unitStats.json';
-import defaultBuildingsData from './buildings.json';
-import defaultBuildingVisuals from './buildingVisuals.json';
-import defaultHeroesData from './heroes.json';
+import { defaultUnitsVisuals } from './defaults.js';
+import { defaultUnitStats } from './defaults.js';
+import { defaultBuildingsData } from './defaults.js';
+import { defaultBuildingVisuals } from './defaults.js';
+import { defaultHeroesData } from './defaults.js';
 import { sanitizeUnitsData, registerDefaultUnitsVisuals } from '../tools/studio/clipEditing.js';
 import { restow, loadoutsOf, MAIN_LOADOUT } from '../tools/studio/weaponRules.js';
 import { computeCapabilitiesForLoadout } from '../sim/combatCapabilitiesRegistry.js';
 import { ensureUnitStatsForVisualUnit, removeUnitAcrossLabs } from '../tools/labSync.js';
 import { validateRegistryState } from '../tools/studio/healthCheck.js';
+import { buildSimSnapshot } from '../sim/simConfig.js';
+import { BASE_ONLY_RACE_IDS } from './dataLayout.js';
 
 registerDefaultUnitsVisuals(defaultUnitsVisuals);
 
@@ -1094,6 +1096,7 @@ let _lastValidation = null;
 let _lastChanged = ['*'];
 let _persistStatus = { ok: true, error: null, at: 0 };
 const _subscribers = new Set();
+let _simSnapshotCache = null;
 
 function persistOverridesToStorage(bundle) {
   const storage = globalThis.localStorage;
@@ -1598,6 +1601,59 @@ export const dataRegistry = {
     }
     return out;
   },
+  // ---- Race cards (getRaces()/getRace() above keep returning the faction definitions the labs use) ----
+  // A card = identity + the ids of the race's bases, units, heroes and gear, grouped live by the `race` field
+  // (the same grouping as src/data/races/<race>.json). Per-race getters below return copies of that data.
+  /** Race cards. Base-only ids (mirukenkay) are bases, never races, unless `includeBaseOnly` is set. */
+  getRaceCards({ includeBaseOnly = false } = {}) {
+    const b = ensureLoaded();
+    const out = [];
+    for (const id of Object.keys(b.unitsVisuals.factions || {})) {
+      if (!includeBaseOnly && BASE_ONLY_RACE_IDS.includes(id)) continue;
+      out.push(this.getRaceCard(id));
+    }
+    return out;
+  },
+  getRaceCard(id) {
+    const b = ensureLoaded();
+    const f = b.unitsVisuals.factions?.[id];
+    if (!f) return null;
+    const visuals = b.unitsVisuals.units || {};
+    const bases = [];
+    const units = [];
+    for (const [uid, u] of Object.entries(visuals)) {
+      if (u?.race !== id) continue;
+      if (isBaseUnitEntry(uid, u)) bases.push(uid); else if (!u.isBuildingEntity && !u.isHero) units.push(uid);
+    }
+    return deepClone({
+      id,
+      name: f.displayName || id,
+      teamColors: f.teamColors ?? null,
+      sharedUnits: Boolean(f.sharedUnits),
+      baseOnly: BASE_ONLY_RACE_IDS.includes(id),
+      bases,
+      units,
+      heroes: Object.entries(b.heroes.heroes || {}).filter(([, h]) => h?.race === id).map(([hid]) => hid),
+      gear: Object.entries(b.unitsVisuals.prefabs || {}).filter(([, p]) => p?.race === id).map(([pid]) => pid),
+      buildings: 'shared'
+    });
+  },
+  getUnitsForRace(id) {
+    const b = ensureLoaded();
+    const race = this.getRaceCard(id);
+    if (!race) return { visuals: {}, stats: {} };
+    const pick = (map, ids) => Object.fromEntries(ids.filter((k) => map?.[k]).map((k) => [k, deepClone(map[k])]));
+    return { visuals: pick(b.unitsVisuals.units, race.units), stats: pick(b.unitStats.units, Object.keys(b.unitStats.units || {}).filter((k) => b.unitStats.units[k]?.race === id)) };
+  },
+  getBasesForRace(id) { return this.getBases(id); },
+  getGearForRace(id) {
+    return deepClone(Object.fromEntries(Object.entries(ensureLoaded().unitsVisuals.prefabs || {}).filter(([, p]) => p?.race === id)));
+  },
+  getHeroesForRace(id) {
+    return deepClone(Object.fromEntries(Object.entries(ensureLoaded().heroes.heroes || {}).filter(([, h]) => h?.race === id)));
+  },
+  /** Buildings are shared by every race today (no `race` on a building); a future per-race building list plugs in here. */
+  getBuildingsForRace(_id) { return this.getBuildings().buildings; },
   getBase(id) {
     if (!id) return null;
     const resolved = resolveBaseCharId(id, id);
@@ -2021,6 +2077,17 @@ export const dataRegistry = {
       buildingSkins: deepClone(BASELINE_BUILDING_SKINS),
       heroes: deepClone(BASELINE_HEROES)
     };
+  },
+  /**
+   * The frozen, versioned config for a NEW match (see src/sim/simConfig.js). Cached per registry version.
+   * The running match never sees later lab edits.
+   */
+  getSimSnapshot() {
+    const b = ensureLoaded();
+    if (!_simSnapshotCache || _simSnapshotCache.version !== _version) {
+      _simSnapshotCache = { version: _version, snap: buildSimSnapshot(b, _version) };
+    }
+    return _simSnapshotCache.snap;
   },
   syncRuntimeData({ unitStats = null, buildings = null, unitsVisuals = null, buildingVisuals = null, heroes = null } = {}) {
     syncRuntimeModuleExports({ unitStats, buildings, unitsVisuals, buildingVisuals, heroes });
