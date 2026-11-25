@@ -167,24 +167,6 @@ export function computeEligibleFormationsForUnit(
   return result;
 }
 
-/**
- * Syncs live in-memory module exports through `dataRegistry` so untouched sim code
- * sees updated unit stats, buildings, and unit visuals immediately.
- */
-export function syncLiveConfigObjectsInMemory(
-  unitStatsObj,
-  buildingsDataObj,
-  unitsVisualsObj = null,
-  buildingVisualsObj = null
-) {
-  dataRegistry.syncRuntimeData({
-    unitStats: unitStatsObj,
-    buildings: buildingsDataObj,
-    unitsVisuals: unitsVisualsObj,
-    buildingVisuals: buildingVisualsObj
-  });
-}
-
 export function loadUnitsBuildingsConfigFromStorage() {
   const { stats, visuals } = dataRegistry.getUnits();
   const buildings = dataRegistry.getBuildings();

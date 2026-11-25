@@ -12,10 +12,16 @@
  * The same snapshot always gives the same match (tests/regression/sim_snapshot.test.mjs). A lab edit reaches the NEXT
  * match; a running match keeps the snapshot it started with.
  *
- * Sim modules read the shipped default objects (src/data/defaults.js) that applySimSnapshot updates in place
- * (this is what the old syncRuntimeModuleExports did implicitly for every lab save, mid-match included).
+ * Sim modules read their data ONLY through the accessors below (simUnitStats / simBuildings / simUnitsVisuals /
+ * simHeroes). The data behind them is owned by this module:
+ *   worker      : a private view that applySimSnapshot fills (identity-stable, updated in place between matches)
+ *   main thread : the HUD/formation code that shares sim helpers calls setSimDataSource(() => registry view), so it
+ *                 always sees the live registry data
+ * Nothing mutates the shipped objects of src/data/defaults.js any more; they stay pristine for the registry baseline.
+ * Without a snapshot (unit tests that build a GameState directly) the view starts as a copy of the shipped data.
  */
 import { defaultUnitStats, defaultBuildingsData, defaultUnitsVisuals, defaultHeroesData } from '../data/defaults.js';
+import { dataHash, BLOB_KEYS, BLOB_MIN } from '../data/dataHash.js';
 
 export const SIM_SNAPSHOT_SCHEMA = 1;
 
@@ -26,16 +32,25 @@ function deepFreeze(o) {
   return o;
 }
 
-const clone = (v) => (v === undefined ? undefined : JSON.parse(JSON.stringify(v)));
-
-/** FNV-1a over a key-sorted JSON text: same data -> same hash, whatever the key order. */
-export function stableHash(value) {
-  const text = JSON.stringify(value, (_k, v) => (v && typeof v === 'object' && !Array.isArray(v)
-    ? Object.fromEntries(Object.keys(v).sort().map((k) => [k, v[k]])) : v));
-  let h = 0x811c9dc5;
-  for (let i = 0; i < text.length; i++) { h ^= text.charCodeAt(i); h = Math.imul(h, 0x01000193); }
-  return (h >>> 0).toString(16).padStart(8, '0');
+/**
+ * Deep copy for the sim. Mesh arrays (vertices / faces / colors ...) are visual-only: the sim never reads them, so they
+ * are dropped (empty arrays) - the snapshot shrinks from several MB to a few hundred KB, which makes the hand-over to
+ * the worker, the hash and the apply step cheap. Mesh edits therefore do not change the snapshot hash.
+ */
+function clone(v, key) {
+  if (v === undefined || v === null || typeof v !== 'object') return v;
+  if (Array.isArray(v)) {
+    if (key !== undefined && v.length >= BLOB_MIN && BLOB_KEYS.has(key)) return [];
+    const out = new Array(v.length);
+    for (let i = 0; i < v.length; i++) out[i] = clone(v[i]);
+    return out;
+  }
+  const out = {};
+  for (const k in v) if (Object.prototype.hasOwnProperty.call(v, k)) out[k] = clone(v[k], k);
+  return out;
 }
+
+export const stableHash = dataHash;
 
 /** bundle = { unitStats, buildings, unitsVisuals, heroes } (registry bundle). Returns a deep-frozen plain snapshot. */
 export function buildSimSnapshot(bundle, version = 0) {
@@ -70,31 +85,64 @@ function syncKey(target, key, value) {
   if (!sameValue(target[key], value)) target[key] = clone(value);
 }
 
+// ---- the sim's private view of game data ----------------------------------------------------------------------
+const view = { unitStats: null, buildings: null, unitsVisuals: null, heroes: null };
+let externalSource = null;
+
+function shippedView() {
+  return {
+    unitStats: clone({ formationRules: defaultUnitStats.formationRules, units: defaultUnitStats.units || {} }),
+    buildings: clone({ economy: defaultBuildingsData.economy, sharedBuildingWatchtower: defaultBuildingsData.sharedBuildingWatchtower, buildings: defaultBuildingsData.buildings || {} }),
+    unitsVisuals: clone({ units: defaultUnitsVisuals.units || {}, prefabs: defaultUnitsVisuals.prefabs || {}, actionRules: defaultUnitsVisuals.actionRules }),
+    heroes: clone({ heroes: defaultHeroesData.heroes || {}, spellTrees: defaultHeroesData.spellTrees || {}, hybridSpells: defaultHeroesData.hybridSpells || {} })
+  };
+}
+
+function ensureView() {
+  if (!view.unitStats) Object.assign(view, shippedView());
+  return view;
+}
+
+/**
+ * Main thread only: read from another live source (the data registry) instead of the snapshot view.
+ * `fn()` returns { unitStats, buildings, unitsVisuals, heroes } and must be cheap (no cloning). Pass null to unbind.
+ */
+export function setSimDataSource(fn) {
+  externalSource = typeof fn === 'function' ? fn : null;
+}
+
+const current = () => (externalSource ? externalSource() : ensureView());
+
+/** { formationRules, units } */
+export const simUnitStats = () => current().unitStats;
+/** { economy, sharedBuildingWatchtower, buildings } */
+export const simBuildings = () => current().buildings;
+/** { units, prefabs, actionRules } */
+export const simUnitsVisuals = () => current().unitsVisuals;
+/** { heroes, spellTrees, hybridSpells } */
+export const simHeroes = () => current().heroes;
+
 let appliedHash = null;
 export const appliedSimSnapshotHash = () => appliedHash;
 
 /** The single place that changes the data the sim reads. Idempotent. Returns the snapshot hash. */
 export function applySimSnapshot(snapshot) {
   if (!snapshot || snapshot.schema !== SIM_SNAPSHOT_SCHEMA) throw new Error('applySimSnapshot: not a sim snapshot (schema ' + snapshot?.schema + ')');
-  if (snapshot.hash === appliedHash) return appliedHash;
+  if (snapshot.hash === appliedHash && view.unitStats) return appliedHash;
+  const v = ensureView();
   const { unitStats, buildings, unitsVisuals, heroes } = snapshot;
-  syncKey(defaultUnitStats, 'formationRules', unitStats.formationRules);
-  defaultUnitStats.units = defaultUnitStats.units || {};
-  syncMap(defaultUnitStats.units, unitStats.units);
-  defaultBuildingsData.economy = defaultBuildingsData.economy || {};
-  for (const [k, v] of Object.entries(buildings.economy || {})) syncKey(defaultBuildingsData.economy, k, v);
-  syncKey(defaultBuildingsData, 'sharedBuildingWatchtower', buildings.sharedBuildingWatchtower);
-  defaultBuildingsData.buildings = defaultBuildingsData.buildings || {};
-  syncMap(defaultBuildingsData.buildings, buildings.buildings);
-  defaultUnitsVisuals.units = defaultUnitsVisuals.units || {};
-  syncMap(defaultUnitsVisuals.units, unitsVisuals.units);
-  defaultUnitsVisuals.prefabs = defaultUnitsVisuals.prefabs || {};
-  syncMap(defaultUnitsVisuals.prefabs, unitsVisuals.prefabs);
-  syncKey(defaultUnitsVisuals, 'actionRules', unitsVisuals.actionRules);
-  defaultHeroesData.heroes = defaultHeroesData.heroes || {};
-  syncMap(defaultHeroesData.heroes, heroes.heroes);
-  syncKey(defaultHeroesData, 'spellTrees', heroes.spellTrees);
-  syncKey(defaultHeroesData, 'hybridSpells', heroes.hybridSpells);
+  syncKey(v.unitStats, 'formationRules', unitStats.formationRules);
+  syncMap(v.unitStats.units, unitStats.units);
+  v.buildings.economy = v.buildings.economy || {};
+  for (const [k, val] of Object.entries(buildings.economy || {})) syncKey(v.buildings.economy, k, val);
+  syncKey(v.buildings, 'sharedBuildingWatchtower', buildings.sharedBuildingWatchtower);
+  syncMap(v.buildings.buildings, buildings.buildings);
+  syncMap(v.unitsVisuals.units, unitsVisuals.units);
+  syncMap(v.unitsVisuals.prefabs, unitsVisuals.prefabs);
+  syncKey(v.unitsVisuals, 'actionRules', unitsVisuals.actionRules);
+  syncMap(v.heroes.heroes, heroes.heroes);
+  syncKey(v.heroes, 'spellTrees', heroes.spellTrees);
+  syncKey(v.heroes, 'hybridSpells', heroes.hybridSpells);
   appliedHash = snapshot.hash;
   return appliedHash;
 }

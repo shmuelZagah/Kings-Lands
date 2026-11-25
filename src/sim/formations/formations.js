@@ -1,3 +1,4 @@
+import { simUnitStats } from '../simConfig.js';
 import {
   FX_ONE,
   PERMILLE_ONE,
@@ -9,7 +10,6 @@ import {
   fxCos,
   isqrt
 } from '../../core/fx.js';
-import { defaultUnitStats as unitStatsData } from '../../data/defaults.js';
 
 export const FormationTypes = Object.freeze({
   SQUARE: 'square',
@@ -36,9 +36,9 @@ export const AllowedFormationsByUnitType = Object.freeze({
 import { resolveUnitActiveCapabilities } from '../combatCapabilitiesRegistry.js';
 
 export function getAllowedFormationsForUnit(unitType, activeLoadoutIdx = 0) {
-  const uStat = unitStatsData?.units?.[unitType];
+  const uStat = simUnitStats()?.units?.[unitType];
   if (uStat) {
-    const caps = resolveUnitActiveCapabilities(unitType, activeLoadoutIdx, unitStatsData);
+    const caps = resolveUnitActiveCapabilities(unitType, activeLoadoutIdx, simUnitStats());
     if (Array.isArray(caps?.allowedFormations) && caps.allowedFormations.length > 0) {
       return caps.allowedFormations;
     }

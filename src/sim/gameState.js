@@ -1,5 +1,4 @@
-import { applySimSnapshot } from './simConfig.js';
-import { defaultBuildingsData } from '../data/defaults.js';
+import { applySimSnapshot, simBuildings } from './simConfig.js';
 import {
   FX_ONE,
   TICKS_PER_SEC,
@@ -773,12 +772,12 @@ export class GameState {
    */
   applySimConfig(snapshot) {
     applySimSnapshot(snapshot);
-    if (this.constructionSystem && defaultBuildingsData?.buildings) {
-      this.constructionSystem.buildingDefs = defaultBuildingsData.buildings;
+    if (this.constructionSystem && simBuildings()?.buildings) {
+      this.constructionSystem.buildingDefs = simBuildings().buildings;
     }
-    if (this.economySystem && defaultBuildingsData?.buildings) {
-      this.economySystem.buildingDefs = defaultBuildingsData.buildings;
-      if (defaultBuildingsData.economy) this.economySystem.ecoConfig = defaultBuildingsData.economy;
+    if (this.economySystem && simBuildings()?.buildings) {
+      this.economySystem.buildingDefs = simBuildings().buildings;
+      if (simBuildings().economy) this.economySystem.ecoConfig = simBuildings().economy;
     }
     for (const comp of this.companies.values()) {
       if (!comp || comp.isHero) continue;

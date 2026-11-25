@@ -23,8 +23,12 @@ import { loadGameSettings, applySettingsToRuntime, saveGameSnapshot } from './co
 const sharedUbStateManager = new UnitsBuildingsStateManager();
 const sharedHeroStateManager = new HeroStateManager();
 import { clearAndHideGameHud, restoreGameHud } from './ui/hud/hudVisibilityManager.js';
-import { defaultEngineConfig as engineConfig } from './data/defaults.js';
 import { dataRegistry } from './data/dataRegistry.js';
+import { setSimDataSource } from './sim/simConfig.js';
+
+const engineConfig = dataRegistry.getEngineConfig();
+// HUD / formation helpers share sim code: on the main thread they read the live registry data (no copies).
+setSimDataSource(() => dataRegistry.getSimView());
 
 // Visible warning when the browser refuses to store the data (quota): the edit still works everywhere in this session,
 // but it would be lost on reload - say so instead of failing silently.
@@ -54,6 +58,23 @@ let activePreGameLobby = null;
 let activeEscPauseMenu = null;
 let activeSceneManager = null;
 let activeSimBridge = null;
+
+// A running match keeps the data snapshot it started with: say so when game data changes underneath it
+// (the labs stop the match when they open, so this only shows for edits made by other means, e.g. an import).
+dataRegistry.subscribe(() => {
+  if (!activeSimBridge) return;
+  let el = document.getElementById('kl-next-match-notice');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'kl-next-match-notice';
+    el.style.cssText = 'position:fixed;left:50%;top:14px;transform:translateX(-50%);z-index:99998;background:#1e3a5f;color:#fff;padding:7px 14px;border-radius:10px;font:600 13px system-ui;box-shadow:0 4px 18px #000a;pointer-events:none;transition:opacity .4s';
+    document.body.appendChild(el);
+  }
+  el.textContent = 'Game data changed - changes apply from the next match.';
+  el.style.opacity = '1';
+  clearTimeout(el._t);
+  el._t = setTimeout(() => { el.style.opacity = '0'; }, 4000);
+});
 let telemetryTimerId = null;
 
 function isStudioRoute() {

@@ -14,9 +14,8 @@
  * 4. Ammo Resupply: Archers out of combat near completed military/supply buildings replenish arrows.
  */
 
+import { simBuildings, simUnitStats } from '../simConfig.js';
 import { FX_ONE, mulDiv, fxHypot, xorshift32, fxRandomRange } from '../../core/fx.js';
-import { defaultBuildingsData as buildingsData } from '../../data/defaults.js';
-import { defaultUnitStats as unitStatsData } from '../../data/defaults.js';
 
 const TOWER_HEIGHT_RANGE_BONUS_FX = 6 * FX_ONE; // +6m range bonus from tower elevation
 const TURRET_RELOAD_MIN_TICKS = 44;
@@ -485,10 +484,10 @@ export class BuildingCombatSystem {
   stepBuildingTurretAndAuras(gameState, b, AnimState, UnitTypeIndex = { archer: 3 }) {
     const def = this.cs.buildingDefs[b.type];
     const isSharedBuildingTurret = b.type !== "citadel" && b.type !== "watchtower" && b.type !== "ballista_tower";
-    const sharedWt = buildingsData?.sharedBuildingWatchtower || {};
+    const sharedWt = simBuildings()?.sharedBuildingWatchtower || {};
     const mountedBallistaStat =
       b.type === "ballista_tower" && def?.mountedBallistaUnitId
-        ? unitStatsData?.units?.[def.mountedBallistaUnitId]
+        ? simUnitStats()?.units?.[def.mountedBallistaUnitId]
         : null;
     const baseRangeMeters = isSharedBuildingTurret
       ? (sharedWt.rangeMeters | 0) || 28

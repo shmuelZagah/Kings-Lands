@@ -1,3 +1,4 @@
+import { simBuildings } from '../simConfig.js';
 import { getActiveCustomMapState } from "../../tools/map_editor/mapStateManager.js";
 import {
   FX_ONE,
@@ -19,7 +20,6 @@ import {
 import { GarrisonSystem } from './garrisonSystem.js';
 import { ProductionAndRallySystem } from './productionAndRallySystem.js';
 import { BuildingCombatSystem } from './buildingCombatSystem.js';
-import { defaultBuildingsData as buildingsData } from '../../data/defaults.js';
 
 export const MAX_SLOPE_HEIGHT_DIFF_FX = 2252;
 export const CITADEL_SLOT_RING_RADIUS_FX = (10 * FX_ONE + 512) | 0;
@@ -29,7 +29,7 @@ export class ConstructionSystem {
     this.navGrid = navGrid;
     this.economySystem = economySystem;
     this.movementSystem = movementSystem;
-    this.buildingDefs = buildingsData.buildings;
+    this.buildingDefs = simBuildings().buildings;
 
     this.buildings = new Map();
     this.sortedBuildingIds = [];

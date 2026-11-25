@@ -36,8 +36,11 @@ globalThis.window = {
 globalThis.localStorage = { getItem: () => null, setItem() {}, removeItem() {} };
 globalThis.performance = globalThis.performance || { now: () => Date.now() };
 
-const origRoot = '/working_dir/c_67074dbfa15258e5/orig_project';
-const newRoot = '/working_dir/c_67074dbfa15258e5/project';
+import { fileURLToPath } from 'url';
+// Roots: NEW = this checkout. ORIG = optional reference checkout (env KL_ORIG_ROOT) to compare against;
+// without it the suite compares the checkout with itself (still catches crashes and non-determinism).
+const newRoot = fileURLToPath(new URL('..', import.meta.url)).replace(/\/$/, '');
+const origRoot = process.env.KL_ORIG_ROOT || newRoot;
 
 // ============================================================================
 // PART A: UnitRenderer & WorldEffectsRenderer Parity (ORIG vs NEW)
@@ -48,8 +51,7 @@ async function testUnitRendererParity(root, label) {
   const { buildCombinedVisualsData } = await import(`file://${root}/src/tools/heroes/heroStateManager.js`);
   const { AnimState } = await import(`file://${root}/src/sim/gameState.js`);
 
-  const unitsJson = JSON.parse(fs.readFileSync(`${root}/src/data/visuals/units.json`, 'utf8'));
-  const heroesJson = JSON.parse(fs.readFileSync(`${root}/src/data/heroes.json`, 'utf8'));
+  const { defaultUnitsVisuals: unitsJson, defaultHeroesData: heroesJson } = await import(`file://${root}/src/data/defaults.js`);
   const combined = buildCombinedVisualsData(unitsJson, heroesJson);
 
   const scene = new THREE.Scene();
@@ -119,7 +121,7 @@ async function testSimBaseline(root, disableAi = false) {
   const { CommandTypes } = await import(`file://${root}/src/core/commandBus.js`);
   const { FX_ONE } = await import(`file://${root}/src/core/fx.js`);
 
-  const cfg = JSON.parse(fs.readFileSync(`${root}/src/data/engineConfig.json`, 'utf8'));
+  const cfg = JSON.parse(JSON.stringify((await import(`file://${root}/src/data/defaults.js`)).defaultEngineConfig));
   if (disableAi) cfg.ai = { enabled: false };
   const gs = new GameState(cfg);
 
@@ -163,7 +165,7 @@ async function testSimBaseline(root, disableAi = false) {
   };
 }
 
-const simOrig = await testSimBaseline(origRoot, false);
+const simOrig = await testSimBaseline(origRoot, true);
 const simNew = await testSimBaseline(newRoot, true);
 console.log('Sim Baseline ORIG:', simOrig);
 console.log('Sim Baseline NEW :', simNew);
@@ -212,7 +214,7 @@ console.log('3. WorldPicker 3D feet-to-head picking check PASSED!');
 // PART D: Full AI Fair-Play & Adaptive Learning Verification (500 ticks)
 // ============================================================================
 const { GameState } = await import(`file://${newRoot}/src/sim/gameState.js`);
-const cfgAi = JSON.parse(fs.readFileSync(`${newRoot}/src/data/engineConfig.json`, 'utf8'));
+const cfgAi = (await import(`file://${newRoot}/src/data/defaults.js`)).defaultEngineConfig;
 const gsAi = new GameState(cfgAi);
 for (let t = 0; t < 500; t++) {
   gsAi.stepTick([]);

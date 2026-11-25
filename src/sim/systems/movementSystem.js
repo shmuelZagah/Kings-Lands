@@ -1,3 +1,4 @@
+import { simUnitStats } from '../simConfig.js';
 import { resolveUnitActiveCapabilities } from '../combatCapabilitiesRegistry.js';
 import {
   FX_ONE,
@@ -17,7 +18,6 @@ import { CompanyOrderType, SlotConstraints } from '../formations/company.js';
 import { computeArmyDragLayoutFx } from '../formations/armyDrag.js';
 import { UnitCombatSystem } from './unitCombatSystem.js';
 import { UnitCollisionSystem } from './unitCollisionSystem.js';
-import { defaultUnitStats as unitStatsData } from '../../data/defaults.js';
 import { CHARGE_MIN_RUN_DIST_FX } from './combatSystem.js';
 
 export const UnitPhysicsProfile = Object.freeze({
@@ -242,9 +242,9 @@ export class MovementSystem {
     }
     const base = UnitPhysicsProfile[unitTypeIdx] || UnitPhysicsProfile[1];
     const key = effKey || base.name;
-    const custom = unitStatsData?.units?.[key];
+    const custom = simUnitStats()?.units?.[key];
     if (!custom) return base;
-    const caps = resolveUnitActiveCapabilities(key, effLoadoutIdx, unitStatsData);
+    const caps = resolveUnitActiveCapabilities(key, effLoadoutIdx, simUnitStats());
     const isRangedNow = effLoadoutIdx > 0 ? Boolean(caps.isRangedLoadout) : Boolean(custom.isRanged ?? caps.isRangedLoadout ?? base.isRanged);
     return {
       ...base,

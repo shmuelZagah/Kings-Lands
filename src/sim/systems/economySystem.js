@@ -1,3 +1,4 @@
+import { simBuildings } from '../simConfig.js';
 import {
   FX_ONE,
   ANGLE_MASK,
@@ -13,7 +14,6 @@ import {
   WORKER_FATIGUE_THRESHOLD_PERMILLE
 } from '../formations/company.js';
 import { generateDeterministicTreesFx, generateDeterministicMinesFx } from '../world/worldGen.js';
-import { defaultBuildingsData as buildingsData } from '../../data/defaults.js';
 
 export const ResourceTypes = Object.freeze({
   COINS: 'coins',
@@ -53,8 +53,8 @@ export const GathererState = Object.freeze({
 export class EconomySystem {
   constructor(navGrid, config = {}) {
     this.navGrid = navGrid;
-    this.ecoConfig = buildingsData.economy;
-    this.buildingDefs = buildingsData.buildings;
+    this.ecoConfig = simBuildings().economy;
+    this.buildingDefs = simBuildings().buildings;
 
     this.treeMaxWood = (this.ecoConfig.treeMaxWood | 0) || 250;
     this.treeRegrowTicks = (this.ecoConfig.treeRegrowTicks | 0) || 900;

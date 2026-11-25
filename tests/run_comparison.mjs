@@ -41,8 +41,7 @@ async function runAnimationSuite(projectRoot, label) {
   const { buildCombinedVisualsData } = await import(`file://${projectRoot}/src/tools/heroes/heroStateManager.js`);
   const { getSpellCastTimingProfile } = await import(`file://${projectRoot}/src/render/heroSpellAnimations.js`);
 
-  const unitsJson = JSON.parse(fs.readFileSync(`${projectRoot}/src/data/visuals/units.json`, 'utf8'));
-  const heroesJson = JSON.parse(fs.readFileSync(`${projectRoot}/src/data/heroes.json`, 'utf8'));
+  const { defaultUnitsVisuals: unitsJson, defaultHeroesData: heroesJson } = await import(`file://${projectRoot}/src/data/defaults.js`);
   const combined = buildCombinedVisualsData(unitsJson, heroesJson);
 
   const factory = new ModelFactory(combined);
@@ -111,8 +110,11 @@ async function runAnimationSuite(projectRoot, label) {
   return results;
 }
 
-const origRoot = '/working_dir/c_67074dbfa15258e5/orig_project';
-const newRoot = '/working_dir/c_67074dbfa15258e5/project';
+import { fileURLToPath } from 'url';
+// Roots: NEW = this checkout. ORIG = optional reference checkout (env KL_ORIG_ROOT) to compare against;
+// without it the suite compares the checkout with itself (still catches crashes and non-determinism).
+const newRoot = fileURLToPath(new URL('..', import.meta.url)).replace(/\/$/, '');
+const origRoot = process.env.KL_ORIG_ROOT || newRoot;
 
 console.log('Running animation & model verification on ORIGINAL project...');
 const origAnim = await runAnimationSuite(origRoot, 'ORIG');

@@ -1,5 +1,5 @@
+import { simUnitStats } from '../simConfig.js';
 import { resolveUnitActiveCapabilities } from '../combatCapabilitiesRegistry.js';
-import { defaultUnitStats as unitStatsData } from '../../data/defaults.js';
 import {
   FX_ONE,
   ANGLE_MASK,
@@ -84,7 +84,7 @@ export class Company {
     this.unitType = unitType || 'swordsman';
     this.unitTypeIdx = unitTypeIdx | 0;
     this.activeLoadoutIdx = 0;
-    const initCaps = resolveUnitActiveCapabilities(this.unitType, 0, unitStatsData);
+    const initCaps = resolveUnitActiveCapabilities(this.unitType, 0, simUnitStats());
     this.hasSecondaryLoadout = Boolean(initCaps.hasSecondaryLoadout);
     this.activeWeaponMode = initCaps.isRangedLoadout ? 'ranged' : 'melee';
     this.isCavalry = Boolean(initCaps.isMounted || this.unitType === 'cavalry');
@@ -269,7 +269,7 @@ export class Company {
   }
 
   getActiveCapabilities() {
-    return resolveUnitActiveCapabilities(this.unitType, this.activeLoadoutIdx | 0, unitStatsData);
+    return resolveUnitActiveCapabilities(this.unitType, this.activeLoadoutIdx | 0, simUnitStats());
   }
 
   getAllowedFormations() {
@@ -290,7 +290,7 @@ export class Company {
   }
 
   switchWeaponSet(navGrid, entitiesMap, movementSystem = null) {
-    const caps0 = resolveUnitActiveCapabilities(this.unitType, 0, unitStatsData);
+    const caps0 = resolveUnitActiveCapabilities(this.unitType, 0, simUnitStats());
     if (!caps0.hasSecondaryLoadout) return false;
     this.activeLoadoutIdx = this.activeLoadoutIdx === 1 ? 0 : 1;
     const nextCaps = this.getActiveCapabilities();

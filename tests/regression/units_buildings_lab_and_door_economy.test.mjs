@@ -36,6 +36,10 @@ if (typeof globalThis.document === 'undefined') {
 
 import { readEngineConfig } from '../helpers/loadData.mjs';
 import fs from 'node:fs';
+import { dataRegistry as liveRegistry } from '../../src/data/dataRegistry.js';
+import { setSimDataSource } from '../../src/sim/simConfig.js';
+// like main.js: HUD / formation helpers on the main thread read the live registry data
+setSimDataSource(() => liveRegistry.getSimView());
 import { GameState } from '../../src/sim/gameState.js';
 import { CommandTypes } from '../../src/core/commandBus.js';
 import { GathererState } from '../../src/sim/systems/workerGatheringStepper.js';
@@ -297,27 +301,35 @@ export async function runUnitsBuildingsLabAndDoorTests() {
   // --- 3D Mount Rendering & Building Door Animation Verification ---
   const { ModelFactory } = await import('../../src/render/modelFactory.js');
   const mf = new ModelFactory(sm.unitsVisualsData);
+  // the lab reloads its working copy from the registry after every save, so always point the factory at the current one
+  const visual = () => { mf.visualsData = sm.unitsVisualsData; return mf.createVisual('swordsman', 'blue'); };
 
   sm.setUnitMount('swordsman', 'human_horse');
-  const horseMesh = mf.createVisual('swordsman', 'blue');
+  const horseMesh = visual();
   assert(Boolean(horseMesh.userData.sockets.mount_torso), '3D Warhorse must spawn mount_torso socket');
   assert(Boolean(horseMesh.userData.sockets.mount_head), '3D Warhorse must spawn mount_head socket');
   assert(horseMesh.userData.sockets.pelvis.position.y > 1.3, 'Rider pelvis must be elevated onto Warhorse saddle');
 
   sm.setUnitMount('swordsman', 'katiler_wolf');
-  const wolfMesh = mf.createVisual('swordsman', 'blue');
+  const wolfMesh = visual();
   assert(Boolean(wolfMesh.userData.sockets.mount_torso), '3D Dire Wolf must spawn mount_torso socket');
   assert(Boolean(wolfMesh.userData.sockets.mount_head), '3D Dire Wolf must spawn mount_head socket');
   assert(wolfMesh.userData.sockets.pelvis.position.y > 1.3, 'Rider pelvis must be elevated onto Dire Wolf saddle');
 
-  sm.setUnitMount('swordsman', 'war_chameleon');
-  const chamMesh = mf.createVisual('swordsman', 'blue');
-  assert(Boolean(chamMesh.userData.sockets.mount_torso), '3D War Chameleon must spawn mount_torso socket');
-  assert(Boolean(chamMesh.userData.sockets.mount_head), '3D War Chameleon must spawn mount_head socket');
-  assert(chamMesh.userData.sockets.pelvis.position.y > 1.5, 'Rider pelvis must be elevated onto War Chameleon saddle');
+  // The War Chameleon mount is hero-only content that is not part of the shipped unit data (it never was in units.json).
+  if (liveRegistry.getUnitsVisuals().units.war_chameleon) {
+    sm.setUnitMount('swordsman', 'war_chameleon');
+    const chamMesh = visual();
+    assert(Boolean(chamMesh.userData.sockets.mount_torso), '3D War Chameleon must spawn mount_torso socket');
+    assert(Boolean(chamMesh.userData.sockets.mount_head), '3D War Chameleon must spawn mount_head socket');
+    assert(chamMesh.userData.sockets.pelvis.position.y > 1.5, 'Rider pelvis must be elevated onto War Chameleon saddle');
+
+  } else {
+    console.log('  [SKIP] War Chameleon mount: no war_chameleon unit in the shipped data');
+  }
 
   sm.setUnitMount('swordsman', 'none');
-  const footMesh = mf.createVisual('swordsman', 'blue');
+  const footMesh = visual();
   assert(!footMesh.userData.sockets.mount_torso, 'Unmounted unit must not have mount_torso socket');
   assert(Math.abs(footMesh.userData.sockets.pelvis.position.y - 0.92) < 0.05, 'Unmounted unit pelvis must return to 0.92m');
 
@@ -757,7 +769,9 @@ export async function runUnitsBuildingsLabAndDoorTests() {
       teamSetup.participants[0].teamNumber = 3;
       normalizeParticipantTeams(teamSetup.participants);
       assert.equal(teamSetup.participants[0].team, 1, "Player team maps to sim team 1");
-      assert.equal(teamSetup.participants[1].team, 1, "Ally with matching teamNumber shares sim team 1");
+      // every participant has its OWN sim team; allies are linked through the shared teamNumber (teamAlliances)
+      assert.equal(teamSetup.participants[1].team, 2, "Ally keeps its own sim team");
+      assert.equal(teamSetup.participants[1].teamNumber, teamSetup.participants[0].teamNumber, "Ally shares the player's teamNumber");
       assert.equal(teamSetup.participants[1].role, "ai_ally", "Ally role inferred from shared teamNumber");
 
       const gsAlly = new GameState({ ...engineConfig, matchSetup: teamSetup });

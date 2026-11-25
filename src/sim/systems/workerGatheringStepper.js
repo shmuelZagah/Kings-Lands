@@ -9,6 +9,7 @@
  *   and physically enter through the door (`enterDoorOnDropoff`, briefly stepping inside the doorway while
  *   the building doors swing open) before depositing resources and exiting back out to harvest!
  */
+import { simBuildings, simUnitStats } from '../simConfig.js';
 import {
   FX_ONE,
   ANGLE_MASK,
@@ -24,8 +25,6 @@ import {
   WORKER_FATIGUE_THRESHOLD_PERMILLE
 } from '../formations/company.js';
 import { generateDeterministicTreesFx, generateDeterministicMinesFx } from '../world/worldGen.js';
-import { defaultBuildingsData as buildingsData } from '../../data/defaults.js';
-import { defaultUnitStats as unitStatsData } from '../../data/defaults.js';
 
 export const ResourceTypes = Object.freeze({
   COINS: 'coins',
@@ -64,7 +63,7 @@ export const GathererState = Object.freeze({
 });
 
 function getWorkerGatheringConfig() {
-  const wg = unitStatsData?.units?.worker?.workerGathering || {};
+  const wg = simUnitStats()?.units?.worker?.workerGathering || {};
   return {
     carryCapacity: Math.max(5, (wg.carryCapacity | 0) || 45),
     batchYield: Math.max(1, (wg.batchYield | 0) || 15),

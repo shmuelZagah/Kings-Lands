@@ -48,14 +48,9 @@ import {
 } from '../../src/tools/labSync.js';
 import {
   UnitsBuildingsStateManager,
-  getBaseCharacterTemplates,
-  syncLiveConfigObjectsInMemory
+  getBaseCharacterTemplates
 } from '../../src/tools/units_buildings/unitsBuildingsStateManager.js';
-import {
-  loadBuildingSkins,
-  saveBuildingSkins
-} from '../../src/data/buildingSkinStore.js';
-import { defaultUnitsVisuals, defaultBuildingsData } from '../../src/data/defaults.js';
+import { dataRegistry as sharedRegistry } from '../../src/data/dataRegistry.js';
 import { buildBuildingsStudioViewData } from '../../src/tools/units_buildings/buildingStudioAdapter.js';
 import {
   renderUnitsLeftListHtml,
@@ -271,7 +266,7 @@ test('Two-way skin checkmarks, buildingSkinStore cache sync & in-memory lab prop
   assert.ok(!defaultBlock.includes('data-skin-check="true"'), 'Unselected unit skin card must not show checkmark badge');
 
   // Building skin persistence + checkmark sync
-  const skinsRoot = loadBuildingSkins();
+  const skinsRoot = sharedRegistry.getBuildingSkins();
   skinsRoot.barracks = {
     active: 'citadel_alt',
     items: {
@@ -286,9 +281,9 @@ test('Two-way skin checkmarks, buildingSkinStore cache sync & in-memory lab prop
       }
     }
   };
-  const saveRes = saveBuildingSkins(skinsRoot);
+  const saveRes = sharedRegistry.saveBuildingSkins(skinsRoot);
   assert.equal(saveRes.ok, true);
-  assert.equal(loadBuildingSkins().barracks.active, 'citadel_alt');
+  assert.equal(sharedRegistry.getBuildingSkins().barracks.active, 'citadel_alt');
 
   let bldHtml = renderBuildingRightInspectorHtml(sm, 'barracks');
   const altSkinBlock = bldHtml.split('data-bld-skin-pick="citadel_alt"')[1]?.split('</button>')[0] || '';
@@ -296,27 +291,29 @@ test('Two-way skin checkmarks, buildingSkinStore cache sync & in-memory lab prop
 
   // Switching back to default via saveBuildingSkins updates live cache & renderer
   skinsRoot.barracks.active = 'default';
-  saveBuildingSkins({ ...skinsRoot });
-  assert.equal(loadBuildingSkins().barracks.active, 'default');
+  sharedRegistry.saveBuildingSkins({ ...skinsRoot });
+  assert.equal(sharedRegistry.getBuildingSkins().barracks.active, 'default');
   bldHtml = renderBuildingRightInspectorHtml(sm, 'barracks');
   const defSkinBlock = bldHtml.split('data-bld-skin-pick="default"')[1]?.split('</button>')[0] || '';
   assert.ok(defSkinBlock.includes('data-skin-check="true"'), 'Default building skin card shows checkmark when active');
 
-  // syncLiveConfigObjectsInMemory removes deleted units & custom buildings and syncs prefabs/arrowConfig
+  // saving through the registry adds / removes units, prefabs and custom buildings for every reader (no manual in-memory sync)
   const tempUnit = sm.createNewUnit({ name: 'Temp Sync Unit' });
   sm.unitsVisualsData.prefabs.temp_custom_helm = { id: 'temp_custom_helm', name: 'Temp Helm', slot: 'head' };
   sm.buildingsData.buildings.custom_tower = { id: 'custom_tower', name: 'Custom Tower', isCustom: true, options: [] };
-  syncLiveConfigObjectsInMemory(sm.unitStatsData, sm.buildingsData, sm.unitsVisualsData, sm.buildingVisualsData);
-  assert.ok(defaultUnitsVisuals.units[tempUnit]);
-  assert.ok(defaultUnitsVisuals.prefabs.temp_custom_helm);
-  assert.ok(defaultBuildingsData.buildings.custom_tower);
+  assert.ok(sm.saveAll().ok !== false);
+  let live = sharedRegistry.getSimView();
+  assert.ok(live.unitsVisuals.units[tempUnit]);
+  assert.ok(live.unitsVisuals.prefabs.temp_custom_helm);
+  assert.ok(live.buildings.buildings.custom_tower);
 
   sm.deleteUnit(tempUnit);
   delete sm.unitsVisualsData.prefabs.temp_custom_helm;
   delete sm.buildingsData.buildings.custom_tower;
-  syncLiveConfigObjectsInMemory(sm.unitStatsData, sm.buildingsData, sm.unitsVisualsData, sm.buildingVisualsData);
-  assert.equal(defaultUnitsVisuals.units[tempUnit], undefined);
-  assert.equal(defaultUnitsVisuals.prefabs.temp_custom_helm, undefined);
-  assert.equal(defaultBuildingsData.buildings.custom_tower, undefined);
+  assert.ok(sm.saveAll().ok !== false);
+  live = sharedRegistry.getSimView();
+  assert.equal(live.unitsVisuals.units[tempUnit], undefined);
+  assert.equal(live.unitsVisuals.prefabs.temp_custom_helm, undefined);
+  assert.equal(live.buildings.buildings.custom_tower, undefined);
 });
 

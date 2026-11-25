@@ -19,7 +19,6 @@ import {
   toFx
 } from '../../core/fx.js';
 import { Company, CompanyOrderType, resolveDefaultFormation } from '../formations/company.js';
-import { defaultHeroesData as defaultHeroesJson } from '../../data/defaults.js';
 import { getSpellCastTimingProfile } from '../../render/heroSpellAnimations.js';
 
 function safeFaceTarget(ent, targetXFx, targetZFx) {

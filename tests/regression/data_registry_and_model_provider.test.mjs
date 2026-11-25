@@ -55,7 +55,6 @@ import {
   DRAFT_STORAGE_KEY,
   LEGACY_STORAGE_KEYS
 } from '../../src/data/dataRegistry.js';
-import { loadBuildingSkins, saveBuildingSkins } from '../../src/data/buildingSkinStore.js';
 import { modelProvider } from '../../src/render/modelProvider.js';
 import { getBaseCharacterTemplates } from '../../src/tools/units_buildings/unitsBuildingsStateManager.js';
 
@@ -89,8 +88,8 @@ test('dataRegistry getters return deep clones and buildingSkinStore delegates cl
   hero.displayName = 'Mutated Hero';
   assert.notEqual(dataRegistry.getHero('wizard').displayName, 'Mutated Hero');
 
-  // buildingSkinStore returns deep clones so `delete loadBuildingSkins()[id]` never mutates internal registry
-  const skinSave = saveBuildingSkins({
+  // buildingSkinStore returns deep clones so `delete dataRegistry.getBuildingSkins()[id]` never mutates internal registry
+  const skinSave = dataRegistry.saveBuildingSkins({
     barracks: {
       active: 'alt_keep',
       items: {
@@ -107,9 +106,9 @@ test('dataRegistry getters return deep clones and buildingSkinStore delegates cl
     }
   });
   assert.equal(skinSave.ok, true);
-  const leaked = loadBuildingSkins();
+  const leaked = dataRegistry.getBuildingSkins();
   delete leaked.barracks;
-  assert.ok(loadBuildingSkins().barracks?.items?.alt_keep, 'In-place delete on loadBuildingSkins() must not mutate registry state');
+  assert.ok(dataRegistry.getBuildingSkins().barracks?.items?.alt_keep, 'In-place delete on dataRegistry.getBuildingSkins() must not mutate registry state');
 });
 
 test('dataRegistry validation gate rejects broken cross-references without mutating live state or storage', () => {

@@ -7,6 +7,7 @@
  * - Initializes all Phase 6 combat/ammo/morale fields on newly spawned and Infirmary-reinforced units.
  */
 
+import { simUnitStats } from '../simConfig.js';
 import {
   FX_ONE,
   PERMILLE_ONE,
@@ -18,7 +19,6 @@ import {
 } from '../../core/fx.js';
 import { transformLocalSlotToWorldFx } from '../formations/formations.js';
 import { Company, CompanyOrderType, resolveDefaultFormation } from '../formations/company.js';
-import { defaultUnitStats as unitStatsData } from '../../data/defaults.js';
 
 const RALLY_ENEMY_SNAP_RADIUS_FX = 2253; // ~2.2 meters (direct click on enemy unit only)
 
@@ -286,7 +286,7 @@ export class ProductionAndRallySystem {
     }
 
     const resolvedUnitType = opt.kind === 'unit' ? (opt.unitType || opt.id || 'swordsman') : null;
-    const uStatForCost = resolvedUnitType ? unitStatsData?.units?.[resolvedUnitType] : null;
+    const uStatForCost = resolvedUnitType ? simUnitStats()?.units?.[resolvedUnitType] : null;
     const effectiveCost = (opt.kind === 'unit' && uStatForCost?.cost) ? uStatForCost.cost : (opt.cost || { coins: 0, wood: 0, stone: 0, iron: 0 });
     const category = opt.kind === 'unit' ? 'unit' : 'research';
     if (!this.cs.economySystem.spendResources(team, effectiveCost, category, opt.id)) {
@@ -598,7 +598,7 @@ export class ProductionAndRallySystem {
   startSequentialCompanySpawn(gameState, building, item, UnitTypeIndex) {
     const unitType = item.unitType || 'swordsman';
     const unitTypeIdx = UnitTypeIndex[unitType] ?? UnitTypeIndex.swordsman;
-    const uStat = unitStatsData?.units?.[unitType];
+    const uStat = simUnitStats()?.units?.[unitType];
     const totalUnits = (uStat?.squadSize | 0) || (unitType === 'worker' || unitType === 'ballista' ? 3 : unitType === 'cavalry' ? 16 : 20);
 
     const doorVec = this.cs._getBuildingDoorVectorFx(
@@ -941,7 +941,7 @@ export class ProductionAndRallySystem {
     if (item.kind === 'hero') return 1;
     if (item.kind !== 'unit') return 0;
     const unitType = item.unitType || 'swordsman';
-    const uStat = unitStatsData?.units?.[unitType];
+    const uStat = simUnitStats()?.units?.[unitType];
     if (uStat?.popCost) return uStat.popCost | 0;
     if (item.optionId === 'ballista' || unitType === 'ballista') return 3;
     return unitType === 'worker' ? 3 : unitType === 'cavalry' ? 16 : 20;

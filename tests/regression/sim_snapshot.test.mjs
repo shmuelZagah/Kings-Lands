@@ -14,7 +14,7 @@ if (typeof globalThis.document === 'undefined') {
 
 import { dataRegistry } from '../../src/data/dataRegistry.js';
 import { applySimSnapshot, appliedSimSnapshotHash, buildSimSnapshot, stableHash } from '../../src/sim/simConfig.js';
-import { defaultUnitStats } from '../../src/data/defaults.js';
+import { simUnitStats } from '../../src/sim/simConfig.js';
 import { GameState } from '../../src/sim/gameState.js';
 
 const engineConfig = JSON.parse(fs.readFileSync(new URL('../../src/data/shared/engineConfig.json', import.meta.url), 'utf8'));
@@ -67,7 +67,7 @@ test('a lab edit reaches the next match, and the snapshot of the running match d
 
   new GameState({ ...engineConfig, simSnapshot: after });   // a NEW match applies it
   assert.equal(appliedSimSnapshotHash(), after.hash);
-  assert.equal(defaultUnitStats.units.swordsman.hp, hpBefore + 111, 'sim modules read the edited value');
+  assert.equal(simUnitStats().units.swordsman.hp, hpBefore + 111, 'sim modules read the edited value');
   const house = dataRegistry.getBuilding('house');
   house.maxHp = 4321;
   assert.ok(dataRegistry.saveBuilding('house', house).ok);

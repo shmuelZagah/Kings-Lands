@@ -5,6 +5,7 @@
  * (src/sim/systems/heroSystem.js)
  */
 
+import { simHeroes } from '../simConfig.js';
 import {
   FX_ONE,
   TICKS_PER_SEC,
@@ -18,7 +19,6 @@ import {
   toFx
 } from '../../core/fx.js';
 import { Company, CompanyOrderType, resolveDefaultFormation } from '../formations/company.js';
-import { defaultHeroesData as defaultHeroesJson } from '../../data/defaults.js';
 import { getSpellCastTimingProfile } from '../../render/heroSpellAnimations.js';
 
 const LEGACY_SPELL_ID_ALIASES = Object.freeze({
@@ -37,14 +37,14 @@ export function normalizeSpellId(spellId) {
 function lookupSpellInCatalog(heroesData, rawSpellId) {
   const spellId = normalizeSpellId(rawSpellId);
   if (!spellId) return null;
-  const trees = heroesData?.spellTrees || defaultHeroesJson.spellTrees || {};
+  const trees = heroesData?.spellTrees || simHeroes().spellTrees || {};
   for (const tree of Object.values(trees)) {
     if (tree?.spells?.[spellId]) return tree.spells[spellId];
   }
-  const hybrids = heroesData?.hybridSpells || defaultHeroesJson.hybridSpells || {};
+  const hybrids = heroesData?.hybridSpells || simHeroes().hybridSpells || {};
   if (hybrids[spellId]) return hybrids[spellId];
-  if (defaultHeroesJson.hybridSpells?.[spellId]) return defaultHeroesJson.hybridSpells[spellId];
-  for (const tree of Object.values(defaultHeroesJson.spellTrees || {})) {
+  if (simHeroes().hybridSpells?.[spellId]) return simHeroes().hybridSpells[spellId];
+  for (const tree of Object.values(simHeroes().spellTrees || {})) {
     if (tree?.spells?.[spellId]) return tree.spells[spellId];
   }
   return null;
@@ -108,7 +108,7 @@ export class HeroSystem {
   constructor(config = {}) {
     this.heroesData = config?.heroesData
       ? JSON.parse(JSON.stringify(config.heroesData))
-      : JSON.parse(JSON.stringify(defaultHeroesJson));
+      : JSON.parse(JSON.stringify(simHeroes()));
 
     // Track fallen heroes per team so revive cost/time scales with their achieved level
     this.fallenHeroesByTeam = {};
@@ -186,11 +186,11 @@ export class HeroSystem {
   }
 
   getHeroDef(heroId) {
-    return this.heroesData?.heroes?.[heroId] || defaultHeroesJson.heroes?.[heroId] || null;
+    return this.heroesData?.heroes?.[heroId] || simHeroes().heroes?.[heroId] || null;
   }
 
   getHeroVisualOrder() {
-    return Object.keys(this.heroesData?.heroes || defaultHeroesJson.heroes || {});
+    return Object.keys(this.heroesData?.heroes || simHeroes().heroes || {});
   }
 
   getHeroVisualIndex(heroId) {

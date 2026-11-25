@@ -11,8 +11,7 @@
  *    Units & Buildings Lab (`UnitsBuildingsLabApp`), and Animation Lab (`StudioApp`).
  */
 
-import { defaultUnitStats } from '../data/defaults.js';
-import { defaultUnitsVisuals } from '../data/defaults.js';
+import { simUnitStats, simUnitsVisuals } from './simConfig.js';
 import { MAIN_LOADOUT, loadoutsOf, asLoadout, heldItems, weaponTypeOf } from '../tools/studio/weaponRules.js';
 
 export const COMBAT_MODES_CATALOG = Object.freeze({
@@ -118,9 +117,9 @@ export const FORMATION_RULES_CATALOG = Object.freeze({
 /**
  * Extracts weapon types held in a specific loadout (`'main'` or `'loadout2'`) of a unit.
  */
-export function getLoadoutWeaponTypes(unitStatDef, unitVisualDef, visualsData = defaultUnitsVisuals, loadoutId = MAIN_LOADOUT) {
+export function getLoadoutWeaponTypes(unitStatDef, unitVisualDef, visualsData = simUnitsVisuals(), loadoutId = MAIN_LOADOUT) {
   const types = new Set();
-  const prefabs = visualsData?.prefabs || defaultUnitsVisuals?.prefabs || {};
+  const prefabs = visualsData?.prefabs || simUnitsVisuals()?.prefabs || {};
 
   if (unitVisualDef) {
     const view = asLoadout(unitVisualDef, loadoutId);
@@ -164,7 +163,7 @@ export function getLoadoutWeaponTypes(unitStatDef, unitVisualDef, visualsData = 
 export function computeCapabilitiesForLoadout(
   unitStatDef,
   unitVisualDef = null,
-  visualsData = defaultUnitsVisuals,
+  visualsData = simUnitsVisuals(),
   loadoutId = MAIN_LOADOUT
 ) {
   const uStat = unitStatDef || {};
@@ -199,7 +198,7 @@ export function computeCapabilitiesForLoadout(
 
   const rulesSource = {
     ...FORMATION_RULES_CATALOG,
-    ...(defaultUnitStats?.formationRules || {})
+    ...(simUnitStats()?.formationRules || {})
   };
 
   const formations = [];
@@ -293,11 +292,11 @@ export function computeCapabilitiesForLoadout(
 export function resolveUnitActiveCapabilities(
   unitType,
   activeLoadoutIdx = 0,
-  unitStatsData = defaultUnitStats,
-  unitsVisualsData = defaultUnitsVisuals
+  unitStatsData = simUnitStats(),
+  unitsVisualsData = simUnitsVisuals()
 ) {
-  const uStat = unitStatsData?.units?.[unitType] || defaultUnitStats?.units?.[unitType] || defaultUnitStats?.units?.swordsman;
-  const uVis = unitsVisualsData?.units?.[unitType] || defaultUnitsVisuals?.units?.[unitType] || null;
+  const uStat = unitStatsData?.units?.[unitType] || simUnitStats()?.units?.[unitType] || simUnitStats()?.units?.swordsman;
+  const uVis = unitsVisualsData?.units?.[unitType] || simUnitsVisuals()?.units?.[unitType] || null;
   const lds = uVis ? loadoutsOf(uVis) : [{ id: MAIN_LOADOUT }];
   const targetLd = activeLoadoutIdx === 1 && lds[1] ? lds[1].id : MAIN_LOADOUT;
   return computeCapabilitiesForLoadout(uStat, uVis, unitsVisualsData, targetLd);

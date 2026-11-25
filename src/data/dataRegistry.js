@@ -18,11 +18,12 @@
  * file version stamps, migrating all legacy draft keys automatically without dropping user work.
  */
 
+import { dataHash } from './dataHash.js';
 import { defaultUnitsVisuals } from './defaults.js';
 import { defaultUnitStats } from './defaults.js';
 import { defaultBuildingsData } from './defaults.js';
 import { defaultBuildingVisuals } from './defaults.js';
-import { defaultHeroesData } from './defaults.js';
+import { defaultHeroesData, defaultEngineConfig } from './defaults.js';
 import { sanitizeUnitsData, registerDefaultUnitsVisuals } from '../tools/studio/clipEditing.js';
 import { restow, loadoutsOf, MAIN_LOADOUT } from '../tools/studio/weaponRules.js';
 import { computeCapabilitiesForLoadout } from '../sim/combatCapabilitiesRegistry.js';
@@ -243,11 +244,11 @@ const BASELINE_HEROES = deepClone(defaultHeroesData);
 const BASELINE_BUILDING_SKINS = deepClone(BASELINE_UNITS_VISUALS.buildingSkins || {});
 
 export const FILE_VERSIONS = Object.freeze({
-  unitsVisuals: `${BASELINE_UNITS_VISUALS.version ?? '1'}:${hashString(JSON.stringify(defaultUnitsVisuals))}`,
-  unitStats: `${BASELINE_UNIT_STATS.version ?? '1'}:${hashString(JSON.stringify(defaultUnitStats))}`,
-  buildings: `${BASELINE_BUILDINGS.version ?? '1'}:${hashString(JSON.stringify(defaultBuildingsData))}`,
-  buildingVisuals: `${BASELINE_BUILDING_VISUALS.version ?? '1'}:${hashString(JSON.stringify(defaultBuildingVisuals))}`,
-  heroes: `${BASELINE_HEROES.version ?? '1'}:${hashString(JSON.stringify(defaultHeroesData))}`
+  unitsVisuals: `${BASELINE_UNITS_VISUALS.version ?? '1'}:${dataHash(defaultUnitsVisuals)}`,
+  unitStats: `${BASELINE_UNIT_STATS.version ?? '1'}:${dataHash(defaultUnitStats)}`,
+  buildings: `${BASELINE_BUILDINGS.version ?? '1'}:${dataHash(defaultBuildingsData)}`,
+  buildingVisuals: `${BASELINE_BUILDING_VISUALS.version ?? '1'}:${dataHash(defaultBuildingVisuals)}`,
+  heroes: `${BASELINE_HEROES.version ?? '1'}:${dataHash(defaultHeroesData)}`
 });
 
 const LEGACY_SPELL_ID_ALIASES = Object.freeze({
@@ -452,72 +453,6 @@ function normalizeAndSyncBundle(bundle, { syncUnitVisualFromStats = true } = {})
 }
 
 // ------------------------------------------------------------------ Sync live shipped module exports (keeps untouched `src/sim/` working)
-
-function syncMap(target, source) {
-  for (const k of Object.keys(target)) if (!(k in source)) delete target[k];
-  for (const k of Object.keys(source)) {
-    if (!stableEqual(target[k], source[k])) target[k] = deepClone(source[k]);
-  }
-}
-
-function syncValue(target, key, value) {
-  if (!stableEqual(target[key], value)) target[key] = deepClone(value);
-}
-
-function syncRuntimeModuleExports(bundle) {
-  const { unitStats, buildings, unitsVisuals, buildingVisuals, heroes } = bundle;
-  // Only entries that really differ are copied (equality short-circuits on shared mesh blobs), so a one-skin
-  // change no longer re-clones every unit, prefab and building.
-
-  if (unitStats?.formationRules) syncValue(defaultUnitStats, 'formationRules', unitStats.formationRules);
-  if (unitStats?.units) {
-    defaultUnitStats.units = defaultUnitStats.units || {};
-    syncMap(defaultUnitStats.units, unitStats.units);
-  }
-
-  if (buildings?.economy) {
-    defaultBuildingsData.economy = defaultBuildingsData.economy || {};
-    for (const [k, v] of Object.entries(buildings.economy)) syncValue(defaultBuildingsData.economy, k, v);
-  }
-  if (buildings?.sharedBuildingWatchtower) {
-    syncValue(defaultBuildingsData, 'sharedBuildingWatchtower', buildings.sharedBuildingWatchtower);
-  }
-  if (buildings?.buildings) {
-    defaultBuildingsData.buildings = defaultBuildingsData.buildings || {};
-    syncMap(defaultBuildingsData.buildings, buildings.buildings);
-  }
-
-  if (unitsVisuals?.units) {
-    defaultUnitsVisuals.units = defaultUnitsVisuals.units || {};
-    syncMap(defaultUnitsVisuals.units, unitsVisuals.units);
-  }
-  if (unitsVisuals?.prefabs) {
-    defaultUnitsVisuals.prefabs = defaultUnitsVisuals.prefabs || {};
-    syncMap(defaultUnitsVisuals.prefabs, unitsVisuals.prefabs);
-  }
-  if (unitsVisuals?.factions) syncValue(defaultUnitsVisuals, 'factions', unitsVisuals.factions);
-  if (unitsVisuals?.teamPalettes) syncValue(defaultUnitsVisuals, 'teamPalettes', unitsVisuals.teamPalettes);
-  if (unitsVisuals?.arrowConfig) syncValue(defaultUnitsVisuals, 'arrowConfig', unitsVisuals.arrowConfig);
-  if (unitsVisuals?.actionRules) syncValue(defaultUnitsVisuals, 'actionRules', unitsVisuals.actionRules);
-  if (unitsVisuals?.animations?.keyframes) {
-    defaultUnitsVisuals.animations = defaultUnitsVisuals.animations || {};
-    const tgt = defaultUnitsVisuals.animations.keyframes || (defaultUnitsVisuals.animations.keyframes = {});
-    for (const [k, v] of Object.entries(unitsVisuals.animations.keyframes)) syncValue(tgt, k, v);
-  }
-  if (unitsVisuals?.animations?.procedural) {
-    defaultUnitsVisuals.animations = defaultUnitsVisuals.animations || {};
-    const tgt = defaultUnitsVisuals.animations.procedural || (defaultUnitsVisuals.animations.procedural = {});
-    for (const [k, v] of Object.entries(unitsVisuals.animations.procedural)) syncValue(tgt, k, v);
-  }
-
-  if (buildingVisuals?.animations) {
-    syncValue(defaultBuildingVisuals, 'animations', buildingVisuals.animations);
-  }
-  if (heroes?.heroes) {
-    defaultHeroesData.heroes = defaultHeroesData.heroes || {};
-    syncMap(defaultHeroesData.heroes, heroes.heroes);
-  }
-}
 
 // ------------------------------------------------------------------ Diff & Compact Overrides Serialization
 
@@ -1208,7 +1143,6 @@ function loadInitialBundle() {
   normalizeAndSyncBundle(bundle, { syncUnitVisualFromStats: true });
   _lastValidation = validateRegistryState(bundle);
   _bundle = bundle;
-  syncRuntimeModuleExports(_bundle);
 
   if (needsSave && _lastValidation.ok) {
     persistOverridesToStorage(_bundle);
@@ -1259,7 +1193,6 @@ function commitBundle(candidateBundle, { reason = 'save', persist = true, valida
   _lastValidation = report;
   _version += 1;
   _lastChanged = changed;
-  syncRuntimeModuleExports(_bundle);
   notifySubscribers(reason);
   if (!persisted) notifyPersistFailure(persistError);
   return { ok: true, version: _version, report, changed, persisted, ...(persistError ? { warning: `Not saved to browser storage (${persistError}). Export JSON to keep this work.` } : {}) };
@@ -2089,8 +2022,18 @@ export const dataRegistry = {
     }
     return _simSnapshotCache.snap;
   },
-  syncRuntimeData({ unitStats = null, buildings = null, unitsVisuals = null, buildingVisuals = null, heroes = null } = {}) {
-    syncRuntimeModuleExports({ unitStats, buildings, unitsVisuals, buildingVisuals, heroes });
+  /**
+   * Live, READ-ONLY references to the sections the sim helpers read ({ unitStats, buildings, unitsVisuals, heroes }).
+   * No cloning: the main thread binds simConfig to this (setSimDataSource) so HUD code always sees current data.
+   * Never mutate what it returns.
+   */
+  getSimView() {
+    const b = ensureLoaded();
+    return { unitStats: b.unitStats, buildings: b.buildings, unitsVisuals: b.unitsVisuals, heroes: b.heroes };
+  },
+  /** Shipped engine configuration (not editable in the labs). */
+  getEngineConfig() {
+    return deepClone(defaultEngineConfig);
   },
 
   /** Tell the registry that a section copy was modified on purpose by its owner and is "clean" (its merge base = its current content). */
