@@ -100,27 +100,6 @@ export function getEquipmentWeaponMode(equipment) {
   return 'melee';
 }
 
-export function loadHeroesDataFromStorage() {
-  return dataRegistry.getHeroesData();
-}
-
-export function loadActiveUnitsVisualsData(baseUnitsData = null) {
-  if (!baseUnitsData) return dataRegistry.getUnitsVisuals();
-  const active = dataRegistry.getUnitsVisuals();
-  return {
-    ...baseUnitsData,
-    ...active,
-    factions: { ...(baseUnitsData.factions || {}), ...(active.factions || {}) },
-    teamPalettes: { ...(baseUnitsData.teamPalettes || {}), ...(active.teamPalettes || {}) },
-    prefabs: { ...(baseUnitsData.prefabs || {}), ...(active.prefabs || {}) },
-    units: { ...(baseUnitsData.units || {}), ...(active.units || {}) },
-    animations: {
-      keyframes: { ...(baseUnitsData.animations?.keyframes || {}), ...(active.animations?.keyframes || {}) },
-      procedural: { ...(baseUnitsData.animations?.procedural || {}), ...(active.animations?.procedural || {}) }
-    }
-  };
-}
-
 export function buildCombinedVisualsData(unitsVisualsData = null, heroesData = null) {
   if (!unitsVisualsData && !heroesData) {
     return dataRegistry.getCombinedVisuals();
@@ -614,9 +593,6 @@ export class HeroStateManager {
       this.data = dataRegistry.getHeroesData();
       this._dirty = false;
       this._emit('saved');
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('kings_lands_heroes_updated', { detail: this.data }));
-      }
       return { ok: true };
     } finally {
       this._isSavingSelf = false;
@@ -637,9 +613,6 @@ export class HeroStateManager {
       this._dirty = false;
       this.data = dataRegistry.getHeroesData();
       this._emit('saved');
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('kings_lands_heroes_updated', { detail: this.data }));
-      }
       return true;
     } catch (e) {
       console.error('[HeroStateManager] Failed to save heroes draft:', e);
@@ -703,9 +676,6 @@ export class HeroStateManager {
       const res = dataRegistry.resetToDefaults();
       this.data = dataRegistry.getHeroesData();
       this._emit('saved');
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('kings_lands_heroes_updated', { detail: this.data }));
-      }
       return res.ok;
     } finally {
       this._isSavingSelf = false;

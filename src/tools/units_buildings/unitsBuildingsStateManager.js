@@ -167,16 +167,6 @@ export function computeEligibleFormationsForUnit(
   return result;
 }
 
-export function loadUnitsBuildingsConfigFromStorage() {
-  const { stats, visuals } = dataRegistry.getUnits();
-  const buildings = dataRegistry.getBuildings();
-  return {
-    unitStatsData: stats,
-    buildingsData: buildings,
-    unitsVisualsData: visuals
-  };
-}
-
 export class UnitsBuildingsStateManager {
   constructor({ onStatus = null, studioStateManager = null } = {}) {
     this.onStatus = onStatus;

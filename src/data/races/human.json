@@ -13,7 +13,8 @@
     "swordsman",
     "spearman",
     "archer",
-    "cavalry"
+    "cavalry",
+    "ballista"
   ],
   "buildings": "shared",
   "heroes": [
@@ -95,6 +96,7 @@
     "worker_mine",
     "swordsman_human_idle__v2",
     "swordsman_human_attack_slash__v2",
+    "ballista_human_walk",
     "swordsman_human_idle"
   ],
   "files": {

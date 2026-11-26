@@ -316,8 +316,8 @@ export async function runUnitsBuildingsLabAndDoorTests() {
   assert(Boolean(wolfMesh.userData.sockets.mount_head), '3D Dire Wolf must spawn mount_head socket');
   assert(wolfMesh.userData.sockets.pelvis.position.y > 1.3, 'Rider pelvis must be elevated onto Dire Wolf saddle');
 
-  // The War Chameleon mount is hero-only content that is not part of the shipped unit data (it never was in units.json).
-  if (liveRegistry.getUnitsVisuals().units.war_chameleon) {
+  // The War Chameleon mount is Sisnat's mount: the lab copies it from the hero's mountHierarchy (there is no war_chameleon unit).
+  if (liveRegistry.getHero('sisnat')?.mountHierarchy) {
     sm.setUnitMount('swordsman', 'war_chameleon');
     const chamMesh = visual();
     assert(Boolean(chamMesh.userData.sockets.mount_torso), '3D War Chameleon must spawn mount_torso socket');
@@ -325,7 +325,7 @@ export async function runUnitsBuildingsLabAndDoorTests() {
     assert(chamMesh.userData.sockets.pelvis.position.y > 1.5, 'Rider pelvis must be elevated onto War Chameleon saddle');
 
   } else {
-    console.log('  [SKIP] War Chameleon mount: no war_chameleon unit in the shipped data');
+    console.log('  [SKIP] War Chameleon mount: hero sisnat has no mountHierarchy');
   }
 
   sm.setUnitMount('swordsman', 'none');
@@ -342,7 +342,6 @@ export async function runUnitsBuildingsLabAndDoorTests() {
   assert(bActor.doorOpenAmount === 0, 'updateDoorAnimation(false) must close building doors');
 
   // --- END-TO-END INTEGRATION SUITE ---
-  const { loadUnitsBuildingsConfigFromStorage } = await import('../../src/tools/units_buildings/unitsBuildingsStateManager.js');
   const { buildCombinedVisualsData } = await import('../../src/tools/heroes/heroStateManager.js');
   const { getBuildingStudioClipsForBuilding, canBuildingRecruitUnits } = await import('../../src/tools/units_buildings/buildingStudioAdapter.js');
   const { processSimCommands } = await import('../../src/sim/commandHandlers.js');
@@ -499,7 +498,7 @@ export async function runUnitsBuildingsLabAndDoorTests() {
     sm.studioStateManager.saveDraft();
     sm.unitsVisualsData = sm.studioStateManager.data;
     sm.saveAll();
-    const reloadedCfg = loadUnitsBuildingsConfigFromStorage();
+    const reloadedCfg = { unitsVisualsData: liveRegistry.getUnitsVisuals() };
     assert.equal(
       reloadedCfg.unitsVisualsData.animations.keyframes[editedClipName]?.duration,
       0.63,

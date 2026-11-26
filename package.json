@@ -7,6 +7,8 @@
     "dev": "vite --host 0.0.0.0 --port 3000",
     "build": "vite build",
     "preview": "vite preview --host 0.0.0.0 --port 3000",
+    "test": "node --import ./tests/helpers/register.mjs --test \"tests/**/*.test.mjs\"",
+    "test:all": "node --import ./tests/helpers/register.mjs tests/run_all_tests.mjs",
     "data:split": "node scripts/data/build.mjs split",
     "data:index": "node scripts/data/build.mjs index",
     "data:check": "node scripts/data/build.mjs check"

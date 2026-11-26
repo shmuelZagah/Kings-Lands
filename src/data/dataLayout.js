@@ -41,7 +41,8 @@ export function deriveBaseIds(mono) {
   const visuals = mono.unitsVisuals?.units || {};
   for (const id of Object.keys(visuals)) if (BASE_ID_RE.test(id)) ids.add(id);
   for (const s of Object.values(mono.unitStats?.units || {})) {
-    if (s.baseCharId && visuals[s.baseCharId]) ids.add(s.baseCharId);
+    // a unit that is its own model (baseCharId === its own id, e.g. the ballista) is a unit, not a shared base
+    if (s.baseCharId && s.baseCharId !== s.id && visuals[s.baseCharId]) ids.add(s.baseCharId);
     if (s.mountType && s.mountType !== 'none' && visuals[s.mountType]) ids.add(s.mountType);
   }
   for (const h of Object.values(mono.heroes?.heroes || {})) {

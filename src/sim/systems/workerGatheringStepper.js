@@ -4,7 +4,7 @@
  *
  * Upgrades:
  * - Reads per-resource harvest durations (`harvestTimeSecByResource`: wood, stone, iron, coins),
- *   `carryCapacity`, and `batchYield` dynamically from `src/data/unitStats.json` (`worker.workerGathering`).
+ *   `carryCapacity`, and `batchYield` dynamically from the unit stats (`simUnitStats()`; source: the per-race units.json files under src/data/races) (`worker.workerGathering`).
  * - Workers returning with resources must walk to the building's FRONT DOORWAY (`_getBuildingDoorVectorFx`)
  *   and physically enter through the door (`enterDoorOnDropoff`, briefly stepping inside the doorway while
  *   the building doors swing open) before depositing resources and exiting back out to harvest!

@@ -22,6 +22,15 @@
 
 * Source files: modular ES modules under `src/` enforcing Single Responsibility across simulation, rendering, input routing, and HUD, plus JSON configuration/data under `src/data/`.
 
+## 1b. Data architecture (current, stage 4)
+
+* **One door:** `src/data/dataRegistry.js` is the only reader/writer of game data (units, stats, buildings, building skins, heroes). Labs, Studio, Hall of Heroes, HUD and the game all use its API; `src/render/modelProvider.js` is the only place that builds models from it.
+* **Files:** `src/data/races/<race>.json` (identity card) + `races/<race>/{units,gear,animations,heroes}.json`, `bases/<id>.json`, `shared/*.json`, generated index `dataFiles.generated.js` (`node scripts/data/build.mjs index`). Layout details: `src/data/DATA_LAYOUT.md`. Contract and ownership: `src/tools/studio/DATA_CONTRACT.md`.
+* **Draft:** one localStorage key `kings_lands_data_registry_draft_v1` with overrides only; old keys are migrated once inside the registry.
+* **Copies + merge:** getters return working copies; saves three-way merge and validate cross references (rejected with a message when broken).
+* **Match:** `dataRegistry.getSimSnapshot()` (frozen, versioned) -> `SimBridge` -> `GameState`; sim code reads data only through `src/sim/simConfig.js` accessors (`simUnitStats()`, `simBuildings()`, `simUnitsVisuals()`, `simHeroes()`). Edits during a match apply from the next match.
+* **Removed in stage 3/4:** `buildingSkinStore.js`, `baseUnitsMigration.js`, `syncRuntimeData`, `syncLiveConfigObjectsInMemory`, `loadUnitsBuildingsConfigFromStorage`, `loadHeroesDataFromStorage`, `loadActiveUnitsVisualsData`, the monolithic `units.json`/`unitStats.json`/`buildings.json`/`buildingVisuals.json`/`heroes.json`/`engineConfig.json`. Tests: `tests/regression/end_to_end_consistency.test.mjs` (one edit, every reader).
+
 ## 2. High-level architecture
 
 ```
@@ -1793,7 +1802,6 @@ index.html
 | `findSpellDef(heroesData, rawSpellId)` | 91 | איתור וסינון הישות או המיקום המתאים ביותר (`findSpellDef`). | 
 | `heroHasSecondaryLoadout(heroDef)` | 118 | פונקציית עזר ולוגיקה ייעודית במודול (`heroHasSecondaryLoadout`). | 
 | `getEquipmentWeaponMode(equipment)` | 134 | שליפת נתונים או מצב נוכחי (`getEquipmentWeaponMode`). | 
-| `loadHeroesDataFromStorage()` | 147 | פונקציית עזר ולוגיקה ייעודית במודול (`loadHeroesDataFromStorage`). | 
 | `applySavedSpellEdits(sp, oldSp)` | 159 | הגדרה והחלה של ערכים או פקודות על האובייקט (`applySavedSpellEdits`). | 
 | `buildCombinedVisualsData(unitsVisualsData = defaultUnitsJson...)` | 286 | בנייה ויצירה של אובייקט, גאומטריה או מבנה נתונים (`buildCombinedVisualsData`). | 
 | `getOrRenderHeroPortraitUrl(heroId, heroesData = null, options ...)` | 419 | שליפת נתונים או מצב נוכחי (`getOrRenderHeroPortraitUrl`). | 
@@ -2362,7 +2370,7 @@ index.html
 
   * קליעי בליסטרה (`isBallista: true`) עוקפים את הגנת החיצים של מבנים (`arrowProtectionPermille`), אינם ניתנים לחסימה על ידי מגן, מפילים חיילים בפגיעה ישירה וגורמים לנזק רסס היקפי (`2.4m`).
 
-* **`src/data/visuals/units.json` & `src/tools/studio/studioApp.js`**:
+* **`src/data/races/*/units.json` (visuals) & `src/tools/studio/studioApp.js`**:
 
   * מודל תלת-ממדי מלא של בליסטרה על 4 גלגלי עץ וברזל (`pelvis`, `leg_L`, `leg_R`, `shin_L`, `shin_R`), עריסת צידוד ומסילה (`torso`), זרועות פיתול וכבלים (`arm_L`, `arm_R`, `forearm_L`, `forearm_R`), כננת מתיחה (`head`) וחץ מצור כבד (`ballista_crossbow` על `weapon_socket_R`), כולל אנימציות סיבוב גלגלים בהליכה, מתיחה ורתע בירי, פגיעה והתפרקות.
 
@@ -2386,13 +2394,13 @@ index.html
 
   * `syncFromStudioView()` ו-`buildCombinedVisualsData()` — שמירת דגל `userModifiedInStudio = true` על כל אנימציה שנערכה במעבדה וסנכרון דו-כיווני מלא בין המעבדות למשחק.
 
-## 9. מעבדת הלוחמים והבתים (`src/tools/units_buildings/` ו-`src/data/unitStats.json` / `buildingVisuals.json`)
+## 9. מעבדת הלוחמים והבתים (`src/tools/units_buildings/` ונתוני `src/data/races/` ו-`src/data/shared/`)
 
 | קובץ | תפקיד ופונקציות מרכזיות | 
 | ----- | ----- | 
-| `src/data/unitStats.json` | קובץ הגדרות מלא לכל הלוחמים והפועלים: זהות, דמות בסיס, רכיבה, פרמטרי קרב ותנועה, עלויות, מערכים מותרים (`allowedFormations`), וחוקי מערכים לפי נשק (`formationRules`), כולל הגדרות חציבה לפי סוג משאב וכניסה מהדלת לפועלים (`workerGathering`). | 
+| `src/data/races/*/units.json` (`stats`) | קובץ הגדרות מלא לכל הלוחמים והפועלים: זהות, דמות בסיס, רכיבה, פרמטרי קרב ותנועה, עלויות, מערכים מותרים (`allowedFormations`), וחוקי מערכים לפי נשק (`formationRules`), כולל הגדרות חציבה לפי סוג משאב וכניסה מהדלת לפועלים (`workerGathering`). | 
 | `src/data/buildingVisuals.json` | קובץ אנימציות ה-Keyframe של המבנים עבור מעבדת האנימציות (`building_idle`, `building_build_construct`, `building_recruit_spawn`, `building_damage_stage_1`, `building_damage_stage_2`, `building_collapse_destroy`). | 
-| `src/tools/units_buildings/unitsBuildingsStateManager.js` | `UnitsBuildingsStateManager`, `computeEligibleFormationsForUnit`, `syncLiveConfigObjectsInMemory` — ניהול וסנכרון דו-כיווני בזמן אמת בין מעבדת הלוחמים והבתים, מעבדת האנימציות (`StudioApp`), והסימולציה במשחק (`MovementSystem`, `ConstructionSystem`, `ProductionAndRallySystem`, `BuildingCombatSystem`, `EconomySystem`). | 
+| `src/tools/units_buildings/unitsBuildingsStateManager.js` | `UnitsBuildingsStateManager`, `computeEligibleFormationsForUnit` — ניהול וסנכרון דו-כיווני בזמן אמת בין מעבדת הלוחמים והבתים, מעבדת האנימציות (`StudioApp`), והסימולציה במשחק (`MovementSystem`, `ConstructionSystem`, `ProductionAndRallySystem`, `BuildingCombatSystem`, `EconomySystem`). | 
 | `src/tools/units_buildings/buildingStudioAdapter.js` | `buildBuildingsStudioViewData`, `BUILDING_STUDIO_CLIPS` — ממיר כל מבנה מ-`buildings.json` להיררכיית תלת-ממד מפרקית (`pelvis`, `torso`, `head`, `arm_L` שער שמאל, `arm_R` שער ימין) עבור מעבדת האנימציות, כולל הצגת חרכי ירי (`arrow_slit`) אך ורק כש-`maxGarrison > 0`. | 
 | `src/tools/units_buildings/unitsTabRenderer.js` | `renderUnitsLeftListHtml`, `renderUnitRightInspectorHtml` — ממשק לשונית **לוחמים**: יצירת לוחם חדש מדמות בסיס, הרכבת נשקים ושריון (סט 1 וסט 2), הפעלה/כיבוי של מצבי מערך לפי נשק ורכיבה, כל פרמטרי הקרב/משקל/מהירות/עלויות, וזמני חציבה לפי משאב + כניסה מהדלת לפועלים. | 
 | `src/tools/units_buildings/buildingsTabRenderer.js` | `renderBuildingRightInspectorHtml`, `renderBuildingsLeftListHtml` — ממשק לשונית **בתים**: זמן בנייה, עלויות, רמה מקסימלית (`maxLevel`), האצת גיוס לכל רמה (`trainSpeedBonusPctPerLevel`), פתיחת יחידות לפי רמה (`unlockLevel`), רמת הופעת מגדל שמירה (`watchtowerLevel`), מגדל שמירה אוניברסלי משותף לכל הבתים (`sharedBuildingWatchtower`), מגדל שמירה רגיל, מגדל בליסטרה (`mountedBallistaUnitId`, חרכי ירי מותנים ב-`maxGarrison`), בית מרפא ובית דגלים. | 

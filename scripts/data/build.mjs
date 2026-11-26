@@ -7,13 +7,16 @@
  *                                                     under src/data/ and regenerate src/data/dataFiles.generated.js.
  *                                                     monolithDir defaults to src/data (units.json in src/data/visuals/).
  *                                                     Use it to import a JSON exported from a lab (units.json exports).
- *   node scripts/data/build.mjs index                 only regenerate src/data/dataFiles.generated.js (after adding a race by hand)
- *   node scripts/data/build.mjs check                 assemble the files on disk and print a summary
+ *   node scripts/data/build.mjs index                 after adding/removing data files by hand: regenerate src/data/dataFiles.generated.js
+ *                                                     and add the new ids to shared/order.json (UI list order)
+ *   node scripts/data/build.mjs check                 assemble the files on disk, run the cross-reference validation, print a summary
+ *                                                     (exit code 1 on errors: use it in CI / before committing data changes)
  */
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { splitBundle, assembleBundle } from '../../src/data/dataLayout.js';
+import { splitBundle, assembleBundle, SHARED_FILES } from '../../src/data/dataLayout.js';
+import { validateRegistryState } from '../../src/tools/studio/healthCheck.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const dataDir = path.join(root, 'src/data');
@@ -70,12 +73,25 @@ if (cmd === 'split') {
   writeIndex(files);
   console.log(`split -> ${Object.keys(files).length} files under src/data/{races,bases,shared}`);
 } else if (cmd === 'index') {
-  writeIndex(readLayoutFromDisk());
+  const files = readLayoutFromDisk();
+  // keep shared/order.json complete: ids that were added by hand are appended, nothing is reordered
+  const canonical = splitBundle(assembleBundle(files));
+  const orderPath = SHARED_FILES.order;
+  if (canonical[orderPath] && JSON.stringify(canonical[orderPath]) !== JSON.stringify(files[orderPath])) {
+    files[orderPath] = canonical[orderPath];
+    fs.writeFileSync(path.join(dataDir, orderPath), formatJson(files[orderPath]));
+    console.log('shared/order.json updated with the new ids');
+  }
+  writeIndex(files);
   console.log('index regenerated');
 } else if (cmd === 'check') {
   const b = assembleBundle(readLayoutFromDisk());
   console.log('units:', Object.keys(b.unitsVisuals.units).length, 'prefabs:', Object.keys(b.unitsVisuals.prefabs).length,
     'stats:', Object.keys(b.unitStats.units).length, 'buildings:', Object.keys(b.buildings.buildings).length, 'heroes:', Object.keys(b.heroes.heroes).length);
+  const report = validateRegistryState(b);
+  for (const i of (report.issues || []).filter((x) => x.level === 'error')) console.error('ERROR', i.area, '-', i.message);
+  console.log(report.ok ? 'validation: OK' : `validation: ${report.counts?.error ?? '?'} error(s)`);
+  if (!report.ok) process.exit(1);
 } else {
   console.error('unknown command', cmd); process.exit(1);
 }

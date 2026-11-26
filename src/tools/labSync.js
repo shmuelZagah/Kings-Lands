@@ -7,7 +7,7 @@
  * 3. Hall of Heroes (`HallOfHeroesApp`) — owns hero roster, class templates, stats, and spell trees
  */
 
-import { DEFAULT_BASE_CHAR_ID, resolveBaseCharId } from './studio/baseUnitsMigration.js';
+import { DEFAULT_BASE_CHAR_ID, resolveBaseCharId } from '../data/dataRegistry.js';
 import { getFactions, getFactionLabel, isSharedUnitsFaction } from './studio/skinUtils.js';
 
 export const NON_COMBAT_VISUAL_BASE_IDS = new Set([

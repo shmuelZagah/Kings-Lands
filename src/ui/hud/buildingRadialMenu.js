@@ -3,8 +3,7 @@ import { CommandTypes } from '../../core/commandBus.js';
 import { OPTION_SVG_ICONS, buildOrbDecorationsSvg } from './hudIcons.js';
 import { dataRegistry } from '../../data/dataRegistry.js';
 import { findCustomIconById } from './unitIconsCatalog.js';
-import { loadUnitsBuildingsConfigFromStorage } from '../../tools/units_buildings/unitsBuildingsStateManager.js';
-import { loadHeroesDataFromStorage, getOrRenderHeroPortraitUrl } from '../../tools/heroes/heroStateManager.js';
+import { getOrRenderHeroPortraitUrl } from '../../tools/heroes/heroStateManager.js';
 
 export class BuildingRadialMenu {
   constructor({ camera, domElement, simBridge, commandBus, synthAudio }) {
@@ -14,10 +13,9 @@ export class BuildingRadialMenu {
     this.commandBus = commandBus;
     this.synthAudio = synthAudio;
 
-    const initUb = loadUnitsBuildingsConfigFromStorage();
-    this.unitStatsFull = initUb.unitStatsData || dataRegistry.getUnitStats();
-    this.buildingDefs = initUb.buildingsData?.buildings || dataRegistry.getBuildings().buildings;
-    this.unitStatsDefs = this.unitStatsFull?.units || dataRegistry.getUnitStats().units;
+    this.unitStatsFull = dataRegistry.getUnitStats();
+    this.buildingDefs = dataRegistry.getBuildings().buildings;
+    this.unitStatsDefs = this.unitStatsFull?.units || {};
     this.selectedBuildingIds = new Set();
     this.isHeroSubmenuOpen = false;
     this._projVec = new THREE.Vector3();
@@ -53,14 +51,11 @@ export class BuildingRadialMenu {
       this._lastRenderedKey = '';
       this._animateNextRender = false;
     });
-    window.addEventListener('kings_lands_heroes_updated', () => {
-      this._lastRenderedKey = '';
-    });
-    window.addEventListener('kings_lands_units_buildings_updated', () => {
-      const ub = loadUnitsBuildingsConfigFromStorage();
-      this.unitStatsFull = ub.unitStatsData || dataRegistry.getUnitStats();
-      this.buildingDefs = ub.buildingsData?.buildings || dataRegistry.getBuildings().buildings;
-      this.unitStatsDefs = this.unitStatsFull?.units || dataRegistry.getUnitStats().units;
+    // The registry is the only source: every lab/Studio/Hero save notifies it, so one subscription covers all data.
+    dataRegistry.subscribe(() => {
+      this.unitStatsFull = dataRegistry.getUnitStats();
+      this.buildingDefs = dataRegistry.getBuildings().buildings;
+      this.unitStatsDefs = this.unitStatsFull?.units || {};
       this._lastRenderedKey = '';
     });
   }
@@ -570,7 +565,7 @@ export class BuildingRadialMenu {
     const items = [];
     if (primaryBld.type === 'citadel' && this.isHeroSubmenuOpen) {
       // Heroes recruitment bar inside Main Base (בית ההתחלה)
-      const heroesData = loadHeroesDataFromStorage();
+      const heroesData = dataRegistry.getHeroesData();
       const heroesList = Object.values(heroesData.heroes || {});
       const compStates = eco.companyStates || {};
       const fallenHeroes = eco.fallenHeroes || {};

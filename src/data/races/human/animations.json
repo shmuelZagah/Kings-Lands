@@ -2464,6 +2464,143 @@
           }
         }
       ]
+    },
+    "ballista_human_walk": {
+      "mode": "keyframes",
+      "layer": "lowerBody",
+      "duration": 0.72,
+      "loop": true,
+      "tracks": {
+        "leg_L": [
+          {
+            "t": 0,
+            "pos": [
+              0,
+              0,
+              0
+            ],
+            "rot": [
+              0,
+              0,
+              0
+            ],
+            "easing": "linear",
+            "posKey": false
+          },
+          {
+            "t": 1,
+            "pos": [
+              0,
+              0,
+              0
+            ],
+            "rot": [
+              6.2832,
+              0,
+              0
+            ],
+            "easing": "linear",
+            "posKey": false
+          }
+        ],
+        "leg_R": [
+          {
+            "t": 0,
+            "pos": [
+              0,
+              0,
+              0
+            ],
+            "rot": [
+              0,
+              0,
+              0
+            ],
+            "easing": "linear",
+            "posKey": false
+          },
+          {
+            "t": 1,
+            "pos": [
+              0,
+              0,
+              0
+            ],
+            "rot": [
+              6.2832,
+              0,
+              0
+            ],
+            "easing": "linear",
+            "posKey": false
+          }
+        ],
+        "shin_L": [
+          {
+            "t": 0,
+            "pos": [
+              0,
+              0,
+              0
+            ],
+            "rot": [
+              0,
+              0,
+              0
+            ],
+            "easing": "linear",
+            "posKey": false
+          },
+          {
+            "t": 1,
+            "pos": [
+              0,
+              0,
+              0
+            ],
+            "rot": [
+              6.2832,
+              0,
+              0
+            ],
+            "easing": "linear",
+            "posKey": false
+          }
+        ],
+        "shin_R": [
+          {
+            "t": 0,
+            "pos": [
+              0,
+              0,
+              0
+            ],
+            "rot": [
+              0,
+              0,
+              0
+            ],
+            "easing": "linear",
+            "posKey": false
+          },
+          {
+            "t": 1,
+            "pos": [
+              0,
+              0,
+              0
+            ],
+            "rot": [
+              6.2832,
+              0,
+              0
+            ],
+            "easing": "linear",
+            "posKey": false
+          }
+        ]
+      },
+      "events": []
     }
   },
   "procedural": {

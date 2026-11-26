@@ -1,15 +1,50 @@
-# Kings Lands — `units.json` data contract
+# Kings Lands — data contract
 
-> **Layout note (stage 2):** the shipped data is now split per race (`src/data/races/`, `bases/`, `shared/`, see
-> `src/data/DATA_LAYOUT.md`). `assembleBundle()` rebuilds exactly the bundle described here, so everything below about
-> the *shape* of units.json still holds. Where it says "replace `units.json`", use `node scripts/data/build.mjs split <folder>`.
+> **Stage 4 rewrite of the top part.** Sections 2 onward still describe the *shape* of the bundle that
+> `assembleBundle()` rebuilds (`units`, `prefabs`, `animations`, ...). Everything about *where the data lives, who may
+> write it and how it is stored* is in sections 0 and 1 below and supersedes older statements.
 
-**Status: basic (v1).** It describes what exists today. New units, new clips and heroes will extend it; when they
-do, update this file *and* `src/tools/studio/healthCheck.js` (every rule below that says "checked" lives there).
+## 0. Layout and the registry rules
 
-Who reads this file: the game code (AI or human) that consumes `src/data/visuals/units.json`, and the Studio
-(`src/tools/studio/*`) that edits it. If something here and the code disagree, the code in
-`src/render/modelFactory.js` / `src/render/animator3d.js` wins — and this file has a bug to fix.
+```
+src/data/
+  races/<race>.json          identity card: id, name, teamColors, bases[], units[], heroes[], gear[], animations[], files{}
+  races/<race>/units.json    { visuals: {id: ...}, stats: {id: ...} }    units of the race (NOT bases)
+  races/<race>/gear.json     { prefabs }       races/<race>/animations.json { keyframes, procedural }
+  races/<race>/heroes.json   { heroes, prefabs }
+  bases/<baseId>.json        one base character / mount (heavy meshes)
+  shared/                    engineConfig, unitsMeta, unitStatsMeta, buildings, buildingVisuals, heroesMeta, order.json
+  dataLayout.js              splitBundle()/assembleBundle() (pure)      defaults.js   the shipped bundle
+  dataFiles.generated.js     GENERATED index of every file (node scripts/data/build.mjs index)
+  dataRegistry.js            THE ONLY reader/writer of game data
+```
+Details and the layout rules: `src/data/DATA_LAYOUT.md`.
+
+**Registry rules (mandatory)**
+1. `dataRegistry` is the only module that reads or writes game data. Nobody reads `localStorage` data keys, the JSON
+   files or `defaults.js` directly (`defaults.js` is imported only by the registry, the sim fallback and tests).
+2. Getters (`getUnitsVisuals()`, `getUnitStats()`, `getBuildings()`, `getBuildingVisuals()`, `getHeroesData()`) return
+   **working copies**. Mutating a copy changes nothing until it is saved. Saving merges *only what the copy changed*
+   (three-way merge), so a stale lab can never overwrite another lab's save.
+3. Mesh arrays (`vertices`, `faces`, `colors`, ... with 32+ entries) are shared between copies by reference:
+   **never mutate them in place**, replace the array.
+4. Every save validates cross references (`validateRegistryState`) and is **rejected with a clear message** when it
+   breaks one (checked by the end-to-end test: unit -> base, building option -> unit, unit -> equipped prefab; see `validateRegistryState` for the full list). A rejected save changes nothing.
+5. Saving identical data is a no-op (no write, no version bump, no event).
+6. Writers: Units/Buildings lab -> unit stats, buildings, unit skin choice; Studio -> unit visuals, clips, building
+   skins/visuals; Hero lab -> heroes. They all write through the registry; the registry notifies everyone
+   (`dataRegistry.subscribe`, `kings_lands_units_buildings_updated`) and `modelProvider` rebuilds only what changed.
+7. **Draft = overrides only.** The browser keeps one draft, `kings_lands_data_registry_draft_v1`, holding only what
+   differs from the shipped files, per entry (`unit:<id>`, `skin:<id>`, ...). Saving never rewrites the shipped files.
+   The old keys (`kings_lands_studio_draft_v3`, `..._building_skins_v1`, `..._unit_stats_v2`, ...) are read **once**,
+   inside the registry, to migrate an old draft, and are dropped to make room if the quota is hit.
+   If the browser cannot store the draft, the edit stays in memory, the save returns `persisted:false` and a banner shows.
+8. The match never reads the registry live. It starts from a frozen, versioned **sim snapshot**
+   (`dataRegistry.getSimSnapshot()` -> `SimBridge` -> `GameState`); sim modules read data through the accessors in
+   `src/sim/simConfig.js`. Edits made during a match apply from the **next** match.
+9. Shipping new defaults: export from a lab (or edit the files) and run `node scripts/data/build.mjs split <folder>`
+   (monolithic export) or `node scripts/data/build.mjs index` (files edited by hand), then
+   `node scripts/data/build.mjs check` (validation, exit code 1 on errors) and the tests.
 
 ---
 
@@ -17,14 +52,17 @@ Who reads this file: the game code (AI or human) that consumes `src/data/visuals
 
 | Thing | Owner | Rule |
 |---|---|---|
-| `src/data/visuals/units.json` | the Studio (edited), the game (read only) | The game never writes it. Edit through the Studio (**Export JSON**), or by hand + run **Health** in the Studio. |
+| `src/data/races/**`, `bases/**`, `shared/**` | shipped defaults; edited by hand or by a lab **Export JSON** + `build.mjs split` | The game and the labs never write these files. |
+| `src/data/dataRegistry.js` | the only data reader/writer | See section 0. |
+| `src/render/modelProvider.js` | the only place that builds models for previews, labs and the game | Rebuilds from registry events. |
 | `src/render/modelFactory.js` | "sacred" | Builds the 3D body from `hierarchy`. Do not change its output format. |
 | `src/render/animator3d.js` | "sacred" | Plays clips. Only small, backward-compatible edits (see its header). |
-| `src/tools/studio/clipResolver.js` | shared | The ONE place that decides which clip a unit plays. Game code should call it (or copy its rules exactly). |
-| `src/tools/studio/healthCheck.js` | Studio | Pure function `runHealthCheck(data)`. Safe to run from tests / CI: `node` + `esbuild`, no DOM. |
+| `src/tools/studio/clipResolver.js` | shared | The ONE place that decides which clip a unit plays. |
+| `src/tools/studio/healthCheck.js` | Studio | `runHealthCheck(data)` (content) and `validateRegistryState(bundle)` (cross references; used by every save). Pure, no DOM. |
+| `src/sim/simConfig.js` | the sim | The only door through which sim code reads data. |
 
-The Studio keeps its working copy as a **draft in `localStorage`** (`kings_lands_studio_draft_v2`). The draft is *not*
-the file. The file only changes when you replace `units.json` with the exported one.
+The Studio keeps its working copy as a copy from the registry (section 0, rule 2); the registry persists the draft
+(rule 7). The draft is *not* the shipped files.
 
 ---
 

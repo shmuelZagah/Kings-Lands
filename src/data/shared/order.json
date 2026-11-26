@@ -15,6 +15,7 @@
     "spearman",
     "archer",
     "cavalry",
+    "ballista",
     "katiler_base",
     "katiler_wolf",
     "mirukenkay_base",
@@ -354,7 +355,8 @@
     "idle__v2",
     "swordsman_human_idle__v2",
     "attack_slash__v2",
-    "swordsman_human_attack_slash__v2"
+    "swordsman_human_attack_slash__v2",
+    "ballista_human_walk"
   ],
   "unitsVisuals.procedural": [
     "idle",
