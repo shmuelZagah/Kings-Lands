@@ -44,8 +44,12 @@ import {
   createDecorativePropMesh,
   createSpawnBeaconMesh,
   parseWavefrontObjToVertices,
-  renderStaticMeshThumbnailDataUrl
+  renderStaticMeshThumbnailDataUrl,
+  arrayBufferToBase64,
+  clearTexturedGlbAssetCache
 } from './mapStateManager.js';
+
+export const GLB_LARGE_FILE_WARN_BYTES = 3 * 1024 * 1024;
 
 export const BRUSH_FALLOFF_PRESETS = Object.freeze([
   { id: 'smooth', label: 'Smooth Bell Curve' },
@@ -511,6 +515,9 @@ export class MapEditorApp {
     const isValid = this.isPlacementLocationValid(worldX, worldZ);
     const targetMat = isValid ? GHOST_VALID_MAT : GHOST_INVALID_MAT;
     this.ghostGroup.traverse((child) => {
+      if (child.userData?.isGlbTextured) {
+        child.userData.ghostMaterialOverride = targetMat;
+      }
       if (child.isMesh) {
         child.material = targetMat;
       }
@@ -987,6 +994,7 @@ export class MapEditorApp {
     const idx = this.mapState.customPropAssets.findIndex((a) => a.id === assetId);
     if (idx < 0) return false;
     if (typeof this.pushUndoSnapshot === 'function') this.pushUndoSnapshot();
+    clearTexturedGlbAssetCache(assetId);
     this.mapState.customPropAssets.splice(idx, 1);
     if (Array.isArray(this.mapState.decorativeProps)) {
       this.mapState.decorativeProps = this.mapState.decorativeProps.filter(
@@ -1010,6 +1018,7 @@ export class MapEditorApp {
     const idx = bucket.findIndex((s) => s.id === skinId);
     if (idx < 0) return false;
     if (typeof this.pushUndoSnapshot === 'function') this.pushUndoSnapshot();
+    clearTexturedGlbAssetCache(skinId);
     bucket.splice(idx, 1);
     const fallbackSkin = RESOURCE_SKINS_CATALOG[resourceType]?.[0]?.id || 'pine_emerald';
     if (resourceType === 'wood') {
@@ -1030,27 +1039,61 @@ export class MapEditorApp {
     return true;
   }
 
+  _showMapEditorWarning(message) {
+    this.lastImportWarning = message;
+    if (typeof console !== 'undefined' && typeof console.warn === 'function') {
+      console.warn(message);
+    }
+    if (typeof document === 'undefined' || !this.viewportEl) return;
+    let banner = this.viewportEl.querySelector('#map-editor-warning-toast');
+    if (!banner) {
+      banner = document.createElement('div');
+      banner.id = 'map-editor-warning-toast';
+      banner.className =
+        'absolute top-3 left-1/2 -translate-x-1/2 z-30 max-w-md rounded-xl border border-amber-400/70 bg-amber-950/95 px-4 py-2 text-xs font-semibold text-amber-100 shadow-2xl flex items-center gap-2';
+      this.viewportEl.appendChild(banner);
+    }
+    banner.textContent = message;
+    clearTimeout(this._warningToastTimer);
+    this._warningToastTimer = setTimeout(() => {
+      banner?.remove?.();
+    }, 6500);
+  }
+
   async importGlbPropFromBuffer(arrayBuffer, fileName = 'object.glb') {
+    const byteLength = arrayBuffer?.byteLength || 0;
+    const isLarge = byteLength > GLB_LARGE_FILE_WARN_BYTES;
+    const sizeWarning = isLarge
+      ? `Warning: "${fileName}" is ${(byteLength / (1024 * 1024)).toFixed(1)} MB (> 3 MB). Large GLBs may slow rendering or exceed browser save quota.`
+      : '';
+    if (sizeWarning) this._showMapEditorWarning(sizeWarning);
+
     const { readGlb } = await import('../import/glbReader.js');
     const { buildStaticMeshFromScene } = await import('../import/glbToUnit.js');
+    const fitSize = 6.0;
     const scene = await readGlb(arrayBuffer);
     const mesh = buildStaticMeshFromScene(scene, {
       rotateYDeg: 0,
       budget: 3500,
       smoothNormals: true,
-      fit: { mode: 'size', size: 6.0, anchor: 'base', offset: [0, 0, 0] }
+      fit: { mode: 'size', size: fitSize, anchor: 'base', offset: [0, 0, 0] }
     });
     const id = `custom_prop_glb_${Date.now()}_${this._nextUidCounter++}`;
     const name = String(fileName || 'object').replace(/\.[^.]+$/, '') || 'Custom Object';
     const thumbnailDataUrl = renderStaticMeshThumbnailDataUrl(mesh);
+    const glbBase64 = arrayBufferToBase64(arrayBuffer);
     const asset = {
       id,
       name,
-      kind: 'glb',
+      kind: 'glb_textured',
+      glbBase64,
+      glbByteLength: byteLength,
+      fitSize,
       vertices: mesh.vertices,
       faces: mesh.faces,
       colors: mesh.colors,
-      thumbnailDataUrl
+      thumbnailDataUrl,
+      ...(sizeWarning ? { sizeWarning } : {})
     };
     if (!Array.isArray(this.mapState.customPropAssets)) this.mapState.customPropAssets = [];
     this.mapState.customPropAssets.push(asset);
@@ -1062,6 +1105,13 @@ export class MapEditorApp {
 
   async importGlbResourceFromBuffer(arrayBuffer, fileName = 'resource.glb', resourceType = this.activeResourceType) {
     const rType = ['wood', 'coins', 'iron', 'stone'].includes(resourceType) ? resourceType : 'wood';
+    const byteLength = arrayBuffer?.byteLength || 0;
+    const isLarge = byteLength > GLB_LARGE_FILE_WARN_BYTES;
+    const sizeWarning = isLarge
+      ? `Warning: "${fileName}" is ${(byteLength / (1024 * 1024)).toFixed(1)} MB (> 3 MB). Large GLBs may slow rendering or exceed browser save quota.`
+      : '';
+    if (sizeWarning) this._showMapEditorWarning(sizeWarning);
+
     const { readGlb } = await import('../import/glbReader.js');
     const { buildStaticMeshFromScene } = await import('../import/glbToUnit.js');
     const scene = await readGlb(arrayBuffer);
@@ -1075,14 +1125,19 @@ export class MapEditorApp {
     const id = `custom_res_${rType}_${Date.now()}_${this._nextUidCounter++}`;
     const name = String(fileName || 'resource').replace(/\.[^.]+$/, '') || 'Custom Resource';
     const thumbnailDataUrl = renderStaticMeshThumbnailDataUrl(mesh);
+    const glbBase64 = arrayBufferToBase64(arrayBuffer);
     const entry = {
       id,
       name,
-      kind: 'glb',
+      kind: 'glb_textured',
+      glbBase64,
+      glbByteLength: byteLength,
+      fitSize: targetSize,
       vertices: mesh.vertices,
       faces: mesh.faces,
       colors: mesh.colors,
-      thumbnailDataUrl
+      thumbnailDataUrl,
+      ...(sizeWarning ? { sizeWarning } : {})
     };
     if (!this.mapState.customResourceSkins || typeof this.mapState.customResourceSkins !== 'object') {
       this.mapState.customResourceSkins = { wood: [], coins: [], iron: [], stone: [] };

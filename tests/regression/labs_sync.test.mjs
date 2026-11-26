@@ -536,34 +536,49 @@ test('Task 5: Map Editor GLB import for both objects and resources builds vertex
   const ed = new MapEditorApp(null);
   const glbBuf = buildMinimalStaticGlbBuffer();
 
+  const firstMeshOf = (obj) => {
+    if (!obj) return null;
+    if (obj.geometry) return obj;
+    for (const ch of obj.children || []) {
+      const m = firstMeshOf(ch);
+      if (m) return m;
+    }
+    return null;
+  };
+
   const propAsset = await ed.importGlbPropFromBuffer(glbBuf, 'obelisks_pack.glb');
-  assert.equal(propAsset.kind, 'glb');
+  assert.equal(propAsset.kind, 'glb_textured');
+  assert.ok(propAsset.glbBase64);
   assert.equal(propAsset.name, 'obelisks_pack');
   assert.ok(propAsset.vertices.length >= 4 && propAsset.faces.length >= 4);
   assert.equal(ed.activePropType, propAsset.id);
   const propGroup = createDecorativePropMesh({ propType: propAsset.id, scale: 1.5, rotY: 0 }, ed.mapState.customPropAssets);
   assert.equal(propGroup.children.length, 1);
-  assert.ok(propGroup.children[0].geometry.attributes.position);
-  assert.ok(propGroup.children[0].geometry.attributes.color);
+  const propMesh = firstMeshOf(propGroup);
+  assert.ok(propMesh?.geometry?.attributes?.position);
+  assert.ok(propMesh?.geometry?.attributes?.color);
 
   const treeSkin = await ed.importGlbResourceFromBuffer(glbBuf, 'cedar_tree.glb', 'wood');
-  assert.equal(treeSkin.kind, 'glb');
+  assert.equal(treeSkin.kind, 'glb_textured');
+  assert.ok(treeSkin.glbBase64);
   assert.equal(treeSkin.name, 'cedar_tree');
   assert.equal(ed.activeResourceSkins.wood, treeSkin.id);
   const treeGroup = createTreeMeshBySkin(treeSkin.id, 1.0, 0, ed.mapState.customResourceSkins);
   assert.equal(treeGroup.children.length, 1);
-  assert.ok(treeGroup.children[0].geometry.attributes.color);
+  assert.ok(firstMeshOf(treeGroup)?.geometry?.attributes?.color);
 
   const mineSkin = await ed.importGlbResourceFromBuffer(glbBuf, 'gold_crystal.glb', 'coins');
-  assert.equal(mineSkin.kind, 'glb');
+  assert.equal(mineSkin.kind, 'glb_textured');
+  assert.ok(mineSkin.glbBase64);
   assert.equal(ed.activeResourceSkins.coins, mineSkin.id);
   const mineGroup = createMineMeshBySkin('coins', mineSkin.id, 1.0, 0, ed.mapState.customResourceSkins);
   assert.equal(mineGroup.children.length, 1);
-  assert.ok(mineGroup.children[0].geometry.attributes.color);
+  assert.ok(firstMeshOf(mineGroup)?.geometry?.attributes?.color);
 
   const roundTrip = hydrateMapState(JSON.parse(JSON.stringify(serializeMapState(ed.mapState))));
   assert.equal(roundTrip.customPropAssets.length, 1);
-  assert.equal(roundTrip.customPropAssets[0].kind, 'glb');
+  assert.equal(roundTrip.customPropAssets[0].kind, 'glb_textured');
+  assert.ok(roundTrip.customPropAssets[0].glbBase64);
   assert.equal(roundTrip.customResourceSkins.wood.length, 1);
   assert.equal(roundTrip.customResourceSkins.coins.length, 1);
 });
@@ -609,7 +624,237 @@ test('Task 6: Map Editor Paint Blend mode smooths color/biome transitions withou
   }
 });
 
+test('Task 1 (Round 2): Studio removes Active Unit Skin selector & _setUnitActiveSkin cleanly', async () => {
+  const fs = await import('node:fs');
+  const { StudioApp } = await import('../../src/tools/studio/studioApp.js');
+  assert.equal(StudioApp.prototype._setUnitActiveSkin, undefined, '_setUnitActiveSkin removed from StudioApp.prototype');
+  assert.equal(StudioApp.prototype._refreshUnitSkinStrip, undefined, '_refreshUnitSkinStrip removed from StudioApp.prototype');
 
+  for (const rel of [
+    'src/tools/studio/studioApp.js',
+    'src/tools/studio/studioControlsAndLoop.js',
+    'src/tools/studio/studioGearAndPose.js'
+  ]) {
+    const src = fs.readFileSync(rel, 'utf8');
+    assert.ok(!src.includes('Active Unit Skin:'), `${rel} omits Active Unit Skin: label`);
+    assert.ok(!src.includes('st-unit-skin-'), `${rel} omits st-unit-skin-* DOM`);
+    assert.ok(!src.includes('_setUnitActiveSkin'), `${rel} omits _setUnitActiveSkin`);
+    assert.ok(!src.includes('_refreshUnitSkinStrip'), `${rel} omits _refreshUnitSkinStrip`);
+    assert.ok(!src.includes('activeSkin'), `${rel} does not read or write uStat.activeSkin`);
+  }
+});
 
+test('Task 2 (Round 2): Building footprint rectangle plate, +Z facing arrow, Units lab inputs & live registry sync', async () => {
+  globalThis.localStorage.clear();
+  sharedRegistry.resetToDefaults();
+
+  const sm = new UnitsBuildingsStateManager();
+  sm.resetAllToDefaults();
+
+  // Units lab shows Length & Width defaulting to 2 * footprintRadiusMeters, no circle Radius
+  const bksHtml = renderBuildingRightInspectorHtml(sm, 'barracks');
+  assert.ok(bksHtml.includes('data-bld-field="footprintLength"'), 'Buildings inspector renders footprintLength');
+  assert.ok(bksHtml.includes('data-bld-field="footprintWidth"'), 'Buildings inspector renders footprintWidth');
+  assert.ok(!bksHtml.includes('data-bld-field="footprintRadiusMeters"'), 'Buildings inspector omits circle footprintRadiusMeters');
+  const expectedDefault = (sm.buildingsData.buildings.barracks.footprintRadiusMeters || 5) * 2;
+  assert.ok(bksHtml.includes(`value="${expectedDefault}"`), `Default Length/Width equals 2 * radius (${expectedDefault})`);
+
+  const {
+    STUDIO_BUILDING_SCALE,
+    resolveBuildingFootprintMeters,
+    createBuildingFootprintDisplayGroup
+  } = await import('../../src/tools/studio/studioApp.js');
+
+  assert.deepEqual(
+    resolveBuildingFootprintMeters({ footprintRadiusMeters: 6 }),
+    { length: 12, width: 12, radius: 6 }
+  );
+  assert.deepEqual(
+    resolveBuildingFootprintMeters({ footprintRadiusMeters: 6, footprintLength: 18, footprintWidth: 10 }),
+    { length: 18, width: 10, radius: 6 }
+  );
+
+  const grp = createBuildingFootprintDisplayGroup(
+    { footprintRadiusMeters: 6, footprintLength: 18, footprintWidth: 10 },
+    STUDIO_BUILDING_SCALE
+  );
+  const plate = grp.getObjectByName('studio_building_footprint_plate');
+  const arrow = grp.getObjectByName('studio_building_facing_arrow');
+  assert.ok(plate && arrow, 'Creates both footprint plate and facing arrow meshes');
+  assert.deepEqual(plate.userData.plateSize, {
+    width: 10 * STUDIO_BUILDING_SCALE,
+    length: 18 * STUDIO_BUILDING_SCALE
+  });
+  assert.ok(plate.position.y > 0.01 && arrow.position.y > plate.position.y, 'Drawn cleanly above grid without z-fighting');
+  assert.equal(plate.material.polygonOffset, true);
+  assert.equal(arrow.material.polygonOffset, true);
+  assert.equal(arrow.userData.facingAxis, '+Z', 'Arrow points along +Z building front');
+
+  const posAttr = arrow.geometry.getAttribute('position');
+  let maxZ = -Infinity;
+  for (let i = 0; i < posAttr.count; i++) {
+    maxZ = Math.max(maxZ, posAttr.getZ(i));
+  }
+  assert.ok(maxZ > (18 * STUDIO_BUILDING_SCALE) * 0.5, 'Facing arrow extends cleanly in front of plate front edge (+Z)');
+
+  // Editing in Units lab persists via registry without changing footprintRadiusMeters and notifies subscribers
+  let notified = false;
+  const unsub = sharedRegistry.subscribe((evt) => {
+    const keys = evt?.changed || [];
+    if (keys.some((k) => k === 'buildings' || k.startsWith('building:'))) notified = true;
+  });
+  try {
+    const origRad = sm.buildingsData.buildings.barracks.footprintRadiusMeters;
+    sm.buildingsData.buildings.barracks.footprintLength = 16;
+    sm.buildingsData.buildings.barracks.footprintWidth = 10;
+    const res = sm.saveAll();
+    assert.equal(res.ok, true);
+    assert.equal(notified, true, 'Registry notifies Studio/listeners when building footprint changes');
+    const saved = sharedRegistry.getBuilding('barracks');
+    assert.equal(saved.footprintLength, 16);
+    assert.equal(saved.footprintWidth, 10);
+    assert.equal(saved.footprintRadiusMeters, origRad, 'Sim footprintRadiusMeters remains unchanged');
+  } finally {
+    unsub();
+  }
+});
+
+test('Task 3 (Round 2): buildStaticMeshFromScene samples only opaque texels (alpha > 0.5) & falls back to baseColorFactor without affecting units', async () => {
+  const { readGlb } = await import('../../src/tools/import/glbReader.js');
+  const { buildStaticMeshFromScene, buildUnitFromScene, sampleStaticPrimitiveVertexColors } = await import('../../src/tools/import/glbToUnit.js');
+
+  // Helper: build minimal GLB with 2 materials (leaf texture with alpha=0 black corners + all-transparent texture with green baseColorFactor)
+  const makeTestGlb = ({ width, height, rgba, baseColorFactor }) => {
+    const pos = new Float32Array([
+      -0.5, 0, 0,
+       0.5, 0, 0,
+       0.5, 1.9, 0,
+      -0.5, 1.9, 0
+    ]);
+    const uv = new Float32Array([
+      0.0, 0.0,
+      1.0, 0.0,
+      1.0, 1.0,
+      0.0, 1.0
+    ]);
+    const idx = new Uint16Array([0, 1, 2, 0, 2, 3]);
+    const chunks = [];
+    const views = [];
+    const accs = [];
+    const addBuf = (arr, target) => {
+      const buf = Buffer.from(arr.buffer, arr.byteOffset, arr.byteLength);
+      const pad = (4 - (buf.length % 4)) % 4;
+      const byteOffset = chunks.reduce((s, c) => s + c.length, 0);
+      chunks.push(Buffer.concat([buf, Buffer.alloc(pad)]));
+      views.push({ buffer: 0, byteOffset, byteLength: buf.length, ...(target ? { target } : {}) });
+      return views.length - 1;
+    };
+    const bvPos = addBuf(pos, 34962);
+    const bvUv = addBuf(uv, 34962);
+    const bvIdx = addBuf(idx, 34963);
+    const bvImg = addBuf(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0, 0, 0, 0])); // dummy image payload decoded by custom decodeImage
+
+    accs.push({ bufferView: bvPos, componentType: 5126, count: 4, type: 'VEC3' });
+    accs.push({ bufferView: bvUv, componentType: 5126, count: 4, type: 'VEC2' });
+    accs.push({ bufferView: bvIdx, componentType: 5123, count: 6, type: 'SCALAR' });
+
+    const json = {
+      asset: { version: '2.0' },
+      scene: 0,
+      scenes: [{ nodes: [0] }],
+      nodes: [{ name: 'TreeLeaves', mesh: 0 }],
+      meshes: [{ name: 'Leaves', primitives: [{ attributes: { POSITION: 0, TEXCOORD_0: 1 }, indices: 2, material: 0 }] }],
+      materials: [{
+        alphaMode: 'MASK',
+        alphaCutoff: 0.5,
+        pbrMetallicRoughness: {
+          baseColorFactor,
+          baseColorTexture: { index: 0 }
+        }
+      }],
+      textures: [{ source: 0 }],
+      images: [{ bufferView: bvImg, mimeType: 'image/png' }],
+      accessors: accs,
+      bufferViews: views,
+      buffers: [{ byteLength: chunks.reduce((s, c) => s + c.length, 0) }]
+    };
+    const jsonBuf = Buffer.from(JSON.stringify(json));
+    const jsonPad = Buffer.concat([jsonBuf, Buffer.alloc((4 - (jsonBuf.length % 4)) % 4, 0x20)]);
+    const bin = Buffer.concat(chunks);
+    const hdr = Buffer.alloc(12);
+    hdr.writeUInt32LE(0x46546c67, 0);
+    hdr.writeUInt32LE(2, 4);
+    hdr.writeUInt32LE(12 + 8 + jsonPad.length + 8 + bin.length, 8);
+    const chunk = (t, b) => {
+      const h = Buffer.alloc(8);
+      h.writeUInt32LE(b.length, 0);
+      h.writeUInt32LE(t, 4);
+      return Buffer.concat([h, b]);
+    };
+    const glb = Buffer.concat([hdr, chunk(0x4e4f534a, jsonPad), chunk(0x004e4942, bin)]);
+    const ab = glb.buffer.slice(glb.byteOffset, glb.byteOffset + glb.byteLength);
+    return readGlb(ab, {
+      decodeImage: async () => ({ width, height, data: new Uint8ClampedArray(rgba) })
+    });
+  };
+
+  // Case 1: Leaf card texture (4x4) with transparent black border RGB=(0,0,0,0) and green opaque center (40, 180, 50, 255)
+  const rgbaLeaf = new Uint8ClampedArray(4 * 4 * 4);
+  for (let y = 0; y < 4; y++) {
+    for (let x = 0; x < 4; x++) {
+      const o = (y * 4 + x) * 4;
+      const inside = x >= 1 && x <= 2 && y >= 1 && y <= 2;
+      rgbaLeaf[o] = inside ? 40 : 0;
+      rgbaLeaf[o + 1] = inside ? 180 : 0;
+      rgbaLeaf[o + 2] = inside ? 50 : 0;
+      rgbaLeaf[o + 3] = inside ? 255 : 0;
+    }
+  }
+  const leafScene = await makeTestGlb({ width: 4, height: 4, rgba: rgbaLeaf, baseColorFactor: [1, 1, 1, 1] });
+
+  // Unit import behavior stays unchanged (legacy per-vertex texel behavior)
+  assert.deepEqual(Array.from(leafScene.primitives[0].colors.slice(0, 3)), [0, 0, 0], 'readGlb prim.colors preserved for unit import');
+  const unitRes = buildUnitFromScene(leafScene, { id: 'leaf_unit_unchanged', budgets: [100, 50, 20] });
+  assert.ok(unitRes.unit && unitRes.unit.hierarchy?.pelvis, 'buildUnitFromScene runs unchanged');
+
+  // Static prop/tree import samples opaque leaf texels instead of black transparent corners!
+  const staticLeaf = buildStaticMeshFromScene(leafScene, {
+    budget: 100,
+    smoothNormals: true,
+    fit: { mode: 'size', size: 5.5, anchor: 'base', offset: [0, 0, 0] }
+  });
+  assert.ok(staticLeaf.vertices.length > 0 && staticLeaf.faces.length > 0 && staticLeaf.colors.length === staticLeaf.vertices.length);
+  for (const c of staticLeaf.colors) {
+    assert.ok(c[1] >= 150 && c[0] < 80 && c[2] < 80, `Expected green opaque leaf color, got [${c.join(', ')}]`);
+  }
+
+  // Case 2: All-transparent texture with black RGB=(0,0,0,0) and green baseColorFactor -> falls back to baseColorFactor, never black
+  const rgbaAllTransparent = new Uint8ClampedArray(4 * 4 * 4); // all 0s
+  const fallbackScene = await makeTestGlb({ width: 4, height: 4, rgba: rgbaAllTransparent, baseColorFactor: [0.15, 0.65, 0.2, 1] });
+  const staticFallback = buildStaticMeshFromScene(fallbackScene, { budget: 100, smoothNormals: true });
+  for (const c of staticFallback.colors) {
+    assert.ok(c[1] > 180 && c[0] > 80 && c[2] > 90, `Expected linear-to-sRGB green baseColorFactor fallback, got [${c.join(', ')}]`);
+  }
+
+  // Case 3: Direct unit check on alpha boundary (alpha=127 transparent black vs alpha=200 opaque teal)
+  const rgbaBorder = new Uint8ClampedArray([
+    0, 0, 0, 127,
+    25, 210, 160, 200
+  ]);
+  const directColors = sampleStaticPrimitiveVertexColors({
+    positions: new Float32Array([0, 0, 0, 1, 0, 0]),
+    indices: new Uint32Array([]),
+    colors: new Uint8Array([0, 0, 0, 0, 0, 0]),
+    staticColorSource: {
+      factor: [1, 1, 1],
+      col0: null,
+      uv: new Float32Array([0.1, 0.0, 0.75, 0.0]),
+      img: { width: 2, height: 1, data: rgbaBorder }
+    }
+  });
+  // Vertex 1 hits alpha=200 directly -> [25, 210, 160]; Vertex 0 is alpha=127 (<= 0.5) so neighbor/fallback avoids black
+  assert.ok(Math.abs(directColors[3] - 25) <= 1 && Math.abs(directColors[4] - 210) <= 1 && Math.abs(directColors[5] - 160) <= 1);
+  assert.ok(directColors[1] > 180, 'Alpha <= 127 is treated as transparent and never sampled as black');
+});
 
 

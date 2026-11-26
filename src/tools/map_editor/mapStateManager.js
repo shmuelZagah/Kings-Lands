@@ -11,6 +11,7 @@
  */
 
 import * as THREE from 'three';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
 export const CUSTOM_MAP_STORAGE_KEY = 'kings_lands_custom_map_v1';
 export const SAVED_MAPS_LIST_STORAGE_KEY = 'kings_lands_saved_maps_list_v1';
@@ -963,6 +964,166 @@ export function renderStaticMeshThumbnailDataUrl(meshData) {
   }
 }
 
+const _texturedGlbSceneCache = new Map();
+const _texturedGlbPromiseCache = new Map();
+const _sharedGltfLoader = new GLTFLoader();
+
+export function arrayBufferToBase64(buffer) {
+  const bytes = buffer instanceof Uint8Array ? buffer : new Uint8Array(buffer);
+  if (typeof Buffer !== 'undefined' && typeof btoa !== 'function') {
+    return Buffer.from(bytes.buffer, bytes.byteOffset, bytes.byteLength).toString('base64');
+  }
+  const chunkSize = 0x8000;
+  const parts = [];
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    parts.push(String.fromCharCode.apply(null, bytes.subarray(i, i + chunkSize)));
+  }
+  return btoa(parts.join(''));
+}
+
+export function base64ToArrayBuffer(base64) {
+  if (!base64 || typeof base64 !== 'string') return null;
+  if (typeof Buffer !== 'undefined' && typeof atob !== 'function') {
+    const buf = Buffer.from(base64, 'base64');
+    return buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength);
+  }
+  const binStr = atob(base64);
+  const bytes = new Uint8Array(binStr.length);
+  for (let i = 0; i < binStr.length; i++) {
+    bytes[i] = binStr.charCodeAt(i);
+  }
+  return bytes.buffer;
+}
+
+function textureImageHasAlpha(image) {
+  if (!image || typeof document === 'undefined') return false;
+  const w = image.width || image.naturalWidth || 0;
+  const h = image.height || image.naturalHeight || 0;
+  if (!w || !h) return false;
+  try {
+    const sw = Math.min(64, w);
+    const sh = Math.min(64, h);
+    const cv = document.createElement('canvas');
+    cv.width = sw;
+    cv.height = sh;
+    const ctx = cv.getContext('2d', { willReadFrequently: true });
+    if (!ctx) return false;
+    ctx.drawImage(image, 0, 0, sw, sh);
+    const data = ctx.getImageData(0, 0, sw, sh).data;
+    for (let i = 3; i < data.length; i += 4) {
+      if (data[i] < 250) return true;
+    }
+  } catch (_) {}
+  return false;
+}
+
+export function configureTexturedGlbMaterials(root) {
+  if (!root || typeof root.traverse !== 'function') return root;
+  root.traverse((child) => {
+    if (!child.isMesh) return;
+    child.castShadow = true;
+    child.receiveShadow = true;
+    const mats = Array.isArray(child.material) ? child.material : [child.material];
+    for (const mat of mats) {
+      if (!mat) continue;
+      if (mat.map) {
+        mat.map.colorSpace = THREE.SRGBColorSpace;
+        mat.map.needsUpdate = true;
+      }
+      if (mat.emissiveMap) {
+        mat.emissiveMap.colorSpace = THREE.SRGBColorSpace;
+        mat.emissiveMap.needsUpdate = true;
+      }
+      const hasAlpha =
+        Boolean(mat.alphaMap) ||
+        (Number(mat.alphaTest) || 0) > 0 ||
+        Boolean(mat.transparent) ||
+        textureImageHasAlpha(mat.map?.image);
+      if (hasAlpha) {
+        mat.alphaTest = 0.5;
+        mat.transparent = false;
+        mat.depthWrite = true;
+      }
+      mat.side = THREE.DoubleSide;
+      mat.needsUpdate = true;
+    }
+  });
+  return root;
+}
+
+export function fitGlbSceneToTargetSize(sceneRoot, targetSize = 5.5) {
+  const wrapper = new THREE.Group();
+  if (!sceneRoot) return wrapper;
+  sceneRoot.updateMatrixWorld(true);
+  const box = new THREE.Box3().setFromObject(sceneRoot);
+  if (typeof box.isEmpty !== 'function' || !box.isEmpty()) {
+    const size = new THREE.Vector3();
+    const center = new THREE.Vector3();
+    box.getSize(size);
+    box.getCenter(center);
+    const maxDim = Math.max(size.x, size.y, size.z, 1e-6);
+    const s = (Number(targetSize) || 5.5) / maxDim;
+    sceneRoot.scale.multiplyScalar(s);
+    sceneRoot.position.set(
+      sceneRoot.position.x - center.x * s,
+      sceneRoot.position.y - box.min.y * s,
+      sceneRoot.position.z - center.z * s
+    );
+  }
+  wrapper.add(sceneRoot);
+  return wrapper;
+}
+
+function getOrLoadTexturedGlbTemplate(asset, defaultFitSize = 5.5) {
+  if (!asset?.id) return Promise.resolve(null);
+  if (_texturedGlbSceneCache.has(asset.id)) {
+    return Promise.resolve(_texturedGlbSceneCache.get(asset.id));
+  }
+  if (_texturedGlbPromiseCache.has(asset.id)) {
+    return _texturedGlbPromiseCache.get(asset.id);
+  }
+  const buf = asset.glbBuffer instanceof ArrayBuffer
+    ? asset.glbBuffer
+    : base64ToArrayBuffer(asset.glbBase64);
+  if (!buf) return Promise.resolve(null);
+
+  const fitSize = Number(asset.fitSize) || defaultFitSize;
+  const promise = new Promise((resolve) => {
+    try {
+      _sharedGltfLoader.parse(
+        buf,
+        '',
+        (gltf) => {
+          const root = gltf?.scene;
+          if (!root) {
+            resolve(null);
+            return;
+          }
+          configureTexturedGlbMaterials(root);
+          const fitted = fitGlbSceneToTargetSize(root, fitSize);
+          _texturedGlbSceneCache.set(asset.id, fitted);
+          resolve(fitted);
+        },
+        (err) => {
+          console.warn('GLTFLoader failed to parse textured prop/resource GLB, keeping vertex fallback:', err);
+          resolve(null);
+        }
+      );
+    } catch (err) {
+      console.warn('GLTFLoader threw while parsing textured GLB, keeping vertex fallback:', err);
+      resolve(null);
+    }
+  });
+  _texturedGlbPromiseCache.set(asset.id, promise);
+  return promise;
+}
+
+export function clearTexturedGlbAssetCache(assetId) {
+  if (!assetId) return;
+  _texturedGlbSceneCache.delete(assetId);
+  _texturedGlbPromiseCache.delete(assetId);
+}
+
 function createStaticGlbMeshInstance(asset) {
   const geom = getCachedGeom(`glb_${asset.id}`, () => buildStaticGlbGeometry(asset));
   if (!geom) return null;
@@ -972,9 +1133,53 @@ function createStaticGlbMeshInstance(asset) {
   return mesh;
 }
 
+function createTexturedGlbInstance(asset, defaultFitSize = 5.5) {
+  const holder = new THREE.Group();
+  holder.userData.isGlbTextured = true;
+  holder.userData.skipStaticMerge = true;
+
+  const cached = asset?.id ? _texturedGlbSceneCache.get(asset.id) : null;
+  if (cached) {
+    holder.add(cached.clone(true));
+    return holder;
+  }
+
+  const fallback = createStaticGlbMeshInstance(asset);
+  if (fallback) {
+    fallback.userData.isGlbFallback = true;
+    holder.add(fallback);
+  }
+
+  getOrLoadTexturedGlbTemplate(asset, defaultFitSize).then((template) => {
+    if (!template || !holder) return;
+    if (fallback && fallback.parent === holder) {
+      holder.remove(fallback);
+    }
+    const clone = template.clone(true);
+    const ghostMat = holder.userData.ghostMaterialOverride;
+    if (ghostMat) {
+      clone.traverse((c) => {
+        if (c.isMesh) c.material = ghostMat;
+      });
+    }
+    holder.add(clone);
+  });
+
+  return holder;
+}
+
 export function createTreeMeshBySkin(skinId = 'pine_emerald', scale = 1.0, rotY = 0, customResourceSkins = null) {
   const customWoodList = customResourceSkins?.wood || getActiveCustomMapState()?.customResourceSkins?.wood || [];
   const customSkin = customWoodList.find((s) => s.id === skinId);
+  if (customSkin && customSkin.kind === 'glb_textured' && (customSkin.glbBase64 || customSkin.glbBuffer)) {
+    const group = new THREE.Group();
+    group.userData.skipStaticMerge = true;
+    const texturedObj = createTexturedGlbInstance(customSkin, customSkin.fitSize || 5.5);
+    if (texturedObj) group.add(texturedObj);
+    group.scale.set(scale, scale, scale);
+    group.rotation.y = rotY;
+    return group;
+  }
   if (customSkin && Array.isArray(customSkin.vertices) && Array.isArray(customSkin.faces)) {
     const group = new THREE.Group();
     const glbMesh = createStaticGlbMeshInstance(customSkin);
@@ -1097,6 +1302,15 @@ export function createTreeMeshBySkin(skinId = 'pine_emerald', scale = 1.0, rotY 
 export function createMineMeshBySkin(type = 'coins', skinId = 'gold_vein', scale = 1.0, rotY = 0, customResourceSkins = null) {
   const customBucket = customResourceSkins?.[type] || getActiveCustomMapState()?.customResourceSkins?.[type] || [];
   const customSkin = customBucket.find((s) => s.id === skinId);
+  if (customSkin && customSkin.kind === 'glb_textured' && (customSkin.glbBase64 || customSkin.glbBuffer)) {
+    const group = new THREE.Group();
+    group.userData.skipStaticMerge = true;
+    const texturedObj = createTexturedGlbInstance(customSkin, customSkin.fitSize || 5.0);
+    if (texturedObj) group.add(texturedObj);
+    group.scale.set(scale, scale, scale);
+    group.rotation.y = rotY;
+    return group;
+  }
   if (customSkin && Array.isArray(customSkin.vertices) && Array.isArray(customSkin.faces)) {
     const group = new THREE.Group();
     const glbMesh = createStaticGlbMeshInstance(customSkin);
@@ -1201,7 +1415,11 @@ export function createDecorativePropMesh(propRecord, customPropAssets = []) {
     : (customPropAssets || []).find((a) => a.id === propType);
 
   if (customAsset) {
-    if (customAsset.kind === 'glb' && Array.isArray(customAsset.vertices) && Array.isArray(customAsset.faces)) {
+    if (customAsset.kind === 'glb_textured' && (customAsset.glbBase64 || customAsset.glbBuffer)) {
+      group.userData.skipStaticMerge = true;
+      const texturedObj = createTexturedGlbInstance(customAsset, customAsset.fitSize || 6.0);
+      if (texturedObj) group.add(texturedObj);
+    } else if (customAsset.kind === 'glb' && Array.isArray(customAsset.vertices) && Array.isArray(customAsset.faces)) {
       const glbMesh = createStaticGlbMeshInstance(customAsset);
       if (glbMesh) group.add(glbMesh);
     } else if (customAsset.kind === 'obj' && Array.isArray(customAsset.vertices) && customAsset.vertices.length >= 9) {

@@ -1598,6 +1598,8 @@ export class UnitsBuildingsLabApp {
 
         this.stateManager.scheduleSave();
         if (
+          field === 'footprintLength' ||
+          field === 'footprintWidth' ||
           field === 'footprintRadiusMeters' ||
           field === 'watchtowerLevel' ||
           field === 'watchtowerX' ||
@@ -1734,6 +1736,13 @@ export class UnitsBuildingsLabApp {
 
   destroy() {
     this._running = false;
+    try {
+      if (this.stateManager?._saveTimer) {
+        clearTimeout(this.stateManager._saveTimer);
+        this.stateManager._saveTimer = null;
+      }
+      this.stateManager?.saveAll?.();
+    } catch (_) {}
     try { modelProvider.refreshFromRegistry?.(); } catch (_) {}
     clearTimeout(this._toastTimer);
     if (typeof window !== 'undefined' && typeof window.removeEventListener === 'function' && this._onExternalUpdated) {

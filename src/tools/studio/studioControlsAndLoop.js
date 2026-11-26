@@ -320,7 +320,8 @@ export const studioControlsAndLoopMethods = {
       qs('#st-inspector-mount').classList.add('hidden');
       this.gizmoController.snapToRtsGameView(26, new THREE.Vector3(0, 0, 0));
     } else {
-      this.gizmoController.snapToCloseupView();
+      if (this._isBuildingNow?.()) this._frameBuildingCamera?.();
+      else this.gizmoController.snapToCloseupView();
       this._selectJoint(this.selectedSocketName);
     }
     this._applyBottomPanel();
@@ -375,9 +376,7 @@ export const studioControlsAndLoopMethods = {
     qs('#st-unit-select').addEventListener('change', (e) => {
       this.currentUnitId = e.target.value;
       this.currentLoadout = MAIN_LOADOUT;
-      const uStat = this.ubStateManager?.unitStatsData?.units?.[this.currentUnitId];
-      const activeSkin = uStat?.activeSkin && uStat.activeSkin !== 'default' ? uStat.activeSkin : null;
-      const race = activeSkin || this._raceOf(this.currentUnitId);
+      const race = this._raceOf(this.currentUnitId);
       if (race && this._factions().includes(race)) { this.currentFaction = race; qs('#st-faction-select').value = race; }
       this._spawnStudioUnit();
     });
@@ -413,10 +412,6 @@ export const studioControlsAndLoopMethods = {
     });
     qs('#st-faction-select').addEventListener('change', (e) => {
       this.currentFaction = e.target.value;
-      if (this.isContextualMode && this.entityCategory === 'units') {
-        this._setUnitActiveSkin?.(this.currentFaction, { spawn: true });
-        return;
-      }
       this._refreshUnitList();
       this._spawnStudioUnit();
     });
@@ -1019,6 +1014,12 @@ export const studioControlsAndLoopMethods = {
 
     this._unsubUnitState?.();
     this._unsubUnitState = null;
+    this._unsubRegistry?.();
+    this._unsubRegistry = null;
+    if (typeof window !== 'undefined' && this._onStorageSync) {
+      window.removeEventListener('storage', this._onStorageSync);
+      this._onStorageSync = null;
+    }
     this._flushCurrentCategory();
     if (this._ownsUnitStateManager) this.unitStateManager?.destroy();
     else this.unitStateManager?.flush?.();
@@ -1029,6 +1030,7 @@ export const studioControlsAndLoopMethods = {
     this.timelineEditor?.destroy();
     this.sandboxArena?.dispose();
     this.gizmoController?.dispose();
+    this._clearBuildingFootprintDisplay?.();
     if (this.currentUnitGroup) disposeVisual(this.currentUnitGroup);
     this.renderer?.dispose();
     this.renderer?.domElement?.remove();

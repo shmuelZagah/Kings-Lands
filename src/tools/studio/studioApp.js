@@ -19,6 +19,7 @@
  */
 
 import { ANIMATION_LAB_NAME } from '../../data/labNames.js';
+import { dataRegistry } from '../../data/dataRegistry.js';
 import * as THREE from 'three';
 import { updateBowstringRig } from '../../render/modelFactory.js';
 import { modelProvider } from '../../render/modelProvider.js';
@@ -68,6 +69,132 @@ const CHIP = {
   dirty: { cls: 'rounded-full border border-amber-500/40 bg-amber-500/10 px-2.5 py-1 text-[11px] font-semibold text-amber-300', text: 'Saving…' },
   error: { cls: 'rounded-full border border-rose-500/50 bg-rose-500/10 px-2.5 py-1 text-[11px] font-semibold text-rose-300', text: 'Save failed' }
 };
+
+export const STUDIO_BUILDING_SCALE = 0.34;
+
+export function resolveBuildingFootprintMeters(bDef) {
+  const baseRadius = Math.max(1, Number(bDef?.footprintRadiusMeters) || 5);
+  const defaultSpan = baseRadius * 2;
+  const rawLength = Number(bDef?.footprintLength);
+  const rawWidth = Number(bDef?.footprintWidth);
+  const length = Number.isFinite(rawLength) && rawLength > 0 ? rawLength : defaultSpan;
+  const width = Number.isFinite(rawWidth) && rawWidth > 0 ? rawWidth : defaultSpan;
+  return { length, width, radius: baseRadius };
+}
+
+export function createBuildingFootprintDisplayGroup(bDef, scale = STUDIO_BUILDING_SCALE) {
+  const { length, width } = resolveBuildingFootprintMeters(bDef);
+  const plateW = width * scale;
+  const plateL = length * scale;
+
+  const group = new THREE.Group();
+  group.name = 'studio_building_footprint';
+
+  // Flat rectangle plate on the floor (drawn above GridHelper at y=0.01 without z-fighting)
+  const fillGeo = new THREE.PlaneGeometry(plateW, plateL);
+  fillGeo.rotateX(-Math.PI / 2);
+  const fillMat = new THREE.MeshBasicMaterial({
+    color: 0x0ea5e9,
+    transparent: true,
+    opacity: 0.24,
+    side: THREE.DoubleSide,
+    depthWrite: false,
+    polygonOffset: true,
+    polygonOffsetFactor: -2,
+    polygonOffsetUnits: -2
+  });
+  const fillMesh = new THREE.Mesh(fillGeo, fillMat);
+  fillMesh.name = 'studio_building_footprint_plate';
+  fillMesh.position.y = 0.025;
+  fillMesh.renderOrder = 2;
+  fillMesh.userData.footprintMeters = { length, width };
+  fillMesh.userData.plateSize = { width: plateW, length: plateL };
+  group.add(fillMesh);
+
+  // Bold rectangular perimeter strips so the footprint edges are unmistakable at any camera angle
+  const borderThickness = 0.06;
+  const borderMat = new THREE.MeshBasicMaterial({
+    color: 0x38bdf8,
+    side: THREE.DoubleSide,
+    depthWrite: false,
+    polygonOffset: true,
+    polygonOffsetFactor: -3,
+    polygonOffsetUnits: -3
+  });
+  const mkBar = (w, l, x, z, name) => {
+    const g = new THREE.PlaneGeometry(w, l);
+    g.rotateX(-Math.PI / 2);
+    const m = new THREE.Mesh(g, borderMat);
+    m.name = name;
+    m.position.set(x, 0.031, z);
+    m.renderOrder = 3;
+    return m;
+  };
+  const halfW = plateW * 0.5;
+  const halfL = plateL * 0.5;
+  group.add(
+    mkBar(plateW + borderThickness, borderThickness, 0, halfL, 'footprint_border_front'),
+    mkBar(plateW + borderThickness, borderThickness, 0, -halfL, 'footprint_border_back'),
+    mkBar(borderThickness, plateL + borderThickness, -halfW, 0, 'footprint_border_left'),
+    mkBar(borderThickness, plateL + borderThickness, halfW, 0, 'footprint_border_right')
+  );
+
+  // Facing arrow on the floor in front of the building (+Z is doorway / unit exit front)
+  const z0 = halfL + 0.12;
+  const z1 = halfL + 0.62;
+  const z2 = halfL + 1.12;
+  const sw = 0.14;
+  const hw = 0.38;
+  const buildArrowGeo = (pad = 0) => {
+    const aZ0 = z0 - pad;
+    const aZ1 = z1;
+    const aZ2 = z2 + pad * 1.6;
+    const aSw = sw + pad;
+    const aHw = hw + pad * 1.4;
+    const positions = new Float32Array([
+      // Shaft quad (two triangles in XZ plane)
+      -aSw, 0, aZ0,   aSw, 0, aZ0,   aSw, 0, aZ1,
+      -aSw, 0, aZ0,   aSw, 0, aZ1,  -aSw, 0, aZ1,
+      // Arrowhead triangle pointing toward +Z
+      -aHw, 0, aZ1,   aHw, 0, aZ1,     0, 0, aZ2
+    ]);
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geo.computeVertexNormals();
+    return geo;
+  };
+
+  const arrowBackMat = new THREE.MeshBasicMaterial({
+    color: 0x0f172a,
+    side: THREE.DoubleSide,
+    depthWrite: false,
+    polygonOffset: true,
+    polygonOffsetFactor: -3,
+    polygonOffsetUnits: -3
+  });
+  const arrowBackMesh = new THREE.Mesh(buildArrowGeo(0.035), arrowBackMat);
+  arrowBackMesh.name = 'studio_building_facing_arrow_outline';
+  arrowBackMesh.position.y = 0.033;
+  arrowBackMesh.renderOrder = 3;
+  group.add(arrowBackMesh);
+
+  const arrowMat = new THREE.MeshBasicMaterial({
+    color: 0xfbbf24,
+    side: THREE.DoubleSide,
+    depthWrite: false,
+    polygonOffset: true,
+    polygonOffsetFactor: -4,
+    polygonOffsetUnits: -4
+  });
+  const arrowMesh = new THREE.Mesh(buildArrowGeo(0), arrowMat);
+  arrowMesh.name = 'studio_building_facing_arrow';
+  arrowMesh.position.y = 0.036;
+  arrowMesh.renderOrder = 4;
+  arrowMesh.userData.facingAxis = '+Z';
+  group.add(arrowMesh);
+
+  return group;
+}
 
 export class StudioApp {
   static FINGERS = ['index', 'middle', 'ring', 'pinky'];
@@ -195,9 +322,9 @@ export class StudioApp {
       this.currentFaction = 'human';
     } else if (this.contextualUnitId && this.unitsData.units[this.contextualUnitId]) {
       this.currentUnitId = this.contextualUnitId;
-      const uStat = this.ubStateManager?.unitStatsData?.units?.[this.contextualUnitId];
-      const desired = options.initialFaction || (uStat?.activeSkin && uStat.activeSkin !== 'default' ? uStat.activeSkin : null) || this.unitsData.units[this.contextualUnitId]?.race || 'human';
-      this.currentFaction = this._factions().includes(desired) ? desired : (this.unitsData.units[this.contextualUnitId]?.race || 'human');
+      const unitRace = this._raceOf(this.contextualUnitId) || 'human';
+      const desired = options.initialFaction || unitRace;
+      this.currentFaction = this._factions().includes(desired) ? desired : unitRace;
     } else if (this.entityCategory === 'heroes') {
       const heroKeys = Object.keys(this._heroesStudioView.units);
       this.currentUnitId = heroKeys[0] || 'wizard';
@@ -208,9 +335,9 @@ export class StudioApp {
       this.currentFaction = "human";
     } else {
       this.currentUnitId = options.initialUnitId && this.unitsData.units[options.initialUnitId] ? options.initialUnitId : (this.unitsData.units.swordsman ? "swordsman" : Object.keys(this.unitsData.units)[0]);
-      const uStat = this.ubStateManager?.unitStatsData?.units?.[this.currentUnitId];
-      const desired = options.initialFaction || (uStat?.activeSkin && uStat.activeSkin !== 'default' ? uStat.activeSkin : null) || this.unitsData.units[this.currentUnitId]?.race || 'human';
-      this.currentFaction = this._factions().includes(desired) ? desired : (this.unitsData.units[this.currentUnitId]?.race || "human");
+      const unitRace = this._raceOf(this.currentUnitId) || 'human';
+      const desired = options.initialFaction || unitRace;
+      this.currentFaction = this._factions().includes(desired) ? desired : unitRace;
     }
     const initUnitDef = this.unitsData.units?.[this.currentUnitId];
     const secondLdKey = Object.keys(initUnitDef?.loadouts || {}).find((k) => k !== MAIN_LOADOUT);
@@ -222,6 +349,8 @@ export class StudioApp {
     this.selectedSocketName = 'torso';
     this.currentUnitGroup = null;
     this.currentAnimator = null;
+    this._buildingFootprintGroup = null;
+    this._lastFramedBuildingId = null;
 
     this._cleaned = false;                // idle without keys: the procedural pose was replaced by a clean rest pose for editing
     this._previewJoint = null;            // joint whose colour is being previewed
@@ -233,6 +362,25 @@ export class StudioApp {
     this._undoTag = '';
     this._undoTime = 0;
     this._running = false;
+    this._unsubRegistry = dataRegistry.subscribe((evt) => {
+      const keys = evt?.changed || evt?.changedKeys || [];
+      if (keys.length && !keys.some((k) => k === 'buildings' || k.startsWith('building:'))) return;
+      if (this.ubStateManager) {
+        this.ubStateManager.buildingsData = dataRegistry.getBuildings();
+      }
+      this._rebuildCrossLabViews?.();
+      if (this.entityCategory === 'buildings' && this.view === 'studio') {
+        this._refreshBuildingFootprintDisplay?.();
+      }
+    });
+    if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+      this._onStorageSync = (e) => {
+        if (!e || e.storageArea === window.localStorage) {
+          dataRegistry.reloadFromStorage();
+        }
+      };
+      window.addEventListener('storage', this._onStorageSync);
+    }
 
     this._buildStudioDOM();
     this._initThreeScene();
@@ -434,6 +582,13 @@ export class StudioApp {
 
     this._refreshUnitList();
     this._updateHealthBadge();
+    if (cat !== 'buildings') {
+      this._clearBuildingFootprintDisplay();
+      this._lastFramedBuildingId = null;
+      this.gizmoController?.snapToCloseupView();
+    } else {
+      this._lastFramedBuildingId = null;
+    }
     this._spawnStudioUnit();
     this._renderImportPanel?.();
     this._toast(
@@ -527,12 +682,6 @@ export class StudioApp {
                   <select id="st-base-char-select" class="min-w-0 flex-1 rounded bg-slate-800 border border-slate-600 px-2 py-1 text-xs font-bold text-amber-200"></select>
                   <button type="button" id="st-btn-del-base" title="Delete this imported base model" class="hidden h-7 w-7 shrink-0 items-center justify-center rounded bg-rose-700 hover:bg-rose-600 text-white text-xs font-bold cursor-pointer">✕</button>
                 </div>
-              </div>
-              <div id="st-unit-skin-row" class="hidden mt-2 pt-2 border-t border-slate-800">
-                <div class="flex items-center justify-between mb-1">
-                  <span class="text-slate-400">Active Unit Skin:</span>
-                </div>
-                <div id="st-unit-skin-strip" class="grid grid-cols-2 gap-1.5"></div>
               </div>
               <div class="grid grid-cols-2 gap-2 mt-2">
                 <select id="st-team-select" class="w-full rounded bg-slate-800 border border-slate-600 px-2 py-1 text-slate-100">
@@ -777,11 +926,14 @@ export class StudioApp {
           });
     } finally { unitDef.equipment = mainEq; }
     if (unitDef?.isBuildingEntity) {
+      let bDef = { id: unitDef.buildingId || this.currentUnitId, footprintRadiusMeters: 5, maxHp: 1200 };
+      const bId = unitDef.buildingId || this.currentUnitId;
       try {
         this._buildingModelFactory = modelProvider.getBuildingModelFactory();
-        this._buildingModelFactory.buildingsSource = this.ubStateManager?.buildingsData;
-        const bId = unitDef.buildingId || this.currentUnitId;
-        const bDef = this.ubStateManager?.buildingsData?.buildings?.[bId] || { id: bId, footprintRadiusMeters: 5, maxHp: 1200 };
+        const freshBuildingsData = dataRegistry.getBuildings();
+        if (this.ubStateManager) this.ubStateManager.buildingsData = freshBuildingsData;
+        this._buildingModelFactory.buildingsSource = freshBuildingsData;
+        bDef = freshBuildingsData?.buildings?.[bId] || bDef;
         const hasWt = bDef.hasWatchtowerSupport !== false && ((bDef.watchtowerLevel | 0) > 0 || Boolean(bDef.hasBuiltInTurret));
         const bActor = modelProvider.createBuildingModel(bId, {
           buildingDefOverride: bDef,
@@ -793,9 +945,15 @@ export class StudioApp {
           hp: bDef.maxHp || 1200,
           maxHp: bDef.maxHp || 1200
         });
-        const s = 0.34;
+        const s = STUDIO_BUILDING_SCALE;
         bActor.group.scale.set(s, s, s);
+        bActor.group.position.y = -0.20;
         const socks = this.currentUnitGroup.userData?.sockets || {};
+        if (socks.pelvis) {
+          for (const ch of [...socks.pelvis.children]) {
+            if (ch.isMesh) ch.visible = false;
+          }
+        }
         if (socks.torso) {
           // Hide placeholder box/cone meshes on torso/head so the real 3D building architecture shines!
           for (const ch of [...socks.torso.children]) {
@@ -811,6 +969,14 @@ export class StudioApp {
       } catch (e) {
         console.warn('Building 3D studio preview attach warning:', e);
       }
+      this._refreshBuildingFootprintDisplay(bDef);
+      if (this.view === 'studio' && this._lastFramedBuildingId !== bId) {
+        this._frameBuildingCamera(bDef);
+        this._lastFramedBuildingId = bId;
+      }
+    } else {
+      this._clearBuildingFootprintDisplay();
+      this._lastFramedBuildingId = null;
     }
     this.studioPedestalGroup.add(this.currentUnitGroup);
     this._refreshStudioArrowPreview();
@@ -823,8 +989,49 @@ export class StudioApp {
     else this._selectJoint(this.selectedSocketName);
     { const bl = this.rootContainer.querySelector('#st-banner-label'); if (bl) bl.style.display = this._isBuildingNow() ? 'none' : ''; }
     this._refreshBaseCharControl();
-    this._refreshUnitSkinStrip?.();
     this._renderImportPanel();
+  }
+
+  _clearBuildingFootprintDisplay() {
+    if (this._buildingFootprintGroup) {
+      this.studioPedestalGroup?.remove(this._buildingFootprintGroup);
+      disposeVisual(this._buildingFootprintGroup);
+      this._buildingFootprintGroup = null;
+    }
+  }
+
+  _refreshBuildingFootprintDisplay(bDefOverride = null) {
+    this._clearBuildingFootprintDisplay();
+    if (this.entityCategory !== 'buildings' && !this.unitsData.units?.[this.currentUnitId]?.isBuildingEntity) {
+      return;
+    }
+    const unitDef = this.unitsData.units?.[this.currentUnitId];
+    const bId = unitDef?.buildingId || this.currentUnitId;
+    const bDef = bDefOverride
+      || dataRegistry.getBuilding(bId)
+      || this.ubStateManager?.buildingsData?.buildings?.[bId]
+      || { id: bId, footprintRadiusMeters: 5 };
+    this._buildingFootprintGroup = createBuildingFootprintDisplayGroup(bDef, STUDIO_BUILDING_SCALE);
+    this.studioPedestalGroup?.add(this._buildingFootprintGroup);
+  }
+
+  _frameBuildingCamera(bDefOverride = null) {
+    if (!this.gizmoController) return;
+    const unitDef = this.unitsData.units?.[this.currentUnitId];
+    const bId = unitDef?.buildingId || this.currentUnitId;
+    const bDef = bDefOverride
+      || dataRegistry.getBuilding(bId)
+      || this.ubStateManager?.buildingsData?.buildings?.[bId]
+      || { id: bId, footprintRadiusMeters: 5 };
+    const { length, width } = resolveBuildingFootprintMeters(bDef);
+    const wS = width * STUDIO_BUILDING_SCALE;
+    const lS = length * STUDIO_BUILDING_SCALE;
+    const span = Math.max(wS, lS + 1.2, 3.2);
+    const dist = Math.max(6.2, span * 1.42);
+    this.gizmoController.orbit.target.set(0, 0.65, lS * 0.14);
+    this.gizmoController.camera.position.set(dist * 0.68, dist * 0.68, dist * 0.94);
+    this.gizmoController.camera.lookAt(this.gizmoController.orbit.target);
+    this.gizmoController.orbit.update();
   }
 
   /** Everything that depends on "which clip / scope / unit is showing" is refreshed here. */

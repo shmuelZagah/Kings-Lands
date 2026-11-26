@@ -108,6 +108,9 @@ export class TimelineEditor {
     window.addEventListener('pointerup', this._onWindowUp);
     window.addEventListener('pointercancel', this._onWindowUp);
 
+    if (!this.clipList.includes(this.activeBaseName)) {
+      this.activeBaseName = this.isBuildingSession && this.clipList.includes('idle') ? 'idle' : this.clipList[0];
+    }
     this._renderUI();
   }
 
@@ -138,7 +141,7 @@ export class TimelineEditor {
     if (sig === this._listSig) return;
     this._listSig = sig;
     if (!this.clipList.includes(this.activeBaseName)) {
-      this.activeBaseName = this.clipList[0];
+      this.activeBaseName = this.isBuildingSession && this.clipList.includes('idle') ? 'idle' : this.clipList[0];
       this._afterClipChange();
     } else this._renderUI();
   }

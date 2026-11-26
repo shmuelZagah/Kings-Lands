@@ -35,9 +35,10 @@ export class GizmoController {
     this.orbit.target.set(0, 1.1, 0);
 
     this.transformControls = new TransformControls(this.camera, this.domElement);
-    this.transformControls.setSize(0.85);
+    this.transformControls.setSize(0.45);
     this.transformControls.setSpace('local');
     this.transformControls.setMode('rotate');
+    this._configureLightGizmo();
     // three r169+: TransformControls is no longer an Object3D – its helper is what goes into the scene.
     this._gizmoRoot = typeof this.transformControls.getHelper === 'function'
       ? this.transformControls.getHelper()
@@ -52,11 +53,53 @@ export class GizmoController {
     this.snapToCloseupView();
   }
 
+  _configureLightGizmo() {
+    const gizmo = this.transformControls?._gizmo;
+    if (!gizmo) return;
+    // Remove outer yellow screen ring ('E') and multi-axis sphere ('XYZE') so hover/select never floods the model in yellow
+    for (const bucket of [gizmo.gizmo?.rotate, gizmo.picker?.rotate]) {
+      if (!bucket?.children) continue;
+      for (let i = bucket.children.length - 1; i >= 0; i--) {
+        const ch = bucket.children[i];
+        if (ch?.name === 'E' || ch?.name === 'XYZE') {
+          bucket.remove(ch);
+          ch.geometry?.dispose?.();
+          ch.material?.dispose?.();
+        }
+      }
+    }
+    // Remove infinite helper axis lines that cut across the model/viewport
+    for (const helperGroup of Object.values(gizmo.helper || {})) {
+      if (!helperGroup?.children) continue;
+      for (let i = helperGroup.children.length - 1; i >= 0; i--) {
+        const ch = helperGroup.children[i];
+        helperGroup.remove(ch);
+        ch.geometry?.dispose?.();
+        ch.material?.dispose?.();
+      }
+    }
+    // Keep axis rings/arrows subtle and light
+    for (const group of Object.values(gizmo.gizmo || {})) {
+      if (!group?.children) continue;
+      for (const ch of group.children) {
+        const m = ch?.material;
+        if (!m) continue;
+        if (ch.name === 'X' || ch.name === 'Y' || ch.name === 'Z') {
+          m.opacity = 0.78;
+          m._opacity = 0.78;
+        } else if (ch.name === 'XY' || ch.name === 'YZ' || ch.name === 'XZ' || ch.name === 'XYZ') {
+          m.opacity = 0.22;
+          m._opacity = 0.22;
+        }
+      }
+    }
+  }
+
   _createJointMarker() {
-    const geom = new THREE.OctahedronGeometry(0.065, 1);
-    const mat = new THREE.MeshBasicMaterial({ color: 0xfbbf24, wireframe: true, depthTest: false, transparent: true, opacity: 0.9 });
+    // Keep a lightweight hidden placeholder so no yellow wireframe ball obscures the model
+    const geom = new THREE.OctahedronGeometry(0.01, 0);
+    const mat = new THREE.MeshBasicMaterial({ color: 0xfbbf24, transparent: true, opacity: 0 });
     const mesh = new THREE.Mesh(geom, mat);
-    mesh.renderOrder = 999;
     mesh.visible = false;
     return mesh;
   }
@@ -88,9 +131,11 @@ export class GizmoController {
   }
 
   _syncMarkerPosition() {
-    if (!this.selectedObject) { this.selectionHighlight.visible = false; return; }
-    this.selectedObject.getWorldPosition(this.selectionHighlight.position);
-    this.selectionHighlight.visible = true;
+    // Do not show a yellow wireframe overlay over the selected part; TransformControls rings/arrows mark it cleanly.
+    if (this.selectionHighlight) {
+      if (this.selectedObject) this.selectedObject.getWorldPosition(this.selectionHighlight.position);
+      this.selectionHighlight.visible = false;
+    }
   }
 
   attachToObject(object3d, mode = 'rotate') {

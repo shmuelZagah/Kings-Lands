@@ -166,7 +166,8 @@ export function renderBuildingRightInspectorHtml(stateManager, buildingId, previ
         <div class="grid grid-cols-3 gap-2">
           ${bldNumInput('buildTimeSec', 'Build Time (s)', buildTimeSec, 1, 1, 600)}
           ${bldNumInput('maxHp', 'Max HP', bDef.maxHp ?? 1200, 50, 100, 20000)}
-          ${bldNumInput('footprintRadiusMeters', 'Radius (m)', bDef.footprintRadiusMeters ?? 5, 0.5, 2, 14)}
+          ${bldNumInput('footprintLength', 'Length (m)', bDef.footprintLength ?? (bDef.footprintRadiusMeters ?? 5) * 2, 0.5, 2, 30)}
+          ${bldNumInput('footprintWidth', 'Width (m)', bDef.footprintWidth ?? (bDef.footprintRadiusMeters ?? 5) * 2, 0.5, 2, 30)}
           ${bldNumInput('arrowProtectionPct', 'Arrow Prot (%)', arrowProtPct, 5, 0, 95)}
           ${bldNumInput('meleeProtectionPct', 'Melee Prot (%)', meleeProtPct, 5, 0, 95)}
           ${bldNumInput('popCapBonus', 'Pop Bonus', bDef.popCapBonus ?? 0, 5, 0, 200)}

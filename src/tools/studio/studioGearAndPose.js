@@ -185,63 +185,6 @@ export const studioGearAndPoseMethods = {
     this.unitStateManager.saveDraft?.();
   },
 
-  _setUnitActiveSkin(factionId, { spawn = true } = {}) {
-    if (!factionId) return;
-    this.currentFaction = factionId;
-    const facSel = this.rootContainer?.querySelector('#st-faction-select');
-    if (facSel) facSel.value = factionId;
-    if (this.entityCategory === 'units' && this.ubStateManager?.unitStatsData?.units?.[this.currentUnitId]) {
-      const uStat = this.ubStateManager.unitStatsData.units[this.currentUnitId];
-      const uVis = this.unitsData.units?.[this.currentUnitId];
-      const defRace = uStat.race || uVis?.race || 'human';
-      if (factionId === defRace) delete uStat.activeSkin;
-      else uStat.activeSkin = factionId;
-      this._syncUnitsStateToUbLab();
-    }
-    if (spawn) this._spawnStudioUnit();
-    else this._refreshUnitSkinStrip?.();
-  },
-
-  _refreshUnitSkinStrip() {
-    const row = this.rootContainer?.querySelector('#st-unit-skin-row');
-    const strip = this.rootContainer?.querySelector('#st-unit-skin-strip');
-    if (!row || !strip) return;
-    if (this.entityCategory !== 'units') {
-      row.classList.add('hidden');
-      strip.innerHTML = '';
-      return;
-    }
-    row.classList.remove('hidden');
-    const uStat = this.ubStateManager?.unitStatsData?.units?.[this.currentUnitId];
-    const uVis = this.unitsData.units?.[this.currentUnitId];
-    const defRace = uStat?.race || uVis?.race || 'human';
-    const activeSkin = uStat?.activeSkin && uStat.activeSkin !== 'default' ? uStat.activeSkin : defRace;
-    const factions = this._factions();
-    strip.innerHTML = factions
-      .map((fk) => {
-        const on = fk === activeSkin;
-        const tc = getFactionColors(this.unitsData, fk);
-        const c1 = tc?.primary || '#3b82f6';
-        const c2 = tc?.secondary || '#fbbf24';
-        const lbl = getFactionLabel(this.unitsData, fk);
-        return `<button type="button" data-st-unit-skin="${fk}" class="relative flex items-center gap-1.5 rounded border-2 px-1.5 py-1 text-left cursor-pointer transition ${
-          on ? 'border-emerald-400 bg-emerald-500/15' : 'border-slate-700 bg-slate-900/90 hover:border-slate-500'
-        }">
-          ${on ? `<span data-skin-check="true" class="pointer-events-none absolute -top-1.5 -left-1.5 z-10 flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500 text-slate-950 text-[10px] font-black shadow ring-1 ring-slate-950">✓</span>` : ''}
-          <span class="h-3.5 w-3.5 shrink-0 rounded-full border border-white/30" style="background: linear-gradient(135deg, ${c1} 50%, ${c2} 50%);"></span>
-          <span class="truncate text-[10px] font-bold ${on ? 'text-emerald-300' : 'text-slate-200'}">${lbl}</span>
-        </button>`;
-      })
-      .join('');
-    strip.querySelectorAll('[data-st-unit-skin]').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const fk = btn.getAttribute('data-st-unit-skin');
-        this._setUnitActiveSkin(fk, { spawn: true });
-        this._toast(`Active skin set to ${getFactionLabel(this.unitsData, fk)}`);
-      });
-    });
-  },
-
   _autoStow() {
     const u = this.unitsData.units[this.currentUnitId];
     this._beginEdit('loadout');
@@ -1396,15 +1339,6 @@ export const studioGearAndPoseMethods = {
     if (scope === 'class') this._factions().forEach((f) => setColor(this.currentUnitId, f));
     else if (scope === 'faction') Object.keys(data.units).forEach((u) => setColor(u, fac));
     else setColor(this.currentUnitId, fac);
-
-    if (this.entityCategory === 'units' && (scope === 'current' || scope === 'faction')) {
-      const uStat = this.ubStateManager?.unitStatsData?.units?.[this.currentUnitId];
-      if (uStat) {
-        const defRace = uStat.race || unitDef?.race || 'human';
-        if (fac === defRace) delete uStat.activeSkin;
-        else uStat.activeSkin = fac;
-      }
-    }
 
     this._previewJoint = null;
     this._markHeroVisualDirty();

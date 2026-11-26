@@ -256,6 +256,11 @@ export class Material {
     this.metalness = opts.metalness ?? 0.1;
     this.opacity = opts.opacity ?? 1;
     this.transparent = Boolean(opts.transparent);
+    this.side = opts.side ?? 0;
+    this.depthWrite = opts.depthWrite ?? true;
+    this.polygonOffset = Boolean(opts.polygonOffset);
+    this.polygonOffsetFactor = opts.polygonOffsetFactor ?? 0;
+    this.polygonOffsetUnits = opts.polygonOffsetUnits ?? 0;
     this.map = opts.map || null;
     this.userData = {};
   }

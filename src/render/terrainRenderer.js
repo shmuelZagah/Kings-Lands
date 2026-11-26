@@ -536,7 +536,9 @@ export class TerrainRenderer {
         (rType === 'iron' ? 'iron_outcrop' : rType === 'stone' ? 'stone_granite' : 'gold_vein');
       const mineGroup = createMineMeshBySkin(rType, skinId, m.scale || 1.0, m.rotY || 0);
       mineGroup.position.set(mx, my, mz);
-      mergeStaticGroupMeshesByMaterial(mineGroup, { castShadow: true, receiveShadow: true });
+      if (!mineGroup.userData?.skipStaticMerge) {
+        mergeStaticGroupMeshesByMaterial(mineGroup, { castShadow: true, receiveShadow: true });
+      }
       this.propsGroup.add(mineGroup);
     }
 

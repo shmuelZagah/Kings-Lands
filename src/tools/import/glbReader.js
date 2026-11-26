@@ -218,7 +218,13 @@ export async function readGlb(arrayBuffer, opts = {}) {
       const w = prim.attributes.WEIGHTS_0 != null ? readAccessor(json, bin, prim.attributes.WEIGHTS_0).data : null;
       primitives.push({
         node: node.index, skin: node.skin ?? -1, name: mesh.name || node.name,
-        positions: pos, indices: idx, colors, joints: j, weights: w
+        positions: pos, indices: idx, colors, joints: j, weights: w,
+        staticColorSource: {
+          factor: [factor[0], factor[1], factor[2]],
+          col0: col0 ? { data: col0.data, size: col0.size } : null,
+          uv,
+          img
+        }
       });
     }
   }

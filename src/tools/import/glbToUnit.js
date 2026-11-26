@@ -63,8 +63,140 @@ const LIMB = new Set(['arm', 'forearm', 'hand', 'leg', 'shin', 'foot']);
 const sideOf = (x) => (x > 0 ? 'R' : 'L'); // the game's convention: +x is the "_R" limb (see units.json)
 const jointName = (part, side) => (LIMB.has(part) ? `${part}_${side}` : part);
 
+const srgbToLinear = (c) => (c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4));
+const linearToSrgb = (c) => (c <= 0.0031308 ? c * 12.92 : 1.055 * Math.pow(c, 1 / 2.4) - 0.055);
+const STATIC_ALPHA_CUTOFF = 128; // alpha > ~0.5 (128 / 255 = 0.502)
+
+/**
+ * Sample vertex colours for static prop/resource/building primitives:
+ * For materials with a baseColorTexture, only opaque texels (alpha > ~0.5) are sampled at/near the vertex UVs;
+ * transparent texels (such as black RGB=0 padding in alpha-cutout leaf cards) are ignored and fall back to
+ * opaque texels inside incident triangles / local UV neighborhood or the material's baseColorFactor.
+ */
+export function sampleStaticPrimitiveVertexColors(prim) {
+  const src = prim?.staticColorSource;
+  if (!src || !src.img || !src.uv || !src.img.data || !(src.img.width > 0) || !(src.img.height > 0)) {
+    return prim.colors;
+  }
+  const { factor = [1, 1, 1], col0 = null, uv, img } = src;
+  const nv = prim.positions.length / 3;
+  const W = img.width;
+  const H = img.height;
+  const data = img.data;
+  const colors = new Uint8Array(nv * 3);
+
+  const wrap01 = (t) => {
+    if (!Number.isFinite(t)) return 0;
+    const f = t - Math.floor(t);
+    return f >= 1 ? 0 : f < 0 ? f + 1 : f;
+  };
+  const uvToPixel = (uRaw, vRaw) => {
+    const u = wrap01(uRaw);
+    const v = wrap01(vRaw);
+    const px = Math.min(W - 1, Math.max(0, Math.floor(u * W)));
+    const py = Math.min(H - 1, Math.max(0, Math.floor(v * H)));
+    return [px, py];
+  };
+  const sampleAtPixel = (px, py) => {
+    const o = (py * W + px) * 4;
+    return [data[o], data[o + 1], data[o + 2], data[o + 3]];
+  };
+
+  // Build incident triangle list per vertex so transparent corners of leaf cards sample inside their own triangles
+  const vTris = Array.from({ length: nv }, () => []);
+  const indices = prim.indices || [];
+  for (let f = 0; f + 2 < indices.length; f += 3) {
+    const a = indices[f], b = indices[f + 1], c = indices[f + 2];
+    if (a < nv) vTris[a].push(a, b, c);
+    if (b < nv) vTris[b].push(b, a, c);
+    if (c < nv) vTris[c].push(c, a, b);
+  }
+
+  const maxRadius = Math.min(16, Math.max(2, Math.ceil(Math.max(W, H) * 0.1)));
+
+  for (let v = 0; v < nv; v++) {
+    let r = factor[0] ?? 1;
+    let g = factor[1] ?? 1;
+    let b = factor[2] ?? 1;
+    if (col0) {
+      r *= col0.data[v * col0.size];
+      g *= col0.data[v * col0.size + 1];
+      b *= col0.data[v * col0.size + 2];
+    }
+
+    const u0 = uv[v * 2];
+    const v0 = uv[v * 2 + 1];
+    const [px0, py0] = uvToPixel(u0, v0);
+    const [tr, tg, tb, ta] = sampleAtPixel(px0, py0);
+
+    if (ta >= STATIC_ALPHA_CUTOFF) {
+      r *= srgbToLinear(tr / 255);
+      g *= srgbToLinear(tg / 255);
+      b *= srgbToLinear(tb / 255);
+    } else {
+      // Sample opaque texels inside the triangles touching this vertex first (safe for texture atlases)
+      let sumR = 0, sumG = 0, sumB = 0, count = 0;
+      const tris = vTris[v];
+      for (let t = 0; t + 2 < tris.length; t += 3) {
+        const va = tris[t], vb = tris[t + 1], vc = tris[t + 2];
+        const ua = uv[va * 2], wa = uv[va * 2 + 1];
+        const ub = uv[vb * 2], wb = uv[vb * 2 + 1];
+        const uc = uv[vc * 2], wc = uv[vc * 2 + 1];
+        const steps = 4;
+        for (let i = 0; i <= steps; i++) {
+          for (let j = 0; j <= steps - i; j++) {
+            const k = steps - i - j;
+            const s = (i * ua + j * ub + k * uc) / steps;
+            const q = (i * wa + j * wb + k * wc) / steps;
+            const [spx, spy] = uvToPixel(s, q);
+            const [sr, sg, sb, sa] = sampleAtPixel(spx, spy);
+            if (sa >= STATIC_ALPHA_CUTOFF) {
+              sumR += srgbToLinear(sr / 255);
+              sumG += srgbToLinear(sg / 255);
+              sumB += srgbToLinear(sb / 255);
+              count++;
+            }
+          }
+        }
+      }
+
+      // If incident triangles had no opaque hits (e.g. tiny isolated leaf island), check immediate local neighborhood
+      if (count === 0) {
+        for (let rad = 1; rad <= maxRadius && count === 0; rad++) {
+          for (let dy = -rad; dy <= rad; dy++) {
+            for (let dx = -rad; dx <= rad; dx++) {
+              if (Math.abs(dx) !== rad && Math.abs(dy) !== rad) continue;
+              const nx = ((px0 + dx) % W + W) % W;
+              const ny = ((py0 + dy) % H + H) % H;
+              const [sr, sg, sb, sa] = sampleAtPixel(nx, ny);
+              if (sa >= STATIC_ALPHA_CUTOFF) {
+                sumR += srgbToLinear(sr / 255);
+                sumG += srgbToLinear(sg / 255);
+                sumB += srgbToLinear(sb / 255);
+                count++;
+              }
+            }
+          }
+        }
+      }
+
+      if (count > 0) {
+        r *= sumR / count;
+        g *= sumG / count;
+        b *= sumB / count;
+      }
+      // Otherwise: fall back directly to baseColorFactor (* COLOR_0), never black from transparent texels
+    }
+
+    colors[v * 3] = Math.round(255 * linearToSrgb(Math.max(0, Math.min(1, r))));
+    colors[v * 3 + 1] = Math.round(255 * linearToSrgb(Math.max(0, Math.min(1, g))));
+    colors[v * 3 + 2] = Math.round(255 * linearToSrgb(Math.max(0, Math.min(1, b))));
+  }
+  return colors;
+}
+
 // ------------------------------------------------------------------ gather world-space vertices
-function gatherVertices(scene, rotY) {
+function gatherVertices(scene, rotY, staticSampling = false) {
   const cos = Math.cos(rotY), sin = Math.sin(rotY);
   const rot = (p, o) => { const x = p[o], z = p[o + 2]; p[o] = x * cos + z * sin; p[o + 2] = -x * sin + z * cos; };
   let total = 0;
@@ -79,6 +211,7 @@ function gatherVertices(scene, rotY) {
   const tmp = [0, 0, 0];
   scene.primitives.forEach((p, pi) => {
     const n = p.positions.length / 3;
+    const primColors = staticSampling ? sampleStaticPrimitiveVertexColors(p) : p.colors;
     const skin = p.skin >= 0 && p.joints && p.weights ? scene.skins[p.skin] : null;
     const nodeWorld = scene.nodes[p.node].world;
     for (let v = 0; v < n; v++) {
@@ -103,7 +236,7 @@ function gatherVertices(scene, rotY) {
         pos.set(tmp, (vo + v) * 3);
       }
       rot(pos, (vo + v) * 3);
-      col[(vo + v) * 3] = p.colors[v * 3]; col[(vo + v) * 3 + 1] = p.colors[v * 3 + 1]; col[(vo + v) * 3 + 2] = p.colors[v * 3 + 2];
+      col[(vo + v) * 3] = primColors[v * 3]; col[(vo + v) * 3 + 1] = primColors[v * 3 + 1]; col[(vo + v) * 3 + 2] = primColors[v * 3 + 2];
       primOfVertex[vo + v] = pi;
     }
     for (let i = 0; i < p.indices.length; i++) idx.push(p.indices[i] + vo);
@@ -521,7 +654,7 @@ function ensureSkinMats(scene) {
 export function buildStaticMeshFromScene(scene, opts = {}) {
   const o = { rotateYDeg: 0, budget: 6000, fit: { mode: 'size', size: 0.3, anchor: 'center', offset: [0, 0, 0] }, mirrorX: false, smoothNormals: true, ...opts };
   ensureSkinMats(scene);
-  const g = gatherVertices(scene, (o.rotateYDeg * Math.PI) / 180);
+  const g = gatherVertices(scene, (o.rotateYDeg * Math.PI) / 180, true);
   let min = [Infinity, Infinity, Infinity], max = [-Infinity, -Infinity, -Infinity];
   for (let i = 0; i < g.pos.length; i += 3) for (let k = 0; k < 3; k++) { min[k] = Math.min(min[k], g.pos[i + k]); max[k] = Math.max(max[k], g.pos[i + k]); }
   const dim = max.map((v, k) => v - min[k]);
