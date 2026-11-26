@@ -52,6 +52,7 @@ import {
 } from '../../src/tools/units_buildings/unitsBuildingsStateManager.js';
 import { dataRegistry as sharedRegistry } from '../../src/data/dataRegistry.js';
 import { buildBuildingsStudioViewData } from '../../src/tools/units_buildings/buildingStudioAdapter.js';
+import { studioImportMethods } from '../../src/tools/studio/studioImport.js';
 import {
   renderUnitsLeftListHtml,
   renderUnitRightInspectorHtml,
@@ -59,6 +60,17 @@ import {
 } from '../../src/tools/units_buildings/unitsTabRenderer.js';
 import { renderBuildingRightInspectorHtml } from '../../src/tools/units_buildings/buildingsTabRenderer.js';
 import { HeroStateManager } from '../../src/tools/heroes/heroStateManager.js';
+import { MapEditorApp, computeBlendedColorOverridesPatch } from '../../src/tools/map_editor/mapEditorApp.js';
+import {
+  DECORATIVE_PROPS_CATALOG,
+  RESOURCE_SKINS_CATALOG,
+  renderDecorativePropThumbnailSvg,
+  createTreeMeshBySkin,
+  createMineMeshBySkin,
+  createDecorativePropMesh,
+  hydrateMapState,
+  serializeMapState
+} from '../../src/tools/map_editor/mapStateManager.js';
 
 test('labSync pure helpers: import registration, deletion, base choices, cosmetics, skins & faction filtering', () => {
   const unitStatsData = {
@@ -213,10 +225,13 @@ test('Units & Buildings Lab, Hero Manager & Studio cross-lab integration', () =>
 
   const rightHtml = renderUnitRightInspectorHtml(sm, 'swordsman');
   assert.ok(!rightHtml.includes('id="ub-unit-base-select"'), 'Units Lab must NOT contain editable Base Character dropdown');
-  assert.ok(rightHtml.includes('id="ub-unit-base-readonly"'));
-  assert.ok(rightHtml.includes('id="ub-btn-edit-look-studio"'));
-  assert.ok(rightHtml.includes('id="ub-unit-skin-select"'));
-  assert.ok(rightHtml.includes('id="ub-btn-edit-cosmetic-studio"'));
+  assert.ok(!rightHtml.includes('id="ub-unit-base-readonly"'), 'Units Lab must NOT contain Base Character appearance block');
+  assert.ok(!rightHtml.includes('id="ub-btn-edit-look-studio"'), 'Units Lab must NOT contain Base & Look button');
+  assert.ok(!rightHtml.includes('id="ub-unit-skin-select"'), 'Units Lab must NOT contain active unit skin selector');
+  assert.ok(!rightHtml.includes('data-unit-skin-pick'), 'Units Lab must NOT contain active unit skin cards');
+  assert.ok(!rightHtml.includes('id="ub-btn-edit-cosmetic-studio"'), 'Units Lab must NOT contain cosmetic appearance Studio button');
+  assert.ok(!rightHtml.includes('data-unit-appearance'), 'Units Lab must NOT contain cosmetic armour dropdowns');
+  assert.ok(rightHtml.includes('Weapon Sets (Hands Only)'), 'Weapon Sets must remain in Units Lab');
   assert.ok(rightHtml.includes('id="ub-unit-mount-select"'), 'Mount selection must remain in Units Lab');
 
   const bldHtml = renderBuildingRightInspectorHtml(sm, 'barracks');
@@ -252,18 +267,11 @@ test('Two-way skin checkmarks, buildingSkinStore cache sync & in-memory lab prop
   const sm = new UnitsBuildingsStateManager();
   sm.resetAllToDefaults();
 
-  // Unit skin checkmark moves cleanly with activeSkin
-  sm.unitStatsData.units.swordsman.activeSkin = 'default';
-  let unitHtml = renderUnitRightInspectorHtml(sm, 'swordsman');
-  assert.ok(unitHtml.includes('data-unit-skin-pick="default"'));
-  assert.ok(unitHtml.includes('data-skin-check="true"'));
-
+  // Unit active skin list still resolves cleanly for Studio & activeSkin
   sm.unitStatsData.units.swordsman.activeSkin = 'katiler';
-  unitHtml = renderUnitRightInspectorHtml(sm, 'swordsman');
-  const katilerBlock = unitHtml.split('data-unit-skin-pick="katiler"')[1]?.split('</button>')[0] || '';
-  const defaultBlock = unitHtml.split('data-unit-skin-pick="default"')[1]?.split('</button>')[0] || '';
-  assert.ok(katilerBlock.includes('data-skin-check="true"'), 'Selected unit skin card shows green checkmark badge');
-  assert.ok(!defaultBlock.includes('data-skin-check="true"'), 'Unselected unit skin card must not show checkmark badge');
+  const unitSkins = listSkinsForUnit(sm.unitsVisualsData, sm.unitsVisualsData.units.swordsman, sm.unitStatsData.units.swordsman);
+  assert.ok(unitSkins.some((s) => s.id === 'default'));
+  assert.ok(unitSkins.some((s) => s.id === 'katiler'));
 
   // Building skin persistence + checkmark sync
   const skinsRoot = sharedRegistry.getBuildingSkins();
@@ -316,4 +324,292 @@ test('Two-way skin checkmarks, buildingSkinStore cache sync & in-memory lab prop
   assert.equal(live.unitsVisuals.prefabs.temp_custom_helm, undefined);
   assert.equal(live.buildings.buildings.custom_tower, undefined);
 });
+
+test('Studio import panel shows only tab-relevant sections and omits redundant building skins list', () => {
+  globalThis.localStorage.clear();
+  sharedRegistry.resetToDefaults();
+  const unitsData = sharedRegistry.getUnitsVisuals();
+  const hostEl = {
+    innerHTML: '',
+    querySelector: () => null,
+    querySelectorAll: () => []
+  };
+  const fakeStudio = {
+    ...studioImportMethods,
+    entityCategory: 'units',
+    currentUnitId: 'swordsman',
+    currentFaction: 'human',
+    unitsData,
+    ubStateManager: { buildingsData: sharedRegistry.getBuildings() },
+    rootContainer: { querySelector: (sel) => (sel === '#insp-import' ? hostEl : null) },
+    currentUnitGroup: { userData: { sockets: { head: {}, torso: {} } } }
+  };
+
+  fakeStudio._renderImportPanel();
+  assert.ok(hostEl.innerHTML.includes('data-imp-kind="unit"'), 'Units tab shows Import base unit');
+  assert.ok(hostEl.innerHTML.includes('data-imp-kind="gear"'), 'Units tab shows Import armour');
+  assert.ok(!hostEl.innerHTML.includes('data-imp-kind="building"'), 'Units tab hides Import building skin');
+  assert.ok(!hostEl.innerHTML.includes('data-imp-kind="newbuilding"'), 'Studio hides New building');
+
+  fakeStudio.entityCategory = 'heroes';
+  fakeStudio._imp.kind = null;
+  fakeStudio._renderImportPanel();
+  assert.ok(hostEl.innerHTML.includes('data-imp-kind="unit"'), 'Heroes tab shows Import base unit');
+  assert.ok(hostEl.innerHTML.includes('data-imp-kind="gear"'), 'Heroes tab shows Import armour');
+  assert.ok(!hostEl.innerHTML.includes('data-imp-kind="building"'), 'Heroes tab hides Import building skin');
+
+  fakeStudio.entityCategory = 'buildings';
+  fakeStudio.currentUnitId = 'barracks';
+  fakeStudio._renderImportPanel();
+  assert.ok(hostEl.innerHTML.includes('data-imp-kind="building"'), 'Buildings tab shows Import building skin');
+  assert.ok(!hostEl.innerHTML.includes('data-imp-kind="unit"'), 'Buildings tab hides Import base unit');
+  assert.ok(!hostEl.innerHTML.includes('data-imp-kind="gear"'), 'Buildings tab hides Import armour');
+  assert.ok(!hostEl.innerHTML.includes('data-imp-kind="newbuilding"'), 'Buildings tab hides New building');
+  assert.ok(!hostEl.innerHTML.includes('data-imp-del-skin'), 'Import window omits redundant list of all building skins');
+});
+
+test('Task 4: Studio delete X buttons & guards + Map Editor object grid and custom delete helpers', () => {
+  globalThis.localStorage.clear();
+  sharedRegistry.resetToDefaults();
+  const prevConfirm = globalThis.confirm;
+  globalThis.confirm = () => true;
+
+  try {
+    const unitsData = sharedRegistry.getUnitsVisuals();
+    unitsData.units.imported_knight = {
+      id: 'imported_knight',
+      displayName: 'Imported Knight',
+      race: 'human',
+      hierarchy: { pelvis: { shape: 'box', size: [0.2, 0.2, 0.2], children: {} } },
+      equipment: {},
+      importInfo: { source: 'knight.glb' }
+    };
+    unitsData.prefabs.imp_helm = {
+      id: 'imp_helm',
+      name: 'Imported Helm',
+      slot: 'head',
+      race: 'human',
+      importInfo: { source: 'helm.glb' }
+    };
+
+    const fakeStudio = {
+      ...studioImportMethods,
+      entityCategory: 'units',
+      currentUnitId: 'swordsman',
+      currentFaction: 'human',
+      unitsData,
+      ubStateManager: {
+        unitStatsData: sharedRegistry.getUnitStats(),
+        buildingsData: sharedRegistry.getBuildings(),
+        saveAll() {}
+      },
+      rootContainer: { querySelector: () => null },
+      stateManager: { scheduleSave() {} },
+      _beginEdit() {},
+      _rebindData() {},
+      _spawnStudioUnit() {},
+      _restowAll() {},
+      _unitsOfPeople: () => ['swordsman'],
+      _toast() {}
+    };
+
+    // Shipped models cannot be deleted
+    fakeStudio._deleteImportedUnit('swordsman');
+    assert.ok(unitsData.units.swordsman, 'Shipped unit swordsman must NEVER be deleted');
+    const firstPrefabId = Object.keys(unitsData.prefabs).find((k) => !unitsData.prefabs[k]?.importInfo);
+    fakeStudio._deleteImportedGear(firstPrefabId);
+    assert.ok(unitsData.prefabs[firstPrefabId], 'Shipped prefab must NEVER be deleted');
+
+    // Imported models ARE deleted cleanly
+    fakeStudio._deleteImportedUnit('imported_knight');
+    assert.equal(unitsData.units.imported_knight, undefined, 'Imported unit deleted');
+    fakeStudio._deleteImportedGear('imp_helm');
+    assert.equal(unitsData.prefabs.imp_helm, undefined, 'Imported gear deleted');
+
+    // Building skins grid: visible X button on custom skin only, never default
+    sharedRegistry.saveBuildingSkin('barracks', {
+      active: 'custom_skin',
+      items: { custom_skin: { name: 'Custom Stone', mesh: { vertices: [], faces: [], colors: [] } } }
+    });
+    fakeStudio.entityCategory = 'buildings';
+    fakeStudio.currentUnitId = 'barracks';
+    const gridHtml = fakeStudio._skinsGridHtml();
+    assert.ok(gridHtml.includes('data-skin-del="custom_skin"'), 'Custom skin has delete button');
+    assert.ok(!gridHtml.includes('data-skin-del="default"'), 'Default skin has NO delete button');
+    assert.ok(!gridHtml.includes('hidden group-hover:flex'), 'Skin delete X button is always visible');
+
+    // Map Editor decorative prop SVG preview & custom asset deletions
+    for (const p of DECORATIVE_PROPS_CATALOG) {
+      assert.ok(renderDecorativePropThumbnailSvg(p).includes('<svg'), `Prop ${p.id} has SVG preview`);
+    }
+    const ed = new MapEditorApp(null);
+    ed.mapState.customPropAssets.push({ id: 'custom_prop_1', name: 'Statue X', kind: 'json', parts: [] });
+    ed.mapState.decorativeProps.push({ id: 'dp1', propType: 'custom_prop_1', x: 100, z: 100 });
+    ed.activePropType = 'custom_prop_1';
+    assert.equal(ed.deleteCustomPropAsset('custom_prop_1'), true);
+    assert.equal(ed.mapState.customPropAssets.length, 0);
+    assert.equal(ed.mapState.decorativeProps.length, 0);
+    assert.equal(ed.activePropType, DECORATIVE_PROPS_CATALOG[0].id);
+    assert.equal(ed.deleteCustomPropAsset('statue_king'), false, 'Built-in prop cannot be deleted');
+
+    ed.mapState.customResourceSkins.wood.push({ id: 'custom_tree_1', name: 'Custom Tree', kind: 'glb', mesh: { vertices: [], faces: [], colors: [] } });
+    ed.mapState.trees.push({ uid: 't_c1', x: 200, z: 200, skinId: 'custom_tree_1' });
+    ed.activeResourceSkins.wood = 'custom_tree_1';
+    assert.equal(ed.deleteCustomResourceSkin('wood', 'custom_tree_1'), true);
+    assert.equal(ed.mapState.customResourceSkins.wood.length, 0);
+    assert.equal(ed.mapState.trees[0].skinId, RESOURCE_SKINS_CATALOG.wood[0].id);
+    assert.equal(ed.activeResourceSkins.wood, RESOURCE_SKINS_CATALOG.wood[0].id);
+    assert.equal(ed.deleteCustomResourceSkin('wood', 'pine_emerald'), false, 'Shipped resource cannot be deleted');
+
+    ed.mapState.customTextures.push({ id: 'tex_1', name: 'Moss', dataUrl: 'data:image/png;base64,AA==' });
+    ed.mapState.activeGroundTextureId = 'tex_1';
+    assert.equal(ed.deleteCustomGroundTexture('tex_1'), true);
+    assert.equal(ed.mapState.customTextures.length, 0);
+    assert.equal(ed.mapState.activeGroundTextureId, 'none');
+  } finally {
+    globalThis.confirm = prevConfirm;
+  }
+});
+
+function buildMinimalStaticGlbBuffer() {
+  const pos = new Float32Array([
+    0, 0, 0,
+    1, 0, 0,
+    0, 1, 0,
+    0, 0, 1
+  ]);
+  const col = new Uint8Array([
+    255, 64, 32,
+    32, 255, 64,
+    32, 64, 255,
+    255, 220, 40
+  ]);
+  const idx = new Uint16Array([
+    0, 2, 1,
+    0, 1, 3,
+    1, 2, 3,
+    2, 0, 3
+  ]);
+  const chunks = [];
+  const views = [];
+  const accs = [];
+  const add = (arr, type, ct, count, target, extra = {}) => {
+    const raw = Buffer.from(arr.buffer, arr.byteOffset, arr.byteLength);
+    const pad = (4 - (raw.length % 4)) % 4;
+    const byteOffset = chunks.reduce((s, c) => s + c.length, 0);
+    chunks.push(Buffer.concat([raw, Buffer.alloc(pad)]));
+    views.push({ buffer: 0, byteOffset, byteLength: raw.length, target });
+    accs.push({ bufferView: views.length - 1, componentType: ct, count, type, ...extra });
+    return accs.length - 1;
+  };
+  const aPos = add(pos, 'VEC3', 5126, 4, 34962, { min: [0, 0, 0], max: [1, 1, 1] });
+  const aCol = add(col, 'VEC3', 5121, 4, 34962, { normalized: true });
+  const aIdx = add(idx, 'SCALAR', 5123, idx.length, 34963);
+  const bin = Buffer.concat(chunks);
+  const json = {
+    asset: { version: '2.0' },
+    scene: 0,
+    scenes: [{ nodes: [0] }],
+    nodes: [{ name: 'PropMesh', mesh: 0 }],
+    meshes: [{ primitives: [{ attributes: { POSITION: aPos, COLOR_0: aCol }, indices: aIdx }] }],
+    accessors: accs,
+    bufferViews: views,
+    buffers: [{ byteLength: bin.length }]
+  };
+  const jsonRaw = Buffer.from(JSON.stringify(json));
+  const jsonPad = Buffer.concat([jsonRaw, Buffer.alloc((4 - (jsonRaw.length % 4)) % 4, 0x20)]);
+  const header = Buffer.alloc(12);
+  header.writeUInt32LE(0x46546c67, 0);
+  header.writeUInt32LE(2, 4);
+  header.writeUInt32LE(12 + 8 + jsonPad.length + 8 + bin.length, 8);
+  const mkChunk = (type, payload) => {
+    const h = Buffer.alloc(8);
+    h.writeUInt32LE(payload.length, 0);
+    h.writeUInt32LE(type, 4);
+    return Buffer.concat([h, payload]);
+  };
+  const glb = Buffer.concat([header, mkChunk(0x4e4f534a, jsonPad), mkChunk(0x004e4942, bin)]);
+  return glb.buffer.slice(glb.byteOffset, glb.byteOffset + glb.byteLength);
+}
+
+test('Task 5: Map Editor GLB import for both objects and resources builds vertex-colored meshes & serializes cleanly', async () => {
+  const ed = new MapEditorApp(null);
+  const glbBuf = buildMinimalStaticGlbBuffer();
+
+  const propAsset = await ed.importGlbPropFromBuffer(glbBuf, 'obelisks_pack.glb');
+  assert.equal(propAsset.kind, 'glb');
+  assert.equal(propAsset.name, 'obelisks_pack');
+  assert.ok(propAsset.vertices.length >= 4 && propAsset.faces.length >= 4);
+  assert.equal(ed.activePropType, propAsset.id);
+  const propGroup = createDecorativePropMesh({ propType: propAsset.id, scale: 1.5, rotY: 0 }, ed.mapState.customPropAssets);
+  assert.equal(propGroup.children.length, 1);
+  assert.ok(propGroup.children[0].geometry.attributes.position);
+  assert.ok(propGroup.children[0].geometry.attributes.color);
+
+  const treeSkin = await ed.importGlbResourceFromBuffer(glbBuf, 'cedar_tree.glb', 'wood');
+  assert.equal(treeSkin.kind, 'glb');
+  assert.equal(treeSkin.name, 'cedar_tree');
+  assert.equal(ed.activeResourceSkins.wood, treeSkin.id);
+  const treeGroup = createTreeMeshBySkin(treeSkin.id, 1.0, 0, ed.mapState.customResourceSkins);
+  assert.equal(treeGroup.children.length, 1);
+  assert.ok(treeGroup.children[0].geometry.attributes.color);
+
+  const mineSkin = await ed.importGlbResourceFromBuffer(glbBuf, 'gold_crystal.glb', 'coins');
+  assert.equal(mineSkin.kind, 'glb');
+  assert.equal(ed.activeResourceSkins.coins, mineSkin.id);
+  const mineGroup = createMineMeshBySkin('coins', mineSkin.id, 1.0, 0, ed.mapState.customResourceSkins);
+  assert.equal(mineGroup.children.length, 1);
+  assert.ok(mineGroup.children[0].geometry.attributes.color);
+
+  const roundTrip = hydrateMapState(JSON.parse(JSON.stringify(serializeMapState(ed.mapState))));
+  assert.equal(roundTrip.customPropAssets.length, 1);
+  assert.equal(roundTrip.customPropAssets[0].kind, 'glb');
+  assert.equal(roundTrip.customResourceSkins.wood.length, 1);
+  assert.equal(roundTrip.customResourceSkins.coins.length, 1);
+});
+
+test('Task 6: Map Editor Paint Blend mode smooths color/biome transitions without altering outside vertices', () => {
+  const ed = new MapEditorApp(null);
+  const cell = ed.getCellMeters();
+  const res = 257;
+  // Paint sharp split: left side red (ix <= 63), right side blue (ix >= 64) around iz=64
+  for (let iz = 58; iz <= 70; iz++) {
+    for (let ix = 58; ix <= 70; ix++) {
+      ed.mapState.colorOverrides[iz * res + ix] = ix <= 63 ? [1, 0, 0] : [0, 0, 1];
+    }
+  }
+  const farLeftIdx = 64 * res + 50;
+  ed.mapState.colorOverrides[farLeftIdx] = [1, 0, 0];
+
+  ed.paintMode = 'blend';
+  ed.brushRadius = 48;
+  ed.brushStrength = 1.0;
+  ed.brushShape = 'circle_smooth';
+  ed.brushFalloff = 'smooth';
+  ed.applyPaintBlendAt(63.5 * cell, 64 * cell);
+
+  const leftEdge = ed.mapState.colorOverrides[64 * res + 63];
+  const rightEdge = ed.mapState.colorOverrides[64 * res + 64];
+  assert.ok(leftEdge[0] < 1 && leftEdge[2] > 0, `Left boundary blended toward blue: ${leftEdge}`);
+  assert.ok(rightEdge[0] > 0 && rightEdge[2] < 1, `Right boundary blended toward red: ${rightEdge}`);
+  assert.deepEqual(ed.mapState.colorOverrides[farLeftIdx], [1, 0, 0], 'Vertices outside brush radius remain unchanged');
+
+  // Uniform patch blends identically to itself
+  const uniformPatch = computeBlendedColorOverridesPatch({
+    worldX: 20 * cell,
+    worldZ: 20 * cell,
+    brushRadius: 32,
+    brushStrength: 0.8,
+    cellMeters: cell,
+    mapRes: res,
+    getVertexRgb: () => [0.25, 0.5, 0.75]
+  });
+  for (const rgb of uniformPatch.updates.values()) {
+    assert.deepEqual(rgb, [0.25, 0.5, 0.75]);
+  }
+});
+
+
+
+
 

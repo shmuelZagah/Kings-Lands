@@ -29,6 +29,7 @@ import {
   DECORATIVE_PROPS_CATALOG,
   renderPaintBrushThumbnailSvg,
   renderSkinVisualThumbnailSvg,
+  renderDecorativePropThumbnailSvg,
   getActiveCustomMapState,
   setActiveCustomMapState,
   getSavedMapsList,
@@ -42,7 +43,8 @@ import {
   createMineMeshBySkin,
   createDecorativePropMesh,
   createSpawnBeaconMesh,
-  parseWavefrontObjToVertices
+  parseWavefrontObjToVertices,
+  renderStaticMeshThumbnailDataUrl
 } from './mapStateManager.js';
 
 export const BRUSH_FALLOFF_PRESETS = Object.freeze([
@@ -82,6 +84,68 @@ export function evaluateBrushFalloff(distRatio, falloffId = 'smooth', worldX = 0
     return smooth * n;
   }
   return t * t * (3 - 2 * t);
+}
+
+export function computeBlendedColorOverridesPatch({
+  worldX,
+  worldZ,
+  brushRadius = 64,
+  brushStrength = 0.45,
+  brushShape = 'circle_smooth',
+  brushFalloff = 'smooth',
+  cellMeters = MAP_CELL_METERS,
+  mapRes = MAP_VERTEX_RES,
+  getVertexRgb
+}) {
+  const radius = Math.max(8, Number(brushRadius) || 64);
+  const strength = Math.max(0.02, Math.min(1.0, Number(brushStrength) || 0.45));
+  const minIx = Math.max(0, Math.floor((worldX - radius) / cellMeters));
+  const maxIx = Math.min(mapRes - 1, Math.ceil((worldX + radius) / cellMeters));
+  const minIz = Math.max(0, Math.floor((worldZ - radius) / cellMeters));
+  const maxIz = Math.min(mapRes - 1, Math.ceil((worldZ + radius) / cellMeters));
+  const updates = new Map();
+
+  for (let iz = minIz; iz <= maxIz; iz++) {
+    for (let ix = minIx; ix <= maxIx; ix++) {
+      const wx = ix * cellMeters;
+      const wz = iz * cellMeters;
+      const distRatio = computeBrushShapeDistRatio(wx - worldX, wz - worldZ, radius, brushShape);
+      if (distRatio > 1.0) continue;
+
+      const effFalloff = brushShape === 'circle_flat' ? 'flat' : brushFalloff;
+      const w = evaluateBrushFalloff(distRatio, effFalloff, wx, wz) * strength;
+      const blendAlpha = Math.max(0, Math.min(1, w * 0.85));
+      if (blendAlpha <= 0.001) continue;
+
+      let sumR = 0;
+      let sumG = 0;
+      let sumB = 0;
+      let count = 0;
+      for (let dz = -1; dz <= 1; dz++) {
+        for (let dx = -1; dx <= 1; dx++) {
+          const nx = Math.max(0, Math.min(mapRes - 1, ix + dx));
+          const nz = Math.max(0, Math.min(mapRes - 1, iz + dz));
+          const [nr, ng, nb] = getVertexRgb(nz * mapRes + nx);
+          sumR += nr;
+          sumG += ng;
+          sumB += nb;
+          count++;
+        }
+      }
+
+      const avgR = sumR / count;
+      const avgG = sumG / count;
+      const avgB = sumB / count;
+      const vIdx = iz * mapRes + ix;
+      const [cr, cg, cb] = getVertexRgb(vIdx);
+      updates.set(vIdx, [
+        Math.round((cr + (avgR - cr) * blendAlpha) * 1000) / 1000,
+        Math.round((cg + (avgG - cg) * blendAlpha) * 1000) / 1000,
+        Math.round((cb + (avgB - cb) * blendAlpha) * 1000) / 1000
+      ]);
+    }
+  }
+  return { minIx, maxIx, minIz, maxIz, updates };
 }
 
 const GHOST_VALID_MAT = new THREE.MeshStandardMaterial({
@@ -128,6 +192,7 @@ export class MapEditorApp {
     this.flattenTargetHeight = 4.5;
     this.rampStartPoint = null;
 
+    this.paintMode = 'paint';      // 'paint' | 'blend'
     this.activeBiomeLayerId = 1;
     this.useCustomPaintHex = false;
     this.customPaintHex = '#4d7c0f';
@@ -373,9 +438,9 @@ export class MapEditorApp {
       const sc = Number(this.resourceScale) || 1.0;
       const rotRad = ((Number(this.resourceRotDeg) || 0) * Math.PI) / 180;
       if (rType === 'wood') {
-        previewObj = createTreeMeshBySkin(skinId, sc, rotRad);
+        previewObj = createTreeMeshBySkin(skinId, sc, rotRad, this.mapState.customResourceSkins);
       } else {
-        previewObj = createMineMeshBySkin(rType, skinId, sc, rotRad);
+        previewObj = createMineMeshBySkin(rType, skinId, sc, rotRad, this.mapState.customResourceSkins);
       }
     } else if (this.activeMainTab === 'props') {
       const sc = Number(this.propScale) || 1.0;
@@ -655,6 +720,25 @@ export class MapEditorApp {
     this._updateTerrainVertexPatch(minIx, maxIx, minIz, maxIz);
   }
 
+  applyPaintBlendAt(worldX, worldZ) {
+    if (!this.mapState.colorOverrides) this.mapState.colorOverrides = {};
+    const { minIx, maxIx, minIz, maxIz, updates } = computeBlendedColorOverridesPatch({
+      worldX,
+      worldZ,
+      brushRadius: this.brushRadius,
+      brushStrength: this.brushStrength,
+      brushShape: this.brushShape,
+      brushFalloff: this.brushFalloff,
+      cellMeters: this.getCellMeters(),
+      mapRes: MAP_VERTEX_RES,
+      getVertexRgb: (vIdx) => this._getCurrentVertexRgb(vIdx, this.getVertexHeight(vIdx))
+    });
+    for (const [vIdx, rgb] of updates.entries()) {
+      this.mapState.colorOverrides[vIdx] = rgb;
+    }
+    this._updateTerrainVertexPatch(minIx, maxIx, minIz, maxIz);
+  }
+
   placeBridgeBetweenPoints(p0, p1) {
     if (!p0 || !p1) return;
     const dx = p1.x - p0.x;
@@ -896,6 +980,134 @@ export class MapEditorApp {
     this.mapState.decorativeProps.push(newProp);
     this._appendSinglePropMesh(newProp);
     this._updateStatsHud();
+  }
+
+  deleteCustomPropAsset(assetId) {
+    if (!assetId || !Array.isArray(this.mapState.customPropAssets)) return false;
+    const idx = this.mapState.customPropAssets.findIndex((a) => a.id === assetId);
+    if (idx < 0) return false;
+    if (typeof this.pushUndoSnapshot === 'function') this.pushUndoSnapshot();
+    this.mapState.customPropAssets.splice(idx, 1);
+    if (Array.isArray(this.mapState.decorativeProps)) {
+      this.mapState.decorativeProps = this.mapState.decorativeProps.filter(
+        (p) => p.customAssetId !== assetId && p.propType !== assetId
+      );
+    }
+    if (this.activePropType === assetId) {
+      this.activePropType = DECORATIVE_PROPS_CATALOG[0]?.id || 'statue_king';
+      const def = DECORATIVE_PROPS_CATALOG.find((p) => p.id === this.activePropType);
+      if (def?.defaultColor) this.propColorHex = def.defaultColor;
+    }
+    this._rebuildPropsGroup?.();
+    this._renderSidebarInspector?.();
+    this._rebuildGhostPreviewMesh?.();
+    return true;
+  }
+
+  deleteCustomResourceSkin(resourceType, skinId) {
+    const bucket = this.mapState.customResourceSkins?.[resourceType];
+    if (!skinId || !Array.isArray(bucket)) return false;
+    const idx = bucket.findIndex((s) => s.id === skinId);
+    if (idx < 0) return false;
+    if (typeof this.pushUndoSnapshot === 'function') this.pushUndoSnapshot();
+    bucket.splice(idx, 1);
+    const fallbackSkin = RESOURCE_SKINS_CATALOG[resourceType]?.[0]?.id || 'pine_emerald';
+    if (resourceType === 'wood') {
+      for (const t of this.mapState.trees || []) {
+        if (t.skinId === skinId) t.skinId = fallbackSkin;
+      }
+    } else {
+      for (const m of this.mapState.mines || []) {
+        if (m.type === resourceType && m.skinId === skinId) m.skinId = fallbackSkin;
+      }
+    }
+    if (this.activeResourceSkins?.[resourceType] === skinId) {
+      this.activeResourceSkins[resourceType] = fallbackSkin;
+    }
+    this._rebuildResourcesGroup?.();
+    this._renderSidebarInspector?.();
+    this._rebuildGhostPreviewMesh?.();
+    return true;
+  }
+
+  async importGlbPropFromBuffer(arrayBuffer, fileName = 'object.glb') {
+    const { readGlb } = await import('../import/glbReader.js');
+    const { buildStaticMeshFromScene } = await import('../import/glbToUnit.js');
+    const scene = await readGlb(arrayBuffer);
+    const mesh = buildStaticMeshFromScene(scene, {
+      rotateYDeg: 0,
+      budget: 3500,
+      smoothNormals: true,
+      fit: { mode: 'size', size: 6.0, anchor: 'base', offset: [0, 0, 0] }
+    });
+    const id = `custom_prop_glb_${Date.now()}_${this._nextUidCounter++}`;
+    const name = String(fileName || 'object').replace(/\.[^.]+$/, '') || 'Custom Object';
+    const thumbnailDataUrl = renderStaticMeshThumbnailDataUrl(mesh);
+    const asset = {
+      id,
+      name,
+      kind: 'glb',
+      vertices: mesh.vertices,
+      faces: mesh.faces,
+      colors: mesh.colors,
+      thumbnailDataUrl
+    };
+    if (!Array.isArray(this.mapState.customPropAssets)) this.mapState.customPropAssets = [];
+    this.mapState.customPropAssets.push(asset);
+    this.activePropType = id;
+    this._renderSidebarInspector?.();
+    this._rebuildGhostPreviewMesh?.();
+    return asset;
+  }
+
+  async importGlbResourceFromBuffer(arrayBuffer, fileName = 'resource.glb', resourceType = this.activeResourceType) {
+    const rType = ['wood', 'coins', 'iron', 'stone'].includes(resourceType) ? resourceType : 'wood';
+    const { readGlb } = await import('../import/glbReader.js');
+    const { buildStaticMeshFromScene } = await import('../import/glbToUnit.js');
+    const scene = await readGlb(arrayBuffer);
+    const targetSize = rType === 'wood' ? 5.5 : 5.0;
+    const mesh = buildStaticMeshFromScene(scene, {
+      rotateYDeg: 0,
+      budget: 3000,
+      smoothNormals: true,
+      fit: { mode: 'size', size: targetSize, anchor: 'base', offset: [0, 0, 0] }
+    });
+    const id = `custom_res_${rType}_${Date.now()}_${this._nextUidCounter++}`;
+    const name = String(fileName || 'resource').replace(/\.[^.]+$/, '') || 'Custom Resource';
+    const thumbnailDataUrl = renderStaticMeshThumbnailDataUrl(mesh);
+    const entry = {
+      id,
+      name,
+      kind: 'glb',
+      vertices: mesh.vertices,
+      faces: mesh.faces,
+      colors: mesh.colors,
+      thumbnailDataUrl
+    };
+    if (!this.mapState.customResourceSkins || typeof this.mapState.customResourceSkins !== 'object') {
+      this.mapState.customResourceSkins = { wood: [], coins: [], iron: [], stone: [] };
+    }
+    if (!Array.isArray(this.mapState.customResourceSkins[rType])) {
+      this.mapState.customResourceSkins[rType] = [];
+    }
+    this.mapState.customResourceSkins[rType].push(entry);
+    this.activeResourceSkins[rType] = id;
+    this._renderSidebarInspector?.();
+    this._rebuildGhostPreviewMesh?.();
+    return entry;
+  }
+
+  deleteCustomGroundTexture(texId) {
+    if (!texId || !Array.isArray(this.mapState.customTextures)) return false;
+    const idx = this.mapState.customTextures.findIndex((t) => t.id === texId);
+    if (idx < 0) return false;
+    this.mapState.customTextures.splice(idx, 1);
+    if (this.mapState.activeGroundTextureId === texId) {
+      this.mapState.activeGroundTextureId = 'none';
+    }
+    this._applyGroundTextureMaterial?.();
+    this._renderSidebarInspector?.();
+    return true;
   }
 
   placeOrEraseSpawnPointAt(worldX, worldZ) {
@@ -1320,17 +1532,30 @@ export class MapEditorApp {
         <div class="space-y-3">
           <h2 class="text-xs font-extrabold uppercase tracking-wider text-amber-300">🎨 Visual Paint &amp; Texture Swatches</h2>
 
-          <div class="rounded-xl border border-slate-800 bg-slate-950/80 p-2.5 space-y-2">
+          <div>
+            <label class="block text-[11px] text-slate-400 mb-1">Paint Operation</label>
+            <select id="select-paint-mode" class="w-full rounded-lg border border-amber-500/50 bg-slate-950 px-2.5 py-2 text-xs font-bold text-amber-200 cursor-pointer">
+              <option value="paint" ${this.paintMode === 'paint' ? 'selected' : ''}>🖌️ Paint Color / Biome</option>
+              <option value="blend" ${this.paintMode === 'blend' ? 'selected' : ''}>🌫️ Blend (Smooth Transitions)</option>
+            </select>
+            ${
+              this.paintMode === 'blend'
+                ? '<div class="mt-1.5 rounded border border-amber-500/40 bg-amber-950/30 px-2 py-1 text-[10.5px] text-amber-200">Drag across painted edges to smoothly blend color &amp; biome transitions.</div>'
+                : ''
+            }
+          </div>
+
+          <div class="rounded-xl border border-slate-800 bg-slate-950/80 p-2.5 space-y-2 ${this.paintMode === 'blend' ? 'opacity-65' : ''}">
             <div class="flex items-center justify-between">
               <span class="text-[11px] font-bold text-amber-300">🖌️ Paint Color / Biome Swatch</span>
               <div class="flex items-center gap-1.5">
                 <span class="text-[10px] text-slate-400">Custom:</span>
-                <input id="input-custom-paint-hex" type="color" value="${this.customPaintHex}" class="h-6 w-8 rounded border ${this.useCustomPaintHex ? 'border-amber-400 ring-2 ring-amber-400/50' : 'border-slate-700'} bg-slate-900 cursor-pointer" />
+                <input id="input-custom-paint-hex" type="color" value="${this.customPaintHex}" class="h-6 w-8 rounded border ${this.useCustomPaintHex && this.paintMode === 'paint' ? 'border-amber-400 ring-2 ring-amber-400/50' : 'border-slate-700'} bg-slate-900 cursor-pointer" />
               </div>
             </div>
             <div class="grid grid-cols-4 gap-1.5">
               ${TERRAIN_BIOME_LAYERS.map((b) => {
-                const isSel = !this.useCustomPaintHex && this.activeBiomeLayerId === b.id;
+                const isSel = this.paintMode === 'paint' && !this.useCustomPaintHex && this.activeBiomeLayerId === b.id;
                 return `
                 <button type="button" data-biome-id="${b.id}" title="${b.label}"
                   class="biome-swatch-btn flex items-center justify-center rounded-xl border p-1 transition cursor-pointer ${
@@ -1365,14 +1590,18 @@ export class MapEditorApp {
               ${this.mapState.customTextures
                 .map(
                   (tex) => `
-                <button type="button" data-ground-tex="${tex.id}" title="${tex.name}"
-                  class="ground-tex-swatch rounded-lg border overflow-hidden h-11 cursor-pointer ${
-                    this.mapState.activeGroundTextureId === tex.id
-                      ? 'border-amber-400 ring-2 ring-amber-400/50'
-                      : 'border-slate-700'
-                  }">
-                  <img src="${tex.dataUrl}" class="w-full h-full object-cover" alt="" />
-                </button>`
+                <div class="relative">
+                  <button type="button" data-ground-tex="${tex.id}" title="${tex.name}"
+                    class="ground-tex-swatch w-full rounded-lg border overflow-hidden h-11 cursor-pointer ${
+                      this.mapState.activeGroundTextureId === tex.id
+                        ? 'border-amber-400 ring-2 ring-amber-400/50'
+                        : 'border-slate-700'
+                    }">
+                    <img src="${tex.dataUrl}" class="w-full h-full object-cover" alt="" />
+                  </button>
+                  <button type="button" data-del-custom-tex="${tex.id}" title="Delete imported texture"
+                    class="absolute top-0.5 right-0.5 z-10 flex h-4 w-4 items-center justify-center rounded bg-rose-700 hover:bg-rose-600 text-[10px] font-bold text-white cursor-pointer">✕</button>
+                </div>`
                 )
                 .join('')}
             </div>
@@ -1478,7 +1707,9 @@ export class MapEditorApp {
         { id: 'iron', label: `⚔️ Iron Mines (${this.mapState.mines.filter((m) => m.type === 'iron').length})` },
         { id: 'stone', label: `🪨 Stone Quarries (${this.mapState.mines.filter((m) => m.type === 'stone').length})` }
       ];
-      const skinsForActive = RESOURCE_SKINS_CATALOG[this.activeResourceType] || [];
+      const shippedSkins = (RESOURCE_SKINS_CATALOG[this.activeResourceType] || []).map((s) => ({ ...s, isCustom: false }));
+      const customSkins = (this.mapState.customResourceSkins?.[this.activeResourceType] || []).map((s) => ({ ...s, isCustom: true }));
+      const skinsForActive = [...shippedSkins, ...customSkins];
       const currentSkinId = this.activeResourceSkins[this.activeResourceType] || skinsForActive[0]?.id;
 
       this.sidebarEl.innerHTML = `
@@ -1502,20 +1733,33 @@ export class MapEditorApp {
           </div>
 
           <div class="rounded-xl border border-slate-800 bg-slate-950/80 p-2.5 space-y-1.5">
-            <span class="block text-[11px] font-bold text-amber-300">🎨 Skin Appearance</span>
+            <div class="flex items-center justify-between">
+              <span class="block text-[11px] font-bold text-amber-300">🎨 Skin Appearance</span>
+              <label class="rounded border border-emerald-400/70 bg-emerald-500/20 hover:bg-emerald-500/35 px-2 py-0.5 text-[10px] font-bold text-emerald-200 cursor-pointer">
+                + Upload .GLB
+                <input id="input-upload-custom-resource" type="file" accept=".glb" class="hidden" />
+              </label>
+            </div>
             <div class="grid grid-cols-3 gap-2">
               ${skinsForActive
                 .map((sk) => {
                   const isSel = sk.id === currentSkinId;
+                  const thumb = sk.thumbnailDataUrl
+                    ? `<img src="${sk.thumbnailDataUrl}" class="w-12 h-12 object-contain rounded" alt="" />`
+                    : renderSkinVisualThumbnailSvg(this.activeResourceType, sk);
                   return `
-                  <button type="button" data-skin-id="${sk.id}" title="${sk.name}"
-                    class="res-skin-btn flex items-center justify-center rounded-xl border p-2 transition cursor-pointer ${
-                      isSel
-                        ? 'border-amber-400 bg-amber-500/25 shadow-lg scale-105'
-                        : 'border-slate-800 bg-slate-900/90 hover:bg-slate-800'
-                    }">
-                    ${renderSkinVisualThumbnailSvg(this.activeResourceType, sk)}
-                  </button>`;
+                  <div class="relative">
+                    <button type="button" data-skin-id="${sk.id}" title="${sk.name}"
+                      class="res-skin-btn w-full flex flex-col items-center justify-center rounded-xl border p-2 transition cursor-pointer ${
+                        isSel
+                          ? 'border-amber-400 bg-amber-500/25 shadow-lg scale-105'
+                          : 'border-slate-800 bg-slate-900/90 hover:bg-slate-800'
+                      }">
+                      ${thumb}
+                      ${sk.isCustom ? `<span class="mt-0.5 w-full truncate text-center text-[9px] text-slate-200">${sk.name}</span>` : ''}
+                    </button>
+                    ${sk.isCustom ? `<button type="button" data-del-custom-res="${sk.id}" title="Delete imported resource" class="absolute top-0.5 right-0.5 z-10 flex h-5 w-5 items-center justify-center rounded bg-rose-700 hover:bg-rose-600 text-[11px] font-bold text-white shadow cursor-pointer">✕</button>` : ''}
+                  </div>`;
                 })
                 .join('')}
             </div>
@@ -1546,23 +1790,47 @@ export class MapEditorApp {
       `;
     } else if (this.activeMainTab === 'props') {
       const allProps = [
-        ...DECORATIVE_PROPS_CATALOG,
+        ...DECORATIVE_PROPS_CATALOG.map((p) => ({ ...p, isCustom: false })),
         ...this.mapState.customPropAssets.map((ca) => ({
           id: ca.id,
           name: ca.name,
           badge: '📦',
-          defaultColor: '#38bdf8'
+          defaultColor: '#38bdf8',
+          dataUrl: ca.dataUrl || '',
+          thumbnailDataUrl: ca.thumbnailDataUrl || '',
+          isCustom: true
         }))
       ];
       this.sidebarEl.innerHTML = `
         <div class="space-y-3">
           <h2 class="text-xs font-extrabold uppercase tracking-wider text-purple-300">🗿 Decorative Objects</h2>
 
-          <div>
-            <label class="block text-[11px] text-slate-400 mb-1">Select Decorative Object</label>
-            <select id="select-prop-type" class="w-full rounded-lg border border-purple-500/60 bg-slate-950 px-2.5 py-2 text-xs font-bold text-purple-200 cursor-pointer">
-              ${allProps.map((p) => `<option value="${p.id}" ${this.activePropType === p.id ? 'selected' : ''}>${p.badge} ${p.name}</option>`).join('')}
-            </select>
+          <div class="rounded-xl border border-slate-800 bg-slate-950/80 p-2.5 space-y-1.5">
+            <span class="block text-[11px] font-bold text-purple-300">Object Palette (${allProps.length})</span>
+            <div id="props-palette-grid" class="grid grid-cols-3 gap-2 max-h-60 overflow-y-auto pr-1">
+              ${allProps
+                .map((p) => {
+                  const isSel = this.activePropType === p.id;
+                  const imgSrc = p.thumbnailDataUrl || p.dataUrl;
+                  const preview = imgSrc
+                    ? `<img src="${imgSrc}" class="w-11 h-11 object-contain rounded" alt="" />`
+                    : renderDecorativePropThumbnailSvg(p);
+                  return `
+                  <div class="relative">
+                    <button type="button" data-prop-id="${p.id}" title="${p.name}"
+                      class="prop-palette-btn w-full flex flex-col items-center justify-between rounded-xl border p-1.5 transition cursor-pointer ${
+                        isSel
+                          ? 'border-amber-400 bg-amber-500/25 shadow-lg'
+                          : 'border-slate-800 bg-slate-900/90 hover:bg-slate-800'
+                      }">
+                      <div class="flex h-12 items-center justify-center">${preview}</div>
+                      <span class="mt-0.5 w-full truncate text-center text-[9.5px] font-semibold ${isSel ? 'text-amber-200' : 'text-slate-300'}">${p.name}</span>
+                    </button>
+                    ${p.isCustom ? `<button type="button" data-del-custom-prop="${p.id}" title="Delete imported object" class="absolute top-0.5 right-0.5 z-10 flex h-5 w-5 items-center justify-center rounded bg-rose-700 hover:bg-rose-600 text-[11px] font-bold text-white shadow cursor-pointer">✕</button>` : ''}
+                  </div>`;
+                })
+                .join('')}
+            </div>
           </div>
 
           <div>
@@ -1597,8 +1865,8 @@ export class MapEditorApp {
           <div class="rounded-xl border border-purple-500/40 bg-purple-950/20 p-3 flex items-center justify-between">
             <span class="text-xs font-bold text-purple-200">📦 Custom 3D File</span>
             <label class="rounded-lg border border-purple-400/70 bg-purple-500/25 hover:bg-purple-500/40 px-2.5 py-1 text-[11px] font-bold text-purple-100 cursor-pointer">
-              + Upload .OBJ/.JSON/PNG
-              <input id="input-upload-custom-prop" type="file" accept=".obj,.json,image/*" class="hidden" />
+              + Upload .GLB/.OBJ/.JSON/PNG
+              <input id="input-upload-custom-prop" type="file" accept=".glb,.obj,.json,image/*" class="hidden" />
             </label>
           </div>
 
@@ -1732,9 +2000,17 @@ export class MapEditorApp {
       });
     }
 
-    // Visual Paint Swatches & Custom Color Picker
+    // Visual Paint Mode, Swatches & Custom Color Picker
+    const paintModeSelect = sb.querySelector('#select-paint-mode');
+    if (paintModeSelect) {
+      paintModeSelect.addEventListener('change', () => {
+        this.paintMode = paintModeSelect.value === 'blend' ? 'blend' : 'paint';
+        this._renderSidebarInspector();
+      });
+    }
     sb.querySelectorAll('.biome-swatch-btn').forEach((btn) => {
       btn.addEventListener('click', () => {
+        this.paintMode = 'paint';
         this.activeBiomeLayerId = Number(btn.getAttribute('data-biome-id')) || 0;
         this.useCustomPaintHex = false;
         this._renderSidebarInspector();
@@ -1743,10 +2019,12 @@ export class MapEditorApp {
     const customPaintHexInput = sb.querySelector('#input-custom-paint-hex');
     if (customPaintHexInput) {
       customPaintHexInput.addEventListener('input', () => {
+        this.paintMode = 'paint';
         this.customPaintHex = customPaintHexInput.value;
         this.useCustomPaintHex = true;
       });
       customPaintHexInput.addEventListener('change', () => {
+        this.paintMode = 'paint';
         this.customPaintHex = customPaintHexInput.value;
         this.useCustomPaintHex = true;
         this._renderSidebarInspector();
@@ -1757,6 +2035,13 @@ export class MapEditorApp {
         this.mapState.activeGroundTextureId = btn.getAttribute('data-ground-tex') || 'none';
         this._applyGroundTextureMaterial();
         this._renderSidebarInspector();
+      });
+    });
+    sb.querySelectorAll('[data-del-custom-tex]').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const texId = btn.getAttribute('data-del-custom-tex');
+        if (texId) this.deleteCustomGroundTexture(texId);
       });
     });
     const texRepeatSlider = sb.querySelector('#slider-tex-repeat');
@@ -1880,6 +2165,28 @@ export class MapEditorApp {
         }
       });
     });
+    sb.querySelectorAll('[data-del-custom-res]').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const skinId = btn.getAttribute('data-del-custom-res');
+        if (skinId) this.deleteCustomResourceSkin(this.activeResourceType, skinId);
+      });
+    });
+    const uploadResInput = sb.querySelector('#input-upload-custom-resource');
+    if (uploadResInput) {
+      uploadResInput.addEventListener('change', async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        try {
+          const buf = await file.arrayBuffer();
+          await this.importGlbResourceFromBuffer(buf, file.name, this.activeResourceType);
+        } catch (err) {
+          console.error('Failed to import resource GLB:', err);
+        } finally {
+          uploadResInput.value = '';
+        }
+      });
+    }
     const resScaleSlider = sb.querySelector('#slider-res-scale');
     if (resScaleSlider) {
       resScaleSlider.addEventListener('input', () => {
@@ -1903,16 +2210,24 @@ export class MapEditorApp {
     });
 
     // Decorative Props controls
-    const propTypeSelect = sb.querySelector('#select-prop-type');
-    if (propTypeSelect) {
-      propTypeSelect.addEventListener('change', () => {
-        this.activePropType = propTypeSelect.value || 'statue_king';
+    sb.querySelectorAll('.prop-palette-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const propId = btn.getAttribute('data-prop-id');
+        if (!propId) return;
+        this.activePropType = propId;
         const def = DECORATIVE_PROPS_CATALOG.find((p) => p.id === this.activePropType);
         if (def?.defaultColor) this.propColorHex = def.defaultColor;
         this._renderSidebarInspector();
         this._rebuildGhostPreviewMesh();
       });
-    }
+    });
+    sb.querySelectorAll('[data-del-custom-prop]').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const propId = btn.getAttribute('data-del-custom-prop');
+        if (propId) this.deleteCustomPropAsset(propId);
+      });
+    });
     const propModeSelect = sb.querySelector('#select-prop-mode');
     if (propModeSelect) {
       propModeSelect.addEventListener('change', () => {
@@ -1947,13 +2262,22 @@ export class MapEditorApp {
     }
     const uploadPropInput = sb.querySelector('#input-upload-custom-prop');
     if (uploadPropInput) {
-      uploadPropInput.addEventListener('change', (e) => {
+      uploadPropInput.addEventListener('change', async (e) => {
         const file = e.target.files?.[0];
         if (!file) return;
         const ext = file.name.split('.').pop()?.toLowerCase();
         const id = `custom_prop_${Date.now()}`;
         const name = file.name.replace(/\.[^.]+$/, '');
-        if (ext === 'obj') {
+        if (ext === 'glb') {
+          try {
+            const buf = await file.arrayBuffer();
+            await this.importGlbPropFromBuffer(buf, file.name);
+          } catch (err) {
+            console.error('Failed to import prop GLB:', err);
+          } finally {
+            uploadPropInput.value = '';
+          }
+        } else if (ext === 'obj') {
           const reader = new FileReader();
           reader.onload = () => {
             const vertices = parseWavefrontObjToVertices(String(reader.result || ''));
@@ -2397,7 +2721,7 @@ export class MapEditorApp {
   _appendSingleTreeMesh(t) {
     if (!this.resourcesGroup) return;
     if (!t.uid) t.uid = `tree_${Date.now()}_${this._nextUidCounter++}`;
-    const mesh = createTreeMeshBySkin(t.skinId || 'pine_emerald', t.scale || 1.0, t.rotY || 0);
+    const mesh = createTreeMeshBySkin(t.skinId || 'pine_emerald', t.scale || 1.0, t.rotY || 0, this.mapState.customResourceSkins);
     mesh.position.set(t.x, this._sampleEditorGroundY(t.x, t.z), t.z);
     mesh.userData = { wx: t.x, wz: t.z, uid: t.uid, kind: 'tree' };
     this.resourcesGroup.add(mesh);
@@ -2407,7 +2731,7 @@ export class MapEditorApp {
   _appendSingleMineMesh(m) {
     if (!this.resourcesGroup) return;
     if (!m.uid) m.uid = `mine_${Date.now()}_${this._nextUidCounter++}`;
-    const mesh = createMineMeshBySkin(m.type || 'coins', m.skinId, m.scale || 1.0, m.rotY || 0);
+    const mesh = createMineMeshBySkin(m.type || 'coins', m.skinId, m.scale || 1.0, m.rotY || 0, this.mapState.customResourceSkins);
     mesh.position.set(m.x, this._sampleEditorGroundY(m.x, m.z), m.z);
     mesh.userData = { wx: m.x, wz: m.z, uid: m.uid, kind: 'mine' };
     this.resourcesGroup.add(mesh);
@@ -2528,7 +2852,11 @@ export class MapEditorApp {
       this.applyTerrainBrushAt(wx, wz, 0.06);
     } else if (this.activeMainTab === 'paint') {
       if (isInitialClick) this.pushUndoSnapshot();
-      this.applyBiomePaintAt(wx, wz, this.activeBiomeLayerId);
+      if (this.paintMode === 'blend') {
+        this.applyPaintBlendAt(wx, wz);
+      } else {
+        this.applyBiomePaintAt(wx, wz, this.activeBiomeLayerId);
+      }
     } else if (this.activeMainTab === 'water') {
       if (this.waterToolMode === 'stretch_bridge') {
         if (!isInitialClick) return;

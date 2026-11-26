@@ -39,8 +39,12 @@ const DETAIL = {
 export const studioImportMethods = {
   _impState() {
     if (!this._imp) this._imp = { kind: null, file: null, name: '', detail: 'medium', custom: '', slot: 'head', sides: 'both', size: '', flip: false, skirts: true, buildingId: '', equip: true, scale: 1 };
-    const isBld = this.entityCategory === 'buildings' || this.unitsData.units?.[this.currentUnitId]?.isBuildingEntity;
-    if (!this._imp.kind) this._imp.kind = isBld ? 'building' : 'unit';
+    const isBld = this._isBuildingNow();
+    if (isBld) {
+      this._imp.kind = 'building';
+    } else if (this._imp.kind !== 'unit' && this._imp.kind !== 'gear') {
+      this._imp.kind = 'unit';
+    }
     return this._imp;
   },
 
@@ -57,7 +61,8 @@ export const studioImportMethods = {
   _budgetFor(st) {
     const custom = Number(st.custom);
     if (custom >= 200) return Math.min(40000, Math.round(custom));
-    return DETAIL[st.kind === 'newbuilding' ? 'building' : st.kind][st.detail] || DETAIL[st.kind === 'newbuilding' ? 'building' : st.kind].medium;
+    const bucket = DETAIL[st.kind] || DETAIL.unit;
+    return bucket[st.detail] || bucket.medium;
   },
 
   // ------------------------------------------------------------------------------------------------ the tab
@@ -79,13 +84,13 @@ export const studioImportMethods = {
     if (!st.buildingId || !blds.includes(st.buildingId)) st.buildingId = blds.includes(curId) ? curId : blds[0] || '';
     const budget = this._budgetFor(st);
 
-    // what the user imported before (can be deleted)
-    const myUnits = Object.entries(data.units || {}).filter(([, u]) => u?.importInfo);
-    const myGear = Object.entries(data.prefabs || {}).filter(([, p]) => p?.importInfo);
-    const mySkins = [];
-    for (const [bid, e] of Object.entries(dataRegistry.getBuildingSkins())) for (const [sid, it] of Object.entries(e.items || {})) mySkins.push({ bid, sid, name: it.name });
-    const myBlds = Object.entries(this.ubStateManager?.buildingsData?.buildings || {}).filter(([, b]) => b?.isCustom);
-    const row = (label, sub, attr) => `<div class="flex items-center gap-1.5 rounded bg-slate-950/60 border border-slate-800 px-2 py-1"><div class="min-w-0 flex-1"><div class="truncate text-slate-200">${esc(label)}</div><div class="truncate text-[10px] text-slate-500">${esc(sub)}</div></div><button type="button" ${attr} class="rounded bg-rose-900/80 hover:bg-rose-800 px-2 py-0.5 text-[10px] font-bold text-white">Delete</button></div>`;
+    // what the user imported before on Units/Heroes tab (can be deleted; buildings already show their skins grid)
+    const myUnits = !isBldNow ? Object.entries(data.units || {}).filter(([, u]) => u?.importInfo) : [];
+    const myGear = !isBldNow ? Object.entries(data.prefabs || {}).filter(([, p]) => p?.importInfo) : [];
+    const row = (label, sub, attr) => `<div class="flex items-center gap-1.5 rounded bg-slate-950/60 border border-slate-800 px-2 py-1"><div class="min-w-0 flex-1"><div class="truncate text-slate-200">${esc(label)}</div><div class="truncate text-[10px] text-slate-500">${esc(sub)}</div></div><button type="button" ${attr} title="Delete imported model" class="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-rose-700 hover:bg-rose-600 text-[11px] font-bold text-white cursor-pointer">✕</button></div>`;
+    const kindTabsHtml = isBldNow
+      ? seg('building', 'Import building skin', true)
+      : `${seg('unit', 'Import base unit', st.kind === 'unit')}${seg('gear', 'Import armour', st.kind === 'gear')}`;
 
     host.innerHTML = `
       <div class="flex flex-col gap-2">
@@ -96,7 +101,7 @@ export const studioImportMethods = {
             <div class="text-[10px] text-slate-400">${(cur.importInfo.originalTriangles || 0).toLocaleString()} → ${(cur.importInfo.lodTriangles || []).map((n) => n.toLocaleString()).join(' / ')} triangles (LOD0 / 1 / 2) · rig: ${esc(cur.importInfo.rigMode)}</div>
           </div>` : ''}
 
-        <div class="flex gap-1">${seg('unit', 'New unit', st.kind === 'unit')}${seg('gear', 'Armor / gear', st.kind === 'gear')}${seg('building', 'Building skin', st.kind === 'building')}${seg('newbuilding', 'New building', st.kind === 'newbuilding')}</div>
+        <div class="flex gap-1">${kindTabsHtml}</div>
 
         <div class="flex gap-1.5 items-center">
           <button type="button" id="imp-pick" class="rounded bg-sky-600 hover:bg-sky-500 px-3 py-1.5 font-bold text-slate-950">Choose .glb…</button>
@@ -129,33 +134,25 @@ export const studioImportMethods = {
           <label class="flex flex-col gap-0.5"><span class="text-slate-400">Skin name</span><input id="imp-name" class="${inp}" placeholder="${esc(st.file ? st.file.name.replace(/\.[^.]+$/, '') : 'e.g. Winter Barracks')}" value="${esc(st.name)}" /></label>
           <label class="flex flex-col gap-0.5"><span class="text-slate-400">Scale (1 = fills the building's footprint)</span><input id="imp-scale" type="number" step="0.05" min="0.2" max="3" class="${inp}" value="${esc(st.scale)}" /></label>
           <label class="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" id="imp-flip" class="accent-sky-400" ${st.flip ? 'checked' : ''} /> <span class="text-slate-300">Turn it 180° (door side)</span></label>
-          <div class="text-[10px] text-slate-500">The skin appears in the <b class="text-slate-300">Skins</b> tab of that building, next to the default look.</div>
-        ` : ''}
-
-        ${st.kind === 'newbuilding' ? `
-          <label class="flex flex-col gap-0.5"><span class="text-slate-400">Name of the new building</span><input id="imp-name" class="${inp}" placeholder="e.g. Granary" value="${esc(st.name)}" /></label>
-          <label class="flex flex-col gap-0.5"><span class="text-slate-400">Footprint radius (metres)</span><input id="imp-radius" type="number" step="0.5" min="1.5" max="14" class="${inp}" value="${esc(st.radius || 4)}" /></label>
-          <div class="text-[10px] text-slate-500">New buildings are created ONLY here. Until you choose a .glb it is a grey cube; choosing a file above uses it as the first skin. It then appears in the buildings lab (stats, cost, levels, tower).</div>
+          <div class="text-[10px] text-slate-500">The skin appears in the <b class="text-slate-300">Skins</b> tab of that building, next to the default look. Create new buildings in the Units & Buildings Lab.</div>
         ` : ''}
 
         <div class="rounded-lg border border-slate-700 bg-slate-950/50 p-2 flex flex-col gap-1.5">
           <div class="font-bold text-amber-300">Detail kit <span class="font-normal text-slate-500">(polygon budget)</span></div>
-          <div class="flex gap-1">${['low', 'medium', 'high'].map((d) => `<button type="button" data-imp-detail="${d}" class="flex-1 rounded px-1 py-1 text-[11px] font-bold ${!st.custom && st.detail === d ? 'bg-amber-400 text-slate-950' : 'bg-slate-800 border border-slate-700 text-slate-300 hover:bg-slate-700'}">${d[0].toUpperCase() + d.slice(1)} · ${DETAIL[st.kind === 'newbuilding' ? 'building' : st.kind][d].toLocaleString()}</button>`).join('')}</div>
+          <div class="flex gap-1">${['low', 'medium', 'high'].map((d) => `<button type="button" data-imp-detail="${d}" class="flex-1 rounded px-1 py-1 text-[11px] font-bold ${!st.custom && st.detail === d ? 'bg-amber-400 text-slate-950' : 'bg-slate-800 border border-slate-700 text-slate-300 hover:bg-slate-700'}">${d[0].toUpperCase() + d.slice(1)} · ${(DETAIL[st.kind] || DETAIL.unit)[d].toLocaleString()}</button>`).join('')}</div>
           <label class="flex items-center gap-1.5"><span class="text-slate-400 shrink-0">Custom triangles</span><input id="imp-custom" type="number" min="200" step="100" class="${inp}" placeholder="auto" value="${esc(st.custom)}" /></label>
           <div class="text-[10px] text-slate-500">${st.kind === 'unit'
             ? `Full detail <b class="text-slate-300">${budget.toLocaleString()}</b> triangles for close zoom; the game switches by itself to ${Math.round(budget * 0.3).toLocaleString()} (normal zoom) and ${Math.round(budget * 0.08).toLocaleString()} (far).`
             : `Reduced automatically to about <b class="text-slate-300">${budget.toLocaleString()}</b> triangles.`}</div>
         </div>
 
-        <button type="button" id="imp-go" class="rounded-lg ${st.file || st.kind === 'newbuilding' ? 'bg-emerald-500 hover:bg-emerald-400 text-slate-950' : 'bg-slate-800 text-slate-500 cursor-not-allowed'} px-3 py-2 font-extrabold" ${st.file || st.kind === 'newbuilding' ? '' : 'disabled'}>${st.kind === 'newbuilding' ? 'Create building' : 'Import'}</button>
+        <button type="button" id="imp-go" class="rounded-lg ${st.file ? 'bg-emerald-500 hover:bg-emerald-400 text-slate-950' : 'bg-slate-800 text-slate-500 cursor-not-allowed'} px-3 py-2 font-extrabold" ${st.file ? '' : 'disabled'}>Import</button>
 
-        ${myUnits.length || myGear.length || mySkins.length || myBlds.length ? `
+        ${myUnits.length || myGear.length ? `
           <div class="mt-1 flex flex-col gap-1.5">
             <div class="font-bold text-rose-300">Your imports</div>
-            ${myBlds.map(([id, b]) => row(b.name || id, `building · ${id}`, `data-imp-del-bld="${esc(id)}"`)).join('')}
             ${myUnits.map(([id, u]) => row(u.displayName || id, `unit · ${id}`, `data-imp-del-unit="${esc(id)}"`)).join('')}
             ${myGear.map(([id, p]) => row(p.name || id, `gear · ${p.slot} · ${id}`, `data-imp-del-gear="${esc(id)}"`)).join('')}
-            ${mySkins.map((s) => row(s.name || s.sid, `building skin · ${s.bid}`, `data-imp-del-skin="${esc(s.bid)}|${esc(s.sid)}"`)).join('')}
           </div>` : ''}
       </div>`;
     this._bindImportPanel(host);
@@ -170,7 +167,7 @@ export const studioImportMethods = {
     q('#imp-pick')?.addEventListener('click', () => q('#imp-file').click());
     q('#imp-file')?.addEventListener('change', (e) => { st.file = e.target.files?.[0] || null; rerender(); });
     const bindInput = (sel, key, num = false) => q(sel)?.addEventListener('input', (e) => { st[key] = e.target.type === 'checkbox' ? e.target.checked : e.target.value; if (num) st[key] = e.target.value; });
-    bindInput('#imp-name', 'name'); bindInput('#imp-radius', 'radius', true); bindInput('#imp-size', 'size', true); bindInput('#imp-scale', 'scale', true);
+    bindInput('#imp-name', 'name'); bindInput('#imp-size', 'size', true); bindInput('#imp-scale', 'scale', true);
     q('#imp-custom')?.addEventListener('change', (e) => { st.custom = e.target.value; rerender(); });
     for (const [sel, key] of [['#imp-skirts', 'skirts'], ['#imp-flip', 'flip'], ['#imp-equip', 'equip']]) q(sel)?.addEventListener('change', (e) => { st[key] = e.target.checked; });
     q('#imp-slot')?.addEventListener('change', (e) => { st.slot = e.target.value; st.size = ''; rerender(); });
@@ -190,31 +187,27 @@ export const studioImportMethods = {
       this._refreshUnitList();
       this._toast(`Renamed to "${v}"`);
     });
-    host.querySelectorAll('[data-imp-del-bld]').forEach((b) => b.addEventListener('click', () => this._deleteCustomBuilding(b.dataset.impDelBld)));
     host.querySelectorAll('[data-imp-del-unit]').forEach((b) => b.addEventListener('click', () => this._deleteImportedUnit(b.dataset.impDelUnit)));
     host.querySelectorAll('[data-imp-del-gear]').forEach((b) => b.addEventListener('click', () => this._deleteImportedGear(b.dataset.impDelGear)));
-    host.querySelectorAll('[data-imp-del-skin]').forEach((b) => { const [bid, sid] = b.dataset.impDelSkin.split('|'); b.addEventListener('click', () => this._deleteBuildingSkin(bid, sid)); });
   },
 
   // ------------------------------------------------------------------------------------------------ import
   async _runImport() {
     const st = this._impState();
-    if (!st.file && st.kind !== 'newbuilding') return;
+    if (!st.file) return;
     const file = st.file;
-    const stem = file ? file.name.replace(/\.[^.]+$/, '') : 'building';
+    const stem = file.name.replace(/\.[^.]+$/, '');
     const name = (st.name || '').trim() || stem;
     const budget = this._budgetFor(st);
     const data = this.unitsData;
     this._toast('Importing… a large model can take several seconds', 12000);
     await new Promise((r) => setTimeout(r, 40));
     try {
-      if (st.kind === 'newbuilding' && !file) { this._createBuilding(name, null, null, budget, 0, st); st.name = ''; this._renderImportPanel(); return; }
       const [{ readGlb }, conv] = await Promise.all([import('../import/glbReader.js'), import('../import/glbToUnit.js')]);
       const scene = await readGlb(await file.arrayBuffer());
       const rotateYDeg = st.flip ? 180 : 0;
       if (st.kind === 'unit') this._importUnit(conv, scene, name, budget, rotateYDeg, st);
       else if (st.kind === 'gear') this._importGear(conv, scene, name, budget, rotateYDeg, st);
-      else if (st.kind === 'newbuilding') this._createBuilding(name, conv, scene, budget, rotateYDeg, st);
       else this._importBuildingSkin(conv, scene, name, budget, rotateYDeg, st);
       st.file = null; st.name = '';
       this.stateManager.scheduleSave();
@@ -340,82 +333,21 @@ export const studioImportMethods = {
     this._toast(`Skin "${name}" for ${bid}: ${mesh.info.originalTriangles.toLocaleString()} → ${mesh.info.triangles.toLocaleString()} triangles. Pick skins in the Skins tab.`, 9000);
   },
 
-  /** The ONLY way to add a building: creates its data entry + a placeholder cube (or the chosen model as its first skin). */
-  _createBuilding(name, conv, scene, budget, rotateYDeg, st) {
-    const bData = this.ubStateManager?.buildingsData;
-    if (!bData?.buildings) throw new Error('Buildings data is not available.');
-    const radius = Math.max(1.5, Math.min(14, Number(st.radius) || 4));
-    const id = this._uniqueId(slug(name), bData.buildings);
-    const newBDef = {
-      id, name, isCustom: true, buildableByWorker: true, isResourceDropoff: false,
-      cost: { coins: 100, wood: 60, stone: 0, iron: 0 }, description: '',
-      footprintRadiusMeters: radius, buildTimeTicks: 900, maxHp: 650, canAutoLevel: false, maxLevel: 3,
-      hasWatchtowerSupport: false, watchtowerLevel: 0, trainSpeedBonusPctPerLevel: 0, hpPerLevelBonus: 200,
-      turretOffset: [0, 6.5, 0], damageStages: [70, 35], options: [], arrowProtectionPermille: 700, meleeProtectionPermille: 350
-    };
-    const entry = { active: 'default', items: {} };
-    if (scene) {
-      const mesh = conv.buildStaticMeshFromScene(scene, { rotateYDeg, budget, smoothNormals: false, fit: { mode: 'footprint', radius, anchor: 'base', scale: 1 } });
-      entry.items.model = { name, fitRadius: radius, mesh: { vertices: mesh.vertices, faces: mesh.faces, colors: mesh.colors },
-        importInfo: { source: st.file.name, originalTriangles: mesh.info.originalTriangles, triangles: mesh.info.triangles, size: mesh.info.size } };
-    } else {
-      const w = radius * 0.75, hgt = radius * 1.1, vs = [];
-      for (const y of [0, hgt]) for (const [x, z] of [[-w, -w], [w, -w], [w, w], [-w, w]]) vs.push([x, y, z]);
-      const faces = [[0, 2, 1], [0, 3, 2], [4, 5, 6], [4, 6, 7], [0, 1, 5], [0, 5, 4], [1, 2, 6], [1, 6, 5], [2, 3, 7], [2, 7, 6], [3, 0, 4], [3, 4, 7]];
-      entry.items.cube = { name: 'Placeholder cube', fitRadius: radius, isPlaceholderCube: true,
-        mesh: { vertices: vs, faces, colors: vs.map(() => [170, 160, 150]) }, importInfo: { source: 'built-in cube', triangles: 12 } };
-    }
-    entry.active = Object.keys(entry.items)[0];
-    const txRes = dataRegistry.transaction((bundle) => {
-      bundle.buildings.buildings[id] = JSON.parse(JSON.stringify(newBDef));
-      bundle.buildingSkins[id] = JSON.parse(JSON.stringify(entry));
-    }, { reason: 'createBuilding' });
-    if (!txRes.ok) {
-      this._toast(`Could not create building (${txRes.error})`, 6000);
-      return;
-    }
-    bData.buildings[id] = newBDef;
-    this._lastBuildingId = id;
-    this.ubStateManager.saveAll();
-    if (!this.isContextualMode && this.entityCategory !== 'buildings') {
-      this._switchEntityCategory('buildings');
-    }
-    // refresh the Studio's building list
-    this._buildingsStudioView = buildBuildingsStudioViewData(bData, this.ubStateManager.buildingVisualsData, this.unitStateManager.data);
-    if (this._buildingsStateAdapter) this._buildingsStateAdapter._view = this._buildingsStudioView;
-    if (this.entityCategory === 'buildings') {
-      this.currentUnitId = id;
-      this._refreshUnitList();
-      this._spawnStudioUnit();
-      this._renderGearPanel();
-    }
-    this._toast(`Building "${name}" created (${scene ? 'from your model' : 'placeholder cube'}). Set its stats in the buildings lab.`, 8000);
-  },
-
   // ------------------------------------------------------------------------------------------------ delete
-  _deleteCustomBuilding(id) {
-    const bData = this.ubStateManager?.buildingsData;
-    const b = bData?.buildings?.[id];
-    if (!b || !confirm(`Delete the building "${b.name || id}" and all its skins?`)) return;
-    const res = dataRegistry.deleteBuilding(id);
-    if (!res.ok) {
-      this._toast(`Could not delete building (${res.error})`, 6000);
-      return;
-    }
-    delete bData.buildings[id];
-    this.ubStateManager.saveAll();
-    this._buildingsStudioView = buildBuildingsStudioViewData(bData, this.ubStateManager.buildingVisualsData, this.unitStateManager.data);
-    if (this._buildingsStateAdapter) this._buildingsStateAdapter._view = this._buildingsStudioView;
-    if (this.entityCategory === 'buildings') { this.currentUnitId = Object.keys(this.unitsData.units || {})[0]; this._refreshUnitList(); this._spawnStudioUnit(); }
-    this._renderImportPanel();
-    this._toast('Building deleted');
-  },
 
   _deleteImportedUnit(id) {
-    const u = this.unitsData.units[id];
-    if (!u || !confirm(`Delete the imported unit "${u.displayName || id}"? This cannot be undone (Ctrl+Z may not bring it back).`)) return;
+    const u = this.unitsData.units?.[id];
+    if (!u || !u.importInfo) return;
+    if (!confirm(`Delete the imported unit "${u.displayName || id}"? This cannot be undone (Ctrl+Z may not bring it back).`)) return;
     this._beginEdit('delete-unit');
     removeUnitAcrossLabs(this.ubStateManager?.unitStatsData, this.unitsData, this.ubStateManager?.buildingsData, id);
+    if (this.ubStateManager?.unitStatsData?.units) {
+      const fallbackBase = dataRegistry.DEFAULT_BASE_CHAR_ID || 'human_base_1';
+      for (const stat of Object.values(this.ubStateManager.unitStatsData.units)) {
+        if (stat?.baseCharId === id) stat.baseCharId = fallbackBase;
+        if (stat?.baseModel === id) stat.baseModel = fallbackBase;
+      }
+    }
     if (this.ubStateManager) {
       this.ubStateManager.unitsVisualsData = this.unitsData;
       this.ubStateManager.saveAll();
@@ -423,12 +355,15 @@ export const studioImportMethods = {
     if (this.currentUnitId === id) this.currentUnitId = this._unitsOfPeople(this.currentFaction)[0] || Object.keys(this.unitsData.units)[0];
     this.stateManager.scheduleSave();
     this._rebindData();
+    this._refreshBaseCharControl?.();
+    this._renderGearPanel?.();
     this._toast('Unit deleted');
   },
 
   _deleteImportedGear(id) {
     const p = this.unitsData.prefabs?.[id];
-    if (!p || !confirm(`Delete the imported item "${p.name || id}" (removed from every unit that wears it)?`)) return;
+    if (!p || !p.importInfo) return;
+    if (!confirm(`Delete the imported item "${p.name || id}" (removed from every unit that wears it)?`)) return;
     this._beginEdit('delete-gear');
     delete this.unitsData.prefabs[id];
     for (const u of Object.values(this.unitsData.units || {})) {
@@ -438,6 +373,7 @@ export const studioImportMethods = {
     this._restowAll();
     this.stateManager.scheduleSave();
     this._spawnStudioUnit();
+    this._renderGearPanel?.();
     this._renderImportPanel();
     this._toast('Item deleted');
   },
@@ -505,7 +441,7 @@ export const studioImportMethods = {
         ${on ? `<span data-skin-check="true" class="pointer-events-none absolute top-1 left-1 z-10 flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 text-slate-950 text-[11px] font-black shadow ring-2 ring-slate-950">✓</span>` : ''}
         <div class="flex-1 min-h-0 w-full flex items-center justify-center">${inner}</div>
         <div class="truncate px-1 py-0.5 text-[10px] ${on ? 'bg-emerald-500 text-slate-950 font-bold' : 'bg-slate-800 text-slate-200'}">${esc(label)}</div>
-      </button>${del ? `<button type="button" data-skin-del="${esc(id)}" title="Delete this skin" class="absolute top-0.5 right-0.5 hidden group-hover:flex h-5 w-5 items-center justify-center rounded bg-rose-700 text-white text-[11px] font-bold">✕</button>` : ''}</div>`;
+      </button>${del ? `<button type="button" data-skin-del="${esc(id)}" title="Delete this skin" class="absolute top-0.5 right-0.5 z-20 flex h-5 w-5 items-center justify-center rounded bg-rose-700 hover:bg-rose-600 text-white text-[11px] font-bold shadow cursor-pointer">✕</button>` : ''}</div>`;
     const cells = [sq('default', 'Default', '<span class="text-3xl">🏰</span>', active === 'default', false)];
     for (const [sid, it] of Object.entries(entry?.items || {})) {
       const t = this._skinThumb(it);

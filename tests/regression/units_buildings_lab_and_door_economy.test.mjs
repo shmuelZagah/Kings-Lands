@@ -61,6 +61,7 @@ import {
   renderUnitRightInspectorHtml
 } from '../../src/tools/units_buildings/unitsTabRenderer.js';
 import {
+  getFirstBuildingId,
   renderBuildingsLeftListHtml,
   renderBuildingRightInspectorHtml
 } from '../../src/tools/units_buildings/buildingsTabRenderer.js';
@@ -126,15 +127,30 @@ export async function runUnitsBuildingsLabAndDoorTests() {
   {
     const leftUnitsHtml = renderUnitsLeftListHtml(sm, 'swordsman');
     const rightUnitsHtml = renderUnitRightInspectorHtml(sm, 'swordsman');
-    const leftBldHtml = renderBuildingsLeftListHtml(sm, 'barracks');
+    const firstBldId = getFirstBuildingId(sm.buildingsData);
+    assert.ok(firstBldId && firstBldId !== 'barracks', 'First building in list is selected rather than barracks');
+    const leftBldHtml = renderBuildingsLeftListHtml(sm, firstBldId);
+    const firstBtnMatch = leftBldHtml.match(/data-select-building="([^"]+)"/);
+    assert.equal(firstBtnMatch?.[1], firstBldId, 'getFirstBuildingId matches first building rendered in Buildings list');
     const rightBldHtml = renderBuildingRightInspectorHtml(sm, 'barracks');
+
+    assert.ok(leftBldHtml.includes('id="ub-btn-create-building"'), 'Buildings Lab sidebar has + New Building button');
+    assert.ok(!leftBldHtml.includes('ub-btn-delete-building-left'), 'Shipped buildings cannot be deleted');
+
+    const createdBldId = sm.createNewBuilding({ name: 'Granary' });
+    assert.ok(createdBldId && sm.buildingsData.buildings[createdBldId]?.isCustom, 'Units Lab can create a new building without a skin');
+    const customBldLeftHtml = renderBuildingsLeftListHtml(sm, createdBldId);
+    assert.ok(customBldLeftHtml.includes(`data-delete-building-row="${createdBldId}"`), 'Custom building renders delete button in sidebar');
+    assert.equal(sm.deleteBuilding('barracks'), false, 'Shipped building cannot be deleted');
+    assert.equal(sm.deleteBuilding(createdBldId), true, 'Custom building can be deleted cleanly');
+    assert.equal(sm.buildingsData.buildings[createdBldId], undefined, 'Deleted custom building removed from buildingsData');
 
     assert.ok(leftUnitsHtml.includes('Copy "Citadel Swordsmen"'), 'Fix 1 & 10: Copy button in English');
     assert.ok(leftUnitsHtml.includes('+ New Unit'), 'Fix 1 & 10: Clean + New Unit button in English');
     assert.ok(!leftUnitsHtml.includes('ub-new-unit-base'), 'Fix 1 & 6: No base-character or weapon selector in creation box');
     assert.ok(rightUnitsHtml.includes('Delete Unit'), 'Combat unit (swordsman) has Delete Unit button');
     assert.ok(rightUnitsHtml.includes('Weapon Sets (Hands Only)'), 'Fix 4: Weapon Sets contain hand weapons only');
-    assert.ok(rightUnitsHtml.includes('Visual Appearance (Cosmetic)'), 'Fix 4: Helmets & armor separated into Visual Appearance');
+    assert.ok(!rightUnitsHtml.includes('Visual Appearance (Cosmetic)'), 'Cosmetic appearance moved exclusively to Studio');
     assert.ok(rightUnitsHtml.includes('data-unit-field="visionRangeMeters"'), 'Fix 3: Vision Range field present on unit');
     assert.ok(rightUnitsHtml.includes('Blacksmith Upgrade Bonuses (%)'), 'Enhancement 1: Blacksmith bonuses per unit');
     assert.ok(rightBldHtml.includes('Has Levels') && rightBldHtml.includes('Has Watchtower'), 'Building toggles Has Levels & Has Watchtower present');

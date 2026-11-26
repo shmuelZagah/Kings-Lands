@@ -350,7 +350,7 @@ function launchUnitsBuildingsLab(options = {}) {
     stateManager: sharedUbStateManager,
     initialTab: options.initialTab || 'units',
     initialUnitId: options.initialUnitId || 'swordsman',
-    initialBuildingId: options.initialBuildingId || 'barracks',
+    initialBuildingId: options.initialBuildingId || null,
     initialAnim: options.initialAnim || 'idle',
     initialLoadoutIdx: options.initialLoadoutIdx || 0,
     onOpenAnimationLab: (studioOpts = {}) => {

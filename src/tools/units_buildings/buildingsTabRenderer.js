@@ -31,8 +31,17 @@ function bldNumInput(field, label, value, step = 1, min = 0, max = 99999) {
   `;
 }
 
+export function getOrderedBuildingsList(buildingsData) {
+  const bMap = buildingsData?.buildings || {};
+  return Object.values(bMap).filter((b) => b && b.id !== 'citadel_slot');
+}
+
+export function getFirstBuildingId(buildingsData) {
+  const list = getOrderedBuildingsList(buildingsData);
+  return list[0]?.id || null;
+}
+
 export function renderBuildingsLeftListHtml(stateManager, selectedBuildingId) {
-  const bMap = stateManager.buildingsData.buildings || {};
   const icons = {
     citadel: '🏰',
     gathering_camp: '⛺',
@@ -48,26 +57,38 @@ export function renderBuildingsLeftListHtml(stateManager, selectedBuildingId) {
     banner_house: '🚩'
   };
 
-  const rows = Object.values(bMap)
-    .filter((b) => b.id !== 'citadel_slot')
+  const list = getOrderedBuildingsList(stateManager.buildingsData);
+  const selectedBld = stateManager.buildingsData?.buildings?.[selectedBuildingId];
+  const canDeleteSelected = Boolean(selectedBld?.isCustom);
+
+  const rows = list
     .map((b) => {
       const active = b.id === selectedBuildingId;
       return `
-        <button
-          type="button"
-          data-select-building="${b.id}"
-          class="w-full flex items-center justify-between gap-2 rounded-xl border px-3 py-2 text-left transition cursor-pointer ${
+        <div
+          class="w-full flex items-center justify-between gap-1.5 rounded-xl border px-2.5 py-1.5 text-left transition ${
             active
               ? 'border-amber-400 bg-amber-500/20 text-amber-200 font-black shadow'
               : 'border-slate-800 bg-slate-900/70 hover:bg-slate-800 text-slate-200 font-semibold'
           }"
         >
-          <div class="flex-1 min-w-0 text-left">
-            <div class="text-xs truncate">${b.name || b.id}</div>
-            <div class="text-[10px] text-slate-400 mono truncate">${b.id}</div>
-          </div>
-          <span class="text-sm">${icons[b.id] || '🏛️'}</span>
-        </button>
+          <button
+            type="button"
+            data-select-building="${b.id}"
+            class="flex-1 min-w-0 flex items-center justify-between gap-2 text-left cursor-pointer"
+          >
+            <div class="flex-1 min-w-0 text-left">
+              <div class="text-xs truncate">${b.name || b.id}</div>
+              <div class="text-[10px] text-slate-400 mono truncate">${b.id}</div>
+            </div>
+            <span class="text-sm shrink-0">${icons[b.id] || '🏛️'}</span>
+          </button>
+          ${
+            b.isCustom
+              ? `<button type="button" data-delete-building-row="${b.id}" title="Delete ${b.name || b.id}" class="rounded-md bg-rose-950/80 hover:bg-rose-700 border border-rose-500/40 px-1.5 py-1 text-[10px] font-bold text-rose-200 cursor-pointer shrink-0 transition">🗑</button>`
+              : ''
+          }
+        </div>
       `;
     })
     .join('');
@@ -75,6 +96,29 @@ export function renderBuildingsLeftListHtml(stateManager, selectedBuildingId) {
   return `
     <div class="flex flex-col gap-1.5 flex-1 overflow-y-auto pr-0.5">
       ${rows}
+    </div>
+    <div class="rounded-xl border border-slate-800 bg-slate-950/90 p-2 flex flex-col gap-1.5 mt-2">
+      <button
+        type="button"
+        id="ub-btn-create-building"
+        class="w-full rounded-lg border border-dashed border-amber-400/80 bg-amber-500/15 hover:bg-amber-500/25 py-1.5 px-2 text-xs font-extrabold text-amber-300 transition cursor-pointer"
+        title="Create a new building without requiring a skin"
+      >
+        + New Building
+      </button>
+      ${
+        canDeleteSelected
+          ? `
+        <button
+          type="button"
+          id="ub-btn-delete-building-left"
+          class="w-full rounded-lg border border-rose-500/60 bg-rose-950/70 hover:bg-rose-800/80 py-1.5 px-2 text-xs font-extrabold text-rose-200 transition cursor-pointer truncate"
+        >
+          🗑 Delete "${selectedBld?.name || selectedBuildingId}"
+        </button>
+      `
+          : ''
+      }
     </div>
   `;
 }

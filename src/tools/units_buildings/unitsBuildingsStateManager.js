@@ -807,6 +807,79 @@ export class UnitsBuildingsStateManager {
     return true;
   }
 
+  createNewBuilding({
+    name = '',
+    footprintLength = 8,
+    footprintWidth = 8
+  } = {}) {
+    const buildingsMap = this.buildingsData?.buildings || (this.buildingsData.buildings = {});
+    const rawSlug =
+      String(name || 'new_building')
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '_')
+        .replace(/^_+|_+$/g, '') || 'new_building';
+    let cleanId = rawSlug;
+    let n = 2;
+    while (buildingsMap[cleanId]) cleanId = `${rawSlug}_${n++}`;
+
+    const len = Math.max(1, Number(footprintLength) || 8);
+    const wid = Math.max(1, Number(footprintWidth) || 8);
+    const radius = Math.max(1.5, Math.min(14, Math.round(Math.max(len, wid) * 0.5 * 10) / 10));
+
+    const newBDef = {
+      id: cleanId,
+      name: name?.trim() || `New Building ${Object.keys(buildingsMap).length + 1}`,
+      isCustom: true,
+      buildableByWorker: true,
+      isResourceDropoff: false,
+      cost: { coins: 100, wood: 60, stone: 0, iron: 0 },
+      description: '',
+      footprintRadiusMeters: radius,
+      footprintLength: len,
+      footprintWidth: wid,
+      buildTimeTicks: 900,
+      maxHp: 650,
+      canAutoLevel: false,
+      maxLevel: 3,
+      hasWatchtowerSupport: false,
+      watchtowerLevel: 0,
+      trainSpeedBonusPctPerLevel: 0,
+      hpPerLevelBonus: 200,
+      turretOffset: [0, 6.5, 0],
+      damageStages: [70, 35],
+      options: [],
+      arrowProtectionPermille: 700,
+      meleeProtectionPermille: 350
+    };
+
+    buildingsMap[cleanId] = newBDef;
+    const res = this.saveAll();
+    if (!res?.ok) {
+      delete buildingsMap[cleanId];
+      return null;
+    }
+    return cleanId;
+  }
+
+  deleteBuilding(buildingId) {
+    const bDef = this.buildingsData?.buildings?.[buildingId];
+    if (!bDef || !bDef.isCustom) return false;
+    this._isSavingAll = true;
+    try {
+      const res = dataRegistry.deleteBuilding(buildingId);
+      if (!res.ok) {
+        this.onStatus?.('error', res.error || 'Delete rejected');
+        return false;
+      }
+      this._reloadFromRegistry();
+      this.onStatus?.('saved', 'Saved');
+      return true;
+    } finally {
+      this._isSavingAll = false;
+    }
+  }
+
   deleteUnit(unitId) {
     const unitsObj = this.unitStatsData.units || {};
     const uStat = unitsObj[unitId];

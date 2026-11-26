@@ -378,6 +378,7 @@ export class StudioApp {
     if (!ids.includes(this.currentUnitId) && ids.length) { this.currentUnitId = ids[0]; this.currentLoadout = MAIN_LOADOUT; }
     const sel = this.rootContainer.querySelector('#st-unit-select');
     if (sel) sel.innerHTML = this._unitOptions(this.currentUnitId);
+    this._refreshImportedDeleteButtons?.();
   }
 
   _unitOptions(selected) {
@@ -434,6 +435,7 @@ export class StudioApp {
     this._refreshUnitList();
     this._updateHealthBadge();
     this._spawnStudioUnit();
+    this._renderImportPanel?.();
     this._toast(
       cat === 'heroes'
         ? 'Switched to Heroes (גיבורים) — saves to heroes.json'
@@ -513,12 +515,18 @@ export class StudioApp {
                     </div>
 
                     <label id="st-class-label" class="block text-slate-400 mb-1">${isHeroesCat ? 'Hero:' : this.entityCategory === 'buildings' ? 'Building:' : 'Unit:'}</label>
-                    <select id="st-unit-select" class="w-full rounded bg-slate-800 border border-slate-600 px-2.5 py-1.5 font-semibold text-slate-100 mb-2">${this._unitOptions(this.currentUnitId)}</select>
+                    <div class="flex items-center gap-1 mb-2">
+                      <select id="st-unit-select" class="min-w-0 flex-1 rounded bg-slate-800 border border-slate-600 px-2.5 py-1.5 font-semibold text-slate-100">${this._unitOptions(this.currentUnitId)}</select>
+                      <button type="button" id="st-btn-del-unit" title="Delete this imported model" class="hidden h-7 w-7 shrink-0 items-center justify-center rounded bg-rose-700 hover:bg-rose-600 text-white text-xs font-bold cursor-pointer">✕</button>
+                    </div>
                   `
               }
               <div id="st-base-char-row" class="hidden mt-2 pt-2 border-t border-slate-800">
                 <label class="block text-slate-400 mb-1" title="Choose the Base Character body for this unit (weapons, mounts, stats & animations are kept)">Base Character:</label>
-                <select id="st-base-char-select" class="w-full rounded bg-slate-800 border border-slate-600 px-2 py-1 text-xs font-bold text-amber-200"></select>
+                <div class="flex items-center gap-1">
+                  <select id="st-base-char-select" class="min-w-0 flex-1 rounded bg-slate-800 border border-slate-600 px-2 py-1 text-xs font-bold text-amber-200"></select>
+                  <button type="button" id="st-btn-del-base" title="Delete this imported base model" class="hidden h-7 w-7 shrink-0 items-center justify-center rounded bg-rose-700 hover:bg-rose-600 text-white text-xs font-bold cursor-pointer">✕</button>
+                </div>
               </div>
               <div id="st-unit-skin-row" class="hidden mt-2 pt-2 border-t border-slate-800">
                 <div class="flex items-center justify-between mb-1">
@@ -695,11 +703,13 @@ export class StudioApp {
     if (!row || !sel) return;
     if (this.entityCategory !== 'units' || !this.ubStateManager) {
       row.classList.add('hidden');
+      this._refreshImportedDeleteButtons();
       return;
     }
     const choices = this.ubStateManager.listBasesForUnit(this.currentUnitId) || [];
     if (!choices.length) {
       row.classList.add('hidden');
+      this._refreshImportedDeleteButtons();
       return;
     }
     row.classList.remove('hidden');
@@ -708,6 +718,29 @@ export class StudioApp {
     sel.innerHTML = choices
       .map((b) => `<option value="${b.id}" ${b.current ? 'selected' : ''}>${b.label}</option>`)
       .join('');
+    this._refreshImportedDeleteButtons();
+  }
+
+  _refreshImportedDeleteButtons() {
+    const delUnitBtn = this.rootContainer?.querySelector('#st-btn-del-unit');
+    if (delUnitBtn) {
+      const canDelUnit =
+        !this.isContextualMode &&
+        this.entityCategory !== 'buildings' &&
+        Boolean(this.unitsData.units?.[this.currentUnitId]?.importInfo);
+      delUnitBtn.classList.toggle('hidden', !canDelUnit);
+      delUnitBtn.classList.toggle('flex', canDelUnit);
+    }
+    const delBaseBtn = this.rootContainer?.querySelector('#st-btn-del-base');
+    if (delBaseBtn) {
+      const baseSel = this.rootContainer?.querySelector('#st-base-char-select');
+      const baseId = baseSel?.value || '';
+      const canDelBase =
+        this.entityCategory === 'units' &&
+        Boolean(baseId && this.unitsData.units?.[baseId]?.importInfo);
+      delBaseBtn.classList.toggle('hidden', !canDelBase);
+      delBaseBtn.classList.toggle('flex', canDelBase);
+    }
   }
 
   _spawnStudioUnit() {

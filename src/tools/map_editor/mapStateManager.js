@@ -370,6 +370,91 @@ export const DECORATIVE_PROPS_CATALOG = Object.freeze([
   { id: 'dock_pier', name: 'Wooden River Pier', badge: '⚓', defaultColor: '#78350f', defaultScale: 1.0 }
 ]);
 
+export function renderDecorativePropThumbnailSvg(prop) {
+  const id = prop?.id || '';
+  const col = prop?.defaultColor || '#cbd5e1';
+  if (id === 'statue_king') {
+    return `<svg viewBox="0 0 64 64" class="w-11 h-11 drop-shadow">
+      <rect x="20" y="44" width="24" height="12" rx="2" fill="${col}" opacity="0.8"/>
+      <rect x="26" y="20" width="12" height="24" rx="3" fill="${col}"/>
+      <circle cx="32" cy="14" r="5" fill="${col}"/>
+      <polygon points="26,10 29,4 32,9 35,4 38,10" fill="#fbbf24"/>
+      <rect x="30.5" y="22" width="3" height="20" fill="#fbbf24"/>
+    </svg>`;
+  }
+  if (id === 'ruined_arch') {
+    return `<svg viewBox="0 0 64 64" class="w-11 h-11 drop-shadow">
+      <rect x="14" y="20" width="8" height="34" rx="1.5" fill="${col}"/>
+      <rect x="42" y="24" width="8" height="30" rx="1.5" fill="${col}"/>
+      <rect x="10" y="14" width="44" height="8" rx="2" transform="rotate(-4 32 18)" fill="${col}"/>
+    </svg>`;
+  }
+  if (id === 'watch_brazier') {
+    return `<svg viewBox="0 0 64 64" class="w-11 h-11 drop-shadow">
+      <polygon points="22,54 42,54 38,32 26,32" fill="${col}"/>
+      <polygon points="32,8 22,30 42,30" fill="#f97316"/>
+      <polygon points="32,14 26,30 38,30" fill="#fde047"/>
+    </svg>`;
+  }
+  if (id === 'obelisk_rune') {
+    return `<svg viewBox="0 0 64 64" class="w-11 h-11 drop-shadow">
+      <rect x="20" y="46" width="24" height="8" rx="1.5" fill="#475569"/>
+      <polygon points="32,8 25,46 39,46" fill="#64748b"/>
+      <polygon points="32,8 27,18 37,18" fill="${col}"/>
+    </svg>`;
+  }
+  if (id === 'rock_arch') {
+    return `<svg viewBox="0 0 64 64" class="w-11 h-11 drop-shadow">
+      <path d="M10 52 L16 20 Q32 8 48 20 L54 52 L40 52 L38 30 Q32 24 26 30 L24 52 Z" fill="${col}"/>
+    </svg>`;
+  }
+  if (id === 'camp_tents') {
+    return `<svg viewBox="0 0 64 64" class="w-11 h-11 drop-shadow">
+      <polygon points="26,16 8,48 44,48" fill="${col}"/>
+      <polygon points="26,28 20,48 32,48" fill="#451a03"/>
+      <polygon points="50,34 44,48 56,48" fill="#f97316"/>
+    </svg>`;
+  }
+  if (id === 'wooden_cart') {
+    return `<svg viewBox="0 0 64 64" class="w-11 h-11 drop-shadow">
+      <rect x="14" y="24" width="36" height="14" rx="2" fill="${col}"/>
+      <circle cx="22" cy="44" r="7" fill="none" stroke="#fbbf24" stroke-width="3.5"/>
+      <circle cx="42" cy="44" r="7" fill="none" stroke="#fbbf24" stroke-width="3.5"/>
+    </svg>`;
+  }
+  if (id === 'flower_patch') {
+    return `<svg viewBox="0 0 64 64" class="w-11 h-11 drop-shadow">
+      <circle cx="22" cy="36" r="10" fill="${col}"/>
+      <circle cx="42" cy="36" r="10" fill="#16a34a"/>
+      <circle cx="32" cy="28" r="11" fill="${col}"/>
+      <circle cx="24" cy="30" r="3" fill="#f43f5e"/>
+      <circle cx="36" cy="24" r="3" fill="#fbbf24"/>
+      <circle cx="42" cy="34" r="3" fill="#e879f9"/>
+    </svg>`;
+  }
+  if (id === 'fence_wall') {
+    return `<svg viewBox="0 0 64 64" class="w-11 h-11 drop-shadow">
+      <rect x="8" y="30" width="48" height="18" rx="2" fill="${col}"/>
+      <line x1="8" y1="39" x2="56" y2="39" stroke="#44403c" stroke-width="2"/>
+      <line x1="24" y1="30" x2="24" y2="48" stroke="#44403c" stroke-width="2"/>
+      <line x1="40" y1="30" x2="40" y2="48" stroke="#44403c" stroke-width="2"/>
+    </svg>`;
+  }
+  if (id === 'dock_pier') {
+    return `<svg viewBox="0 0 64 64" class="w-11 h-11 drop-shadow">
+      <rect x="16" y="14" width="32" height="36" rx="2" fill="${col}"/>
+      <rect x="12" y="16" width="6" height="34" rx="2" fill="#451a03"/>
+      <rect x="46" y="16" width="6" height="34" rx="2" fill="#451a03"/>
+      <path d="M6 52 Q20 47 32 52 T58 52" stroke="#38bdf8" stroke-width="3" fill="none"/>
+    </svg>`;
+  }
+  return `<svg viewBox="0 0 64 64" class="w-11 h-11 drop-shadow">
+    <polygon points="32,10 52,22 52,44 32,56 12,44 12,22" fill="#1e293b" stroke="${col}" stroke-width="2.5"/>
+    <polyline points="12,22 32,34 52,22" fill="none" stroke="${col}" stroke-width="2"/>
+    <line x1="32" y1="34" x2="32" y2="56" stroke="${col}" stroke-width="2"/>
+  </svg>`;
+}
+
 // ============================================================================
 // 4. IN-MEMORY ACTIVE CUSTOM MAP & SAVED MAPS LIBRARY
 // ============================================================================
@@ -523,6 +608,7 @@ export function createDefaultMapState(baseTrees = [], baseMines = []) {
     ],
     decorativeProps: [],
     customPropAssets: [],
+    customResourceSkins: { wood: [], coins: [], iron: [], stone: [] },
     spawnPoints: [
       { id: 'spawn_1', name: 'Start Point 1 (South)', x: 2048, z: 1660, facingDir: 256 },
       { id: 'spawn_2', name: 'Start Point 2 (North)', x: 2048, z: 2420, facingDir: 768 }
@@ -561,6 +647,7 @@ export function createBlankFlatMapState(name = 'New Clean Flat Map', worldSizeMe
     bridges: [],
     decorativeProps: [],
     customPropAssets: [],
+    customResourceSkins: { wood: [], coins: [], iron: [], stone: [] },
     spawnPoints: [
       { id: 'spawn_1', name: 'Start Point 1', x: center, z: center - offset, facingDir: 256 },
       { id: 'spawn_2', name: 'Start Point 2', x: center, z: center + offset, facingDir: 768 }
@@ -658,6 +745,12 @@ export function hydrateMapState(raw) {
       : [],
     decorativeProps: Array.isArray(raw.decorativeProps) ? raw.decorativeProps : [],
     customPropAssets: Array.isArray(raw.customPropAssets) ? raw.customPropAssets : [],
+    customResourceSkins: {
+      wood: Array.isArray(raw.customResourceSkins?.wood) ? raw.customResourceSkins.wood : [],
+      coins: Array.isArray(raw.customResourceSkins?.coins) ? raw.customResourceSkins.coins : [],
+      iron: Array.isArray(raw.customResourceSkins?.iron) ? raw.customResourceSkins.iron : [],
+      stone: Array.isArray(raw.customResourceSkins?.stone) ? raw.customResourceSkins.stone : []
+    },
     spawnPoints,
     spawns: {
       team1: { x: t1.x, z: t1.z, facingDir: t1.facingDir ?? 256 },
@@ -766,7 +859,130 @@ function getCachedGeom(key, factoryFn) {
   return g;
 }
 
-export function createTreeMeshBySkin(skinId = 'pine_emerald', scale = 1.0, rotY = 0) {
+function buildStaticGlbGeometry(meshData) {
+  const { vertices, faces, colors } = meshData || {};
+  if (!Array.isArray(vertices) || !Array.isArray(faces) || !vertices.length || !faces.length) return null;
+  const cosCrease = Math.cos((55 * Math.PI) / 180);
+  const fn = faces.map(([a, b, c]) => {
+    const A = vertices[a], B = vertices[b], C = vertices[c];
+    if (!A || !B || !C) return [0, 1, 0, 0];
+    const ux = B[0] - A[0], uy = B[1] - A[1], uz = B[2] - A[2];
+    const vx = C[0] - A[0], vy = C[1] - A[1], vz = C[2] - A[2];
+    const n = [uy * vz - uz * vy, uz * vx - ux * vz, ux * vy - uy * vx];
+    const l = Math.hypot(n[0], n[1], n[2]) || 1;
+    return [n[0] / l, n[1] / l, n[2] / l, l];
+  });
+  const vf = vertices.map(() => []);
+  faces.forEach((f, i) => f.forEach((v) => { if (vf[v]) vf[v].push(i); }));
+  const pos = new Float32Array(faces.length * 9);
+  const nor = new Float32Array(faces.length * 9);
+  const col = new Float32Array(faces.length * 9);
+  const tmp = new THREE.Color();
+  faces.forEach((f, i) => {
+    for (let k = 0; k < 3; k++) {
+      const v = f[k];
+      let nx = 0, ny = 0, nz = 0;
+      for (const j of (vf[v] || [])) {
+        const d = fn[i][0] * fn[j][0] + fn[i][1] * fn[j][1] + fn[i][2] * fn[j][2];
+        if (d >= cosCrease) {
+          nx += fn[j][0] * fn[j][3];
+          ny += fn[j][1] * fn[j][3];
+          nz += fn[j][2] * fn[j][3];
+        }
+      }
+      const l = Math.hypot(nx, ny, nz) || 1;
+      const o = i * 9 + k * 3;
+      const pt = vertices[v] || [0, 0, 0];
+      pos[o] = pt[0]; pos[o + 1] = pt[1]; pos[o + 2] = pt[2];
+      nor[o] = nx / l; nor[o + 1] = ny / l; nor[o + 2] = nz / l;
+      const c = colors?.[v] || [200, 200, 200];
+      tmp.setRGB(c[0] / 255, c[1] / 255, c[2] / 255, THREE.SRGBColorSpace);
+      col[o] = tmp.r; col[o + 1] = tmp.g; col[o + 2] = tmp.b;
+    }
+  });
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  geo.setAttribute('normal', new THREE.BufferAttribute(nor, 3));
+  geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  geo.computeBoundingSphere();
+  return geo;
+}
+
+function getGlbVertexColorMaterial() {
+  let mat = _matCache.get('__glb_vertex_colors__');
+  if (!mat) {
+    mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.78, metalness: 0.08 });
+    _matCache.set('__glb_vertex_colors__', mat);
+  }
+  return mat;
+}
+
+export function renderStaticMeshThumbnailDataUrl(meshData) {
+  if (typeof document === 'undefined') return '';
+  const { vertices: V, faces: F, colors: C } = meshData || {};
+  if (!Array.isArray(V) || !Array.isArray(F) || !V.length || !F.length) return '';
+  try {
+    const S = 96;
+    const cv = document.createElement('canvas');
+    cv.width = cv.height = S;
+    const g = cv.getContext('2d');
+    if (!g) return '';
+    const a = 0.65, ca = Math.cos(a), sa = Math.sin(a);
+    const P = V.map(([x, y, z]) => [x * ca - z * sa, y, x * sa + z * ca]);
+    let minX = 1e9, maxX = -1e9, minY = 1e9, maxY = -1e9;
+    for (const p of P) {
+      minX = Math.min(minX, p[0]); maxX = Math.max(maxX, p[0]);
+      minY = Math.min(minY, p[1]); maxY = Math.max(maxY, p[1]);
+    }
+    const k = (S - 12) / Math.max(maxX - minX, maxY - minY, 1e-6);
+    const ox = (S - (maxX - minX) * k) / 2 - minX * k;
+    const oy = S - 6 + minY * k;
+    const step = Math.max(1, Math.floor(F.length / 5000));
+    const order = [];
+    for (let i = 0; i < F.length; i += step) order.push(i);
+    order.sort((i, j) => (P[F[i][0]][2] + P[F[i][1]][2] + P[F[i][2]][2]) - (P[F[j][0]][2] + P[F[j][1]][2] + P[F[j][2]][2]));
+    for (const i of order) {
+      const [a0, b0, c0] = F[i];
+      const A = P[a0], B = P[b0], Cc = P[c0];
+      if (!A || !B || !Cc) continue;
+      const nz = (B[0] - A[0]) * (Cc[1] - A[1]) - (B[1] - A[1]) * (Cc[0] - A[0]);
+      if (nz <= 0) continue;
+      const col = C?.[a0] || [180, 180, 180];
+      const sh = 0.55 + 0.45 * Math.min(1, nz * k * k * 0.02 + 0.3);
+      g.fillStyle = `rgb(${(col[0] * sh) | 0},${(col[1] * sh) | 0},${(col[2] * sh) | 0})`;
+      g.beginPath();
+      g.moveTo(A[0] * k + ox, oy - A[1] * k);
+      g.lineTo(B[0] * k + ox, oy - B[1] * k);
+      g.lineTo(Cc[0] * k + ox, oy - Cc[1] * k);
+      g.closePath();
+      g.fill();
+    }
+    return cv.toDataURL('image/png');
+  } catch (_) {
+    return '';
+  }
+}
+
+function createStaticGlbMeshInstance(asset) {
+  const geom = getCachedGeom(`glb_${asset.id}`, () => buildStaticGlbGeometry(asset));
+  if (!geom) return null;
+  const mesh = new THREE.Mesh(geom, getGlbVertexColorMaterial());
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
+  return mesh;
+}
+
+export function createTreeMeshBySkin(skinId = 'pine_emerald', scale = 1.0, rotY = 0, customResourceSkins = null) {
+  const customWoodList = customResourceSkins?.wood || getActiveCustomMapState()?.customResourceSkins?.wood || [];
+  const customSkin = customWoodList.find((s) => s.id === skinId);
+  if (customSkin && Array.isArray(customSkin.vertices) && Array.isArray(customSkin.faces)) {
+    const group = new THREE.Group();
+    const glbMesh = createStaticGlbMeshInstance(customSkin);
+    if (glbMesh) group.add(glbMesh);
+    group.scale.set(scale, scale, scale);
+    group.rotation.y = rotY;
+    return group;
+  }
   const skin =
     RESOURCE_SKINS_CATALOG.wood.find((s) => s.id === skinId) ||
     RESOURCE_SKINS_CATALOG.wood[0];
@@ -878,7 +1094,17 @@ export function createTreeMeshBySkin(skinId = 'pine_emerald', scale = 1.0, rotY 
   return group;
 }
 
-export function createMineMeshBySkin(type = 'coins', skinId = 'gold_vein', scale = 1.0, rotY = 0) {
+export function createMineMeshBySkin(type = 'coins', skinId = 'gold_vein', scale = 1.0, rotY = 0, customResourceSkins = null) {
+  const customBucket = customResourceSkins?.[type] || getActiveCustomMapState()?.customResourceSkins?.[type] || [];
+  const customSkin = customBucket.find((s) => s.id === skinId);
+  if (customSkin && Array.isArray(customSkin.vertices) && Array.isArray(customSkin.faces)) {
+    const group = new THREE.Group();
+    const glbMesh = createStaticGlbMeshInstance(customSkin);
+    if (glbMesh) group.add(glbMesh);
+    group.scale.set(scale, scale, scale);
+    group.rotation.y = rotY;
+    return group;
+  }
   const catalog = RESOURCE_SKINS_CATALOG[type] || RESOURCE_SKINS_CATALOG.coins;
   const skin = catalog.find((s) => s.id === skinId) || catalog[0];
   const group = new THREE.Group();
@@ -975,7 +1201,10 @@ export function createDecorativePropMesh(propRecord, customPropAssets = []) {
     : (customPropAssets || []).find((a) => a.id === propType);
 
   if (customAsset) {
-    if (customAsset.kind === 'obj' && Array.isArray(customAsset.vertices) && customAsset.vertices.length >= 9) {
+    if (customAsset.kind === 'glb' && Array.isArray(customAsset.vertices) && Array.isArray(customAsset.faces)) {
+      const glbMesh = createStaticGlbMeshInstance(customAsset);
+      if (glbMesh) group.add(glbMesh);
+    } else if (customAsset.kind === 'obj' && Array.isArray(customAsset.vertices) && customAsset.vertices.length >= 9) {
       const geom = getCachedGeom(`obj_${customAsset.id}`, () => {
         const g = new THREE.BufferGeometry();
         g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(customAsset.vertices), 3));

@@ -848,10 +848,12 @@ export const studioGearAndPoseMethods = {
           list
             .map((id) => `<option value="${id}" ${id === cur ? "selected" : ""}>${this._friendlyPrefabLabel(id, prefabs[id])}</option>`)
             .join("");
+      const isImportedCur = Boolean(cur && prefabs[cur]?.importInfo);
       return `<div data-gear-row="${joint}" class="flex items-center gap-1.5 rounded px-1 py-0.5 ${on ? "bg-emerald-500/15 ring-1 ring-emerald-500/50" : ""}">
         <button type="button" class="gear-pick w-[116px] shrink-0 truncate text-left ${on ? "text-emerald-300 font-bold" : "text-slate-300 hover:text-white"}" data-joint="${joint}" title="Select ${joint} on timeline">${rowLabelFor(joint, slot)}</button>
         <select class="gear-sel min-w-0 flex-1 rounded bg-slate-800 border border-slate-600 px-1.5 py-1 text-slate-100 ${cur ? "border-amber-500/60 text-amber-200" : ""}" data-joint="${joint}" id="gear-sel-${joint}" ${list.length && !isLocked ? "" : "disabled"} ${isHandLockedInUnitMode ? 'title="Weapons are chosen in the Units Lab; use Fit to adjust grip or Stow rows to place stowed weapons"' : isLocked ? 'title="Held by a two-handed weapon"' : ""}>${joint === locked ? "<option value=\"\">(Two-Handed Locked)</option>" : options}</select>
         <button type="button" class="gear-grip rounded border px-1.5 py-1 ${cur ? (this.gripJoint === joint ? "border-amber-400 bg-amber-500 text-slate-950 font-bold" : "border-slate-600 text-slate-300 hover:bg-slate-800") : "border-slate-800 text-slate-600"}" data-joint="${joint}" ${cur ? "" : "disabled"} title="Adjust grip offset & rotation (Fit)">Fit</button>
+        ${isImportedCur ? `<button type="button" class="gear-del-imp flex h-6 w-6 shrink-0 items-center justify-center rounded bg-rose-700 hover:bg-rose-600 text-white text-[11px] font-bold cursor-pointer" data-del-prefab="${cur}" title="Delete this imported item">✕</button>` : ""}
       </div>`;
     }).join("");
 
@@ -925,9 +927,25 @@ export const studioGearAndPoseMethods = {
           : '<button type="button" id="loadout-new" class="rounded border border-dashed border-slate-600 px-2 py-1 text-slate-300 hover:bg-slate-800" title="הוסף סט נשקים שני (לוחם -> קשת, קשת -> חרב)">+ 2nd set</button>'}
       ${!isWizardHero && second ? `<button type="button" id="loadout-del" class="ml-auto rounded border border-rose-500/50 px-1.5 py-1 text-rose-300 hover:bg-rose-500/10" title="Delete set 2">Delete set 2</button>` : ""}
     </div>`;
+    const importedGearEntries = Object.entries(prefabs).filter(([, p]) => p?.importInfo);
+    const importedGearListHtml = importedGearEntries.length
+      ? `<div class="mt-2 border-t border-slate-700/70 pt-2">
+          <div class="mb-1 text-[10.5px] font-bold text-rose-300">Imported Armour / Gear (${importedGearEntries.length})</div>
+          <div class="flex flex-col gap-1 max-h-32 overflow-y-auto pr-1">
+            ${importedGearEntries
+              .map(
+                ([pid, pf]) => `<div class="flex items-center gap-1.5 rounded bg-slate-950/60 border border-slate-800 px-2 py-1">
+                  <div class="min-w-0 flex-1 truncate text-[11px] text-slate-200">${pf.name || pid} <span class="text-[10px] text-slate-500">(${pf.slot || 'gear'})</span></div>
+                  <button type="button" class="gear-del-imp flex h-5 w-5 shrink-0 items-center justify-center rounded bg-rose-700 hover:bg-rose-600 text-white text-[11px] font-bold cursor-pointer" data-del-prefab="${pid}" title="Delete this imported item">✕</button>
+                </div>`
+              )
+              .join("")}
+          </div>
+        </div>`
+      : "";
     host.innerHTML = rows.length
-      ? `${loadoutBar}<div class="text-slate-400 leading-snug mb-1">לחיצה על שם החלק בוחרת אותו להנפשה בציר הזמן. לחיצה על <b>Fit</b> מכוונת את מיקום האחיזה הקבוע שלו.</div>${html}${arrowWorkshopHtml}${actionsHtml}${untypedHtml}`
-      : "<div class=\"text-slate-500\">This unit has no parts that can carry items.</div>";
+      ? `${loadoutBar}<div class="text-slate-400 leading-snug mb-1">לחיצה על שם החלק בוחרת אותו להנפשה בציר הזמן. לחיצה על <b>Fit</b> מכוונת את מיקום האחיזה הקבוע שלו.</div>${html}${arrowWorkshopHtml}${actionsHtml}${untypedHtml}${importedGearListHtml}`
+      : `<div class="text-slate-500">This unit has no parts that can carry items.</div>${importedGearListHtml}`;
   },
 
   /** Put an item on a joint (or empty it). Legs (Trousers, Knees & Shins, Boots) update both R and L together; arms/hands are independent! */

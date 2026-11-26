@@ -29,8 +29,6 @@ import {
   MOUNT_TYPES,
   computeEligibleFormationsForUnit
 } from './unitsBuildingsStateManager.js';
-import { listCosmeticOptionsForSlot, listSkinsForUnit } from '../labSync.js';
-import { getFactionColors } from '../studio/skinUtils.js';
 
 export const ALL_HAND_EQUIPMENT_OPTIONS = Object.freeze([
   { id: 'none', label: 'None (Empty)' },
@@ -255,26 +253,7 @@ export function renderUnitRightInspectorHtml(stateManager, unitId, activeLoadout
   const curWeaponR = ldEq.weapon_socket_R?.prefab || 'none';
   const curWeaponL = ldEq.weapon_socket_L?.prefab || 'none';
 
-  // Fix 4: Visual Appearance (Helmet, Chest, Shoulders, Boots, Cape, Mount Armor) is cosmetic only!
-  const curHead = baseEq.head?.prefab || 'none';
-  const curTorso = baseEq.torso?.prefab || 'none';
-  const curCape = baseEq.cape_back?.prefab || 'none';
-  const curShoulder = baseEq.arm_R?.prefab ? baseEq.arm_R.prefab.replace(/_R$/, '') : 'none';
-  const curBoots = baseEq.foot_R?.prefab ? baseEq.foot_R.prefab.replace(/_R$/, '') : 'none';
-  const curMountArmor = baseEq.mount_torso?.prefab || 'none';
-
   const curMountType = uStat.mountType || (uStat.isMounted ? 'human_horse' : 'none');
-  const baseChoices = stateManager.listBasesForUnit(unitId);
-  const curBaseId = stateManager.getUnitBaseId(unitId);
-  const curBaseLabel = baseChoices.find((b) => b.current)?.label || curBaseId;
-  const unitRace = uStat.race || uVis.race || 'human';
-  const skinOptions = listSkinsForUnit(stateManager.unitsVisualsData, uVis, uStat);
-  const curSkinId = uStat.activeSkin || 'default';
-  const headOptions = listCosmeticOptionsForSlot(stateManager.unitsVisualsData, 'head', unitRace, curHead, APPEARANCE_HEAD_OPTIONS);
-  const chestOptions = listCosmeticOptionsForSlot(stateManager.unitsVisualsData, 'chest', unitRace, curTorso, APPEARANCE_CHEST_OPTIONS);
-  const shoulderOptions = listCosmeticOptionsForSlot(stateManager.unitsVisualsData, 'shoulder', unitRace, curShoulder, APPEARANCE_SHOULDER_OPTIONS);
-  const bootsOptions = listCosmeticOptionsForSlot(stateManager.unitsVisualsData, 'boots', unitRace, curBoots, APPEARANCE_BOOT_OPTIONS);
-  const capeOptions = listCosmeticOptionsForSlot(stateManager.unitsVisualsData, 'cape', unitRace, curCape, APPEARANCE_CAPE_OPTIONS);
 
   const activeLdCaps = computeCapabilitiesForLoadout(
     uStat,
@@ -327,15 +306,6 @@ export function renderUnitRightInspectorHtml(stateManager, unitId, activeLoadout
               ${MOUNT_TYPES.map((m) => `<option value="${m.id}" ${m.id === curMountType ? 'selected' : ''}>${m.label}</option>`).join('')}
             </select>
           </label>
-          <div class="col-span-2 flex items-center justify-between gap-2 rounded-lg border border-slate-800 bg-slate-900/80 px-2.5 py-1.5">
-            <div class="min-w-0">
-              <div class="text-[10px] font-semibold text-slate-400">Base Character (Owned by Studio)</div>
-              <div id="ub-unit-base-readonly" class="text-xs font-bold text-amber-200 truncate" title="${curBaseId}">${curBaseLabel}</div>
-            </div>
-            <button type="button" id="ub-btn-edit-look-studio" class="shrink-0 rounded-lg border border-sky-400/60 bg-sky-500/15 hover:bg-sky-500/25 px-2.5 py-1 text-[10.5px] font-extrabold text-sky-300 cursor-pointer transition" title="Open ${ANIMATION_LAB_NAME} to choose Base Character, Skins & Clothing">
-              🎬 Change Base &amp; Look in Studio
-            </button>
-          </div>
         </div>
       </div>
 
@@ -373,86 +343,6 @@ export function renderUnitRightInspectorHtml(stateManager, unitId, activeLoadout
               ${selectOptionsHtml(WEAPON_L_OPTIONS, curWeaponL)}
             </select>
           </label>
-        </div>
-      </div>
-
-      <!-- Fix 4: Visual Appearance (Cosmetic Helmet, Armor, Shoulders, Boots, Cape & Studio Skins) -->
-      <div class="rounded-xl border border-violet-500/40 bg-slate-950/75 p-2.5 flex flex-col gap-2">
-        <div class="flex items-center justify-between gap-2">
-          <span class="text-xs font-black text-violet-300">Visual Appearance (Cosmetic)</span>
-          <button type="button" id="ub-btn-edit-cosmetic-studio" class="rounded-lg border border-violet-400/60 bg-violet-500/15 hover:bg-violet-500/25 px-2 py-0.5 text-[10px] font-extrabold text-violet-200 cursor-pointer transition" title="Customize look, skins, and fitted clothing in ${ANIMATION_LAB_NAME}">
-            🎨 Edit Look &amp; Skins in Studio
-          </button>
-        </div>
-        <div class="grid grid-cols-2 gap-2">
-          <div class="flex flex-col gap-1.5 col-span-2">
-            <span class="text-[10px] font-semibold text-slate-400">Skin / Faction Look (From Studio)</span>
-            <div class="grid grid-cols-2 gap-1.5">
-              ${skinOptions
-                .map((sk) => {
-                  const on = sk.id === curSkinId;
-                  const fKey = sk.id === 'default' ? unitRace : sk.id;
-                  const tc = getFactionColors(stateManager.unitsVisualsData, fKey);
-                  const c1 = tc?.primary || '#3b82f6';
-                  const c2 = tc?.secondary || '#fbbf24';
-                  return `<button type="button" data-unit-skin-pick="${sk.id}" class="relative flex items-center gap-2 rounded-lg border-2 px-2 py-1.5 text-left cursor-pointer transition ${
-                    on
-                      ? 'border-emerald-400 bg-emerald-500/15 ring-1 ring-emerald-400/40'
-                      : 'border-slate-700 bg-slate-900/90 hover:border-slate-500'
-                  }">
-                    ${on ? `<span data-skin-check="true" class="pointer-events-none absolute -top-1.5 -left-1.5 z-10 flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500 text-slate-950 text-[10px] font-black shadow ring-1 ring-slate-950">✓</span>` : ''}
-                    <span class="h-4 w-4 shrink-0 rounded-full border border-white/30 shadow-inner" style="background: linear-gradient(135deg, ${c1} 50%, ${c2} 50%);"></span>
-                    <span class="truncate text-[10.5px] font-bold ${on ? 'text-emerald-300' : 'text-slate-200'}">${sk.label}</span>
-                  </button>`;
-                })
-                .join('')}
-            </div>
-            <select id="ub-unit-skin-select" class="hidden">
-              ${skinOptions.map((sk) => `<option value="${sk.id}" ${sk.id === curSkinId ? 'selected' : ''}>${sk.label}</option>`).join('')}
-            </select>
-          </div>
-          <label class="flex flex-col gap-0.5">
-            <span class="text-[10px] font-semibold text-slate-400">Helmet / Head</span>
-            <select data-unit-appearance="head" class="rounded bg-slate-900 border border-slate-700 px-2 py-1 text-xs text-slate-200">
-              ${selectOptionsHtml(headOptions, curHead)}
-            </select>
-          </label>
-          <label class="flex flex-col gap-0.5">
-            <span class="text-[10px] font-semibold text-slate-400">Chest Armor</span>
-            <select data-unit-appearance="torso" class="rounded bg-slate-900 border border-slate-700 px-2 py-1 text-xs text-slate-200">
-              ${selectOptionsHtml(chestOptions, curTorso)}
-            </select>
-          </label>
-          <label class="flex flex-col gap-0.5">
-            <span class="text-[10px] font-semibold text-slate-400">Shoulders</span>
-            <select data-unit-appearance-pair="shoulder" class="rounded bg-slate-900 border border-slate-700 px-2 py-1 text-xs text-slate-200">
-              ${selectOptionsHtml(shoulderOptions, curShoulder)}
-            </select>
-          </label>
-          <label class="flex flex-col gap-0.5">
-            <span class="text-[10px] font-semibold text-slate-400">Boots</span>
-            <select data-unit-appearance-pair="boots" class="rounded bg-slate-900 border border-slate-700 px-2 py-1 text-xs text-slate-200">
-              ${selectOptionsHtml(bootsOptions, curBoots)}
-            </select>
-          </label>
-          <label class="flex flex-col gap-0.5">
-            <span class="text-[10px] font-semibold text-slate-400">Cape / Cloak</span>
-            <select data-unit-appearance="cape_back" class="rounded bg-slate-900 border border-slate-700 px-2 py-1 text-xs text-slate-200">
-              ${selectOptionsHtml(capeOptions, curCape)}
-            </select>
-          </label>
-          ${
-            curMountType !== 'none'
-              ? `
-            <label class="flex flex-col gap-0.5">
-              <span class="text-[10px] font-semibold text-slate-400">Mount Barding</span>
-              <select data-unit-appearance="mount_torso" class="rounded bg-slate-900 border border-slate-700 px-2 py-1 text-xs text-slate-200">
-                ${selectOptionsHtml(APPEARANCE_MOUNT_ARMOR_OPTIONS, curMountArmor)}
-              </select>
-            </label>
-          `
-              : ''
-          }
         </div>
       </div>
 

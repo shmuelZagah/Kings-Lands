@@ -28,7 +28,7 @@ import { createPortraitStudio } from '../studio/portraitRenderer.js';
 import { canBuildingRecruitUnits, ensureBuildingLevelUpgradesConfig } from './buildingStudioAdapter.js';
 import { computeCapabilitiesForLoadout } from '../../sim/combatCapabilitiesRegistry.js';
 import { MAIN_LOADOUT, asLoadout, equipmentOf, restow, grantedActions, weaponTypeOf } from '../studio/weaponRules.js';
-import { ACTION_CLIPS, getCombatBase, getLocomotionBase, resolveClip } from '../studio/clipResolver.js';
+import { ACTION_CLIPS, getCombatBase, getEquipmentCombatBase, getLocomotionBase, resolveClip } from '../studio/clipResolver.js';
 import {
   UnitsBuildingsStateManager,
   computeEligibleFormationsForUnit
@@ -38,6 +38,8 @@ import {
   renderUnitRightInspectorHtml
 } from './unitsTabRenderer.js';
 import {
+  getFirstBuildingId,
+  getOrderedBuildingsList,
   renderBuildingsLeftListHtml,
   renderBuildingRightInspectorHtml
 } from './buildingsTabRenderer.js';
@@ -77,7 +79,7 @@ export class UnitsBuildingsLabApp {
     this.selectedBuildingId =
       options.initialBuildingId && this.stateManager.buildingsData.buildings[options.initialBuildingId]
         ? options.initialBuildingId
-        : 'barracks';
+        : getFirstBuildingId(this.stateManager.buildingsData);
 
     this.activeLoadoutId = options.initialLoadoutIdx === 1 ? 'loadout2' : MAIN_LOADOUT;
     this.activeUnitAnim = options.initialAnim || 'idle';
@@ -231,6 +233,8 @@ export class UnitsBuildingsLabApp {
     });
     this.rootContainer.querySelector('#ub-tab-buildings')?.addEventListener('click', () => {
       this.activeTab = 'buildings';
+      this.selectedBuildingId = getFirstBuildingId(this.stateManager.buildingsData);
+      this.bldPreviewLevel = 1;
       this._syncTabButtons();
       this._renderWorkspace();
     });
@@ -1218,31 +1222,6 @@ export class UnitsBuildingsLabApp {
       reader.readAsDataURL(file);
     });
 
-    // Open Animation Studio directly on Look / Gear / Base Character controls
-    rightEl?.querySelector('#ub-btn-edit-look-studio')?.addEventListener('click', () => {
-      this._openContextualAnimationLab({ initialInspectorTab: 'gear' });
-    });
-    rightEl?.querySelector('#ub-btn-edit-cosmetic-studio')?.addEventListener('click', () => {
-      this._openContextualAnimationLab({ initialInspectorTab: 'gear' });
-    });
-    const applyUnitSkin = (val) => {
-      const uStat = this.stateManager.unitStatsData.units?.[this.selectedUnitId];
-      if (!uStat) return;
-      if (!val || val === 'default') delete uStat.activeSkin;
-      else uStat.activeSkin = val;
-      this.stateManager.saveAll();
-      this._renderWorkspace();
-      this._toast(`Updated visual skin to "${!val || val === 'default' ? 'Default' : val}"`);
-    };
-    rightEl?.querySelector('#ub-unit-skin-select')?.addEventListener('change', (e) => {
-      applyUnitSkin(e.target.value);
-    });
-    rightEl?.querySelectorAll('[data-unit-skin-pick]').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        applyUnitSkin(btn.getAttribute('data-unit-skin-pick'));
-      });
-    });
-
     // Fix 5: Mount dropdown (`None`, `Warhorse`, `Dire Wolf`, `War Chameleon`)
     rightEl?.querySelector('#ub-unit-mount-select')?.addEventListener('change', (e) => {
       const mountType = e.target.value;
@@ -1367,60 +1346,6 @@ export class UnitsBuildingsLabApp {
       });
     });
 
-    // Fix 4: Equip Cosmetic Visual Appearance (Helmet, Chest, Cape, Mount Armor) across all loadouts
-    const applyCosmeticSocket = (uVis, socket, prefabId) => {
-      const pDef = this.stateManager.unitsVisualsData.prefabs?.[prefabId];
-      const defOffset = Array.isArray(pDef?.gripOffset) ? [...pDef.gripOffset] : [0, 0, 0];
-      const defRot = Array.isArray(pDef?.gripRotation) ? [...pDef.gripRotation] : [0, 0, 0];
-      for (const eqObj of [
-        uVis.equipment || (uVis.equipment = {}),
-        ...Object.values(uVis.loadouts || {}).map((l) => l.equipment || (l.equipment = {}))
-      ]) {
-        if (!prefabId || prefabId === 'none') {
-          delete eqObj[socket];
-        } else {
-          const samePrefab = eqObj[socket]?.prefab === prefabId;
-          eqObj[socket] = {
-            prefab: prefabId,
-            gripOffset: samePrefab && Array.isArray(eqObj[socket]?.gripOffset) ? eqObj[socket].gripOffset : [...defOffset],
-            gripRotation: samePrefab && Array.isArray(eqObj[socket]?.gripRotation) ? eqObj[socket].gripRotation : [...defRot]
-          };
-        }
-      }
-    };
-
-    rightEl?.querySelectorAll('[data-unit-appearance]').forEach((sel) => {
-      sel.addEventListener('change', () => {
-        const socket = sel.getAttribute('data-unit-appearance');
-        const prefabId = sel.value;
-        const uVis = this.stateManager.unitsVisualsData.units[this.selectedUnitId];
-        if (!uVis) return;
-        applyCosmeticSocket(uVis, socket, prefabId);
-        this.stateManager.saveAll();
-        this._renderWorkspace();
-      });
-    });
-
-    rightEl?.querySelectorAll('[data-unit-appearance-pair]').forEach((sel) => {
-      sel.addEventListener('change', () => {
-        const pairKind = sel.getAttribute('data-unit-appearance-pair');
-        const basePrefab = sel.value;
-        const uVis = this.stateManager.unitsVisualsData.units[this.selectedUnitId];
-        if (!uVis) return;
-        const sockR = pairKind === 'shoulder' ? 'arm_R' : 'foot_R';
-        const sockL = pairKind === 'shoulder' ? 'arm_L' : 'foot_L';
-        if (!basePrefab || basePrefab === 'none') {
-          applyCosmeticSocket(uVis, sockR, 'none');
-          applyCosmeticSocket(uVis, sockL, 'none');
-        } else {
-          applyCosmeticSocket(uVis, sockR, `${basePrefab}_R`);
-          applyCosmeticSocket(uVis, sockL, `${basePrefab}_L`);
-        }
-        this.stateManager.saveAll();
-        this._renderWorkspace();
-      });
-    });
-
     // Fix 2 & Per-Set Capabilities: Single toggle button for each secondary formation & combat mode
     rightEl?.querySelectorAll('[data-unit-formation-toggle]').forEach((btn) => {
       btn.addEventListener('click', () => {
@@ -1510,6 +1435,40 @@ export class UnitsBuildingsLabApp {
         this.selectedBuildingId = btn.getAttribute('data-select-building');
         this.bldPreviewLevel = 1;
         this._renderWorkspace({ preserveCamera: false });
+      });
+    });
+
+    leftEl?.querySelector('#ub-btn-create-building')?.addEventListener('click', () => {
+      const count = getOrderedBuildingsList(this.stateManager.buildingsData).length + 1;
+      const newId = this.stateManager.createNewBuilding({ name: `New Building #${count}` });
+      if (newId) {
+        this.selectedBuildingId = newId;
+        this.bldPreviewLevel = 1;
+        this._renderWorkspace({ preserveCamera: false });
+        this._toast(`Created new building "${newId}"`);
+      } else {
+        this._toast('Could not create building', 4500);
+      }
+    });
+
+    const handleDeleteBuildingById = (delId) => {
+      if (!this.stateManager.deleteBuilding(delId)) return;
+      if (!this.stateManager.buildingsData.buildings?.[this.selectedBuildingId]) {
+        this.selectedBuildingId = getFirstBuildingId(this.stateManager.buildingsData);
+        this.bldPreviewLevel = 1;
+      }
+      this._renderWorkspace({ preserveCamera: false });
+      this._toast(`Deleted building "${delId}"`);
+    };
+
+    leftEl?.querySelector('#ub-btn-delete-building-left')?.addEventListener('click', () => {
+      handleDeleteBuildingById(this.selectedBuildingId);
+    });
+
+    leftEl?.querySelectorAll('[data-delete-building-row]').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        handleDeleteBuildingById(btn.getAttribute('data-delete-building-row'));
       });
     });
 

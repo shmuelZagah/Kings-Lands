@@ -381,6 +381,17 @@ export const studioControlsAndLoopMethods = {
       if (race && this._factions().includes(race)) { this.currentFaction = race; qs('#st-faction-select').value = race; }
       this._spawnStudioUnit();
     });
+    qs('#st-btn-del-unit')?.addEventListener('click', () => {
+      if (this.unitsData.units?.[this.currentUnitId]?.importInfo) {
+        this._deleteImportedUnit(this.currentUnitId);
+      }
+    });
+    qs('#st-btn-del-base')?.addEventListener('click', () => {
+      const baseId = qs('#st-base-char-select')?.value;
+      if (baseId && this.unitsData.units?.[baseId]?.importInfo) {
+        this._deleteImportedUnit(baseId);
+      }
+    });
     qs('#st-base-char-select')?.addEventListener('change', (e) => {
       const wanted = e.target.value;
       if (!wanted || !this.ubStateManager || this.entityCategory !== 'units') return;
@@ -455,6 +466,12 @@ export const studioControlsAndLoopMethods = {
         this.stateManager.scheduleSave();
         this._spawnStudioUnit();
         this._renderGearPanel();
+        return;
+      }
+      const delImp = e.target.closest('.gear-del-imp');
+      if (delImp && delImp.dataset.delPrefab) {
+        e.stopPropagation();
+        this._deleteImportedGear(delImp.dataset.delPrefab);
         return;
       }
       const pick = e.target.closest('.gear-pick'), fit = e.target.closest('.gear-grip');
