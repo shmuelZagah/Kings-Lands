@@ -216,7 +216,17 @@ export const studioGearAndPoseMethods = {
     return list;
   },
 
+  /** Same answer for every caller in one synchronous burst (the clip drop-down asks once per clip: 60+ calls, each heavy for heroes). */
   _actionList() {
+    const key = `${this.entityCategory}|${this.currentUnitId}|${this.currentLoadout}`;
+    if (this._actionListMemo && this._actionListMemo.key === key) return this._actionListMemo.value;
+    const value = this._actionListCompute();
+    this._actionListMemo = { key, value };
+    queueMicrotask(() => { this._actionListMemo = null; });
+    return value;
+  },
+
+  _actionListCompute() {
     const data = this.unitsData, u = data.units[this.currentUnitId];
     if (this.entityCategory === "buildings" || u?.isBuildingEntity) {
       const bClips = Array.isArray(u?.allowedBuildingClips) ? u.allowedBuildingClips : BUILDING_STUDIO_CLIPS;
@@ -958,6 +968,7 @@ export const studioGearAndPoseMethods = {
       if (!rest) continue;
       joint.position.set(...rest.pos);
       joint.rotation.set(...rest.rot);
+      if (rest.scale) joint.scale.set(...rest.scale);
     }
   },
 
@@ -1189,6 +1200,10 @@ export const studioGearAndPoseMethods = {
     };
     walk(unitDef.hierarchy);
     walk(unitDef.mountHierarchy);
+    if (unitDef.isBuildingEntity) {   // the building skeleton is generated: keep the edit so it can be saved with the building
+      unitDef.studioRig = unitDef.studioRig || {};
+      unitDef.studioRig[jointName] = { pos: [...pos], rot: [...rot], scale: [...scl] };
+    }
     this._markHeroVisualDirty();
   },
 

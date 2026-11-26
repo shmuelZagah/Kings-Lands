@@ -106,6 +106,28 @@ export const BUILDING_CLIP_LABELS = Object.freeze({
 });
 
 /**
+ * Rig-mode edits of a building (rotation/scale/position of its joints) are stored on the building definition as
+ * `studioRig: { <joint>: { pos, rot, scale } }`. The Studio skeleton is generated, so they are re-applied here.
+ */
+export function applyStudioRig(unit, rig) {
+  unit.studioRig = rig && typeof rig === 'object' ? JSON.parse(JSON.stringify(rig)) : undefined;
+  if (!unit.studioRig) return;
+  const walk = (nodes) => {
+    for (const [name, def] of Object.entries(nodes || {})) {
+      const r = unit.studioRig[name];
+      if (r) {
+        if (Array.isArray(r.pos)) def.pos = [...r.pos];
+        if (Array.isArray(r.rot)) def.rot = [...r.rot];
+        if (Array.isArray(r.scale)) def.scale = [...r.scale]; else delete def.scale;
+        unit.restPoses[name] = { ...(unit.restPoses[name] || {}), pos: [...(def.pos || [0, 0, 0])], rot: [...(def.rot || [0, 0, 0])] };
+      }
+      walk(def.children);
+    }
+  };
+  walk(unit.hierarchy);
+}
+
+/**
  * Builds a Studio-compatible `unitsData` object where each building in `buildingsData.buildings`
  * (excluding `citadel_slot`) is represented as an articulated 3D hierarchy for `ModelFactory` & `Animator3D`.
  */
@@ -284,6 +306,7 @@ export function buildBuildingsStudioViewData(
       },
       skins: bSkinPalette
     };
+    applyStudioRig(units[bId], bDef.studioRig);
   }
 
   const registryBuildingVisuals = dataRegistry.getBuildingVisuals();

@@ -247,8 +247,9 @@ export class StudioApp {
       get data() { return this._view; },
       _view: this._buildingsStudioView,
       notice: "",
-      saveDraft: () => this.ubStateManager.saveAll(),
+      saveDraft: () => { this._pushBuildingRig(); return this.ubStateManager.saveAll(); },
       scheduleSave: (d) => {
+        this._pushBuildingRig();
         if (this._buildingsStudioView?.animations?.keyframes) {
           this.ubStateManager.buildingVisualsData.animations.keyframes = {
             ...(this.ubStateManager.buildingVisualsData.animations.keyframes || {}),
@@ -257,7 +258,7 @@ export class StudioApp {
         }
         this.ubStateManager.scheduleSave(d);
       },
-      flush: () => this.ubStateManager.saveAll(),
+      flush: () => { this._pushBuildingRig(); return this.ubStateManager.saveAll(); },
       exportCustomJson: () => this.ubStateManager.exportCombinedBundleJson(),
       importJsonText: (txt) => this.ubStateManager.importCombinedBundleText(txt),
       resetToDefault: () => { this.ubStateManager.resetAllToDefaults(); return true; },
@@ -539,6 +540,16 @@ export class StudioApp {
       .join('');
   }
 
+  /** Rig-mode edits of buildings live in the generated Studio view; copy them onto the building definitions before saving. */
+  _pushBuildingRig() {
+    const blds = this.ubStateManager?.buildingsData?.buildings;
+    if (!blds) return;
+    for (const [id, u] of Object.entries(this._buildingsStudioView?.units || {})) {
+      if (!blds[id] || !u.studioRig) continue;
+      blds[id].studioRig = JSON.parse(JSON.stringify(u.studioRig));
+    }
+  }
+
   _switchEntityCategory(cat) {
     if (this.contextualHeroId) return;
     if (this.entityCategory === cat) return;
@@ -710,7 +721,7 @@ export class StudioApp {
             <div id="st-gizmo-tools" class="absolute left-3 top-1/2 -translate-y-1/2 z-10 flex flex-col gap-1 rounded-lg border border-slate-700 bg-slate-900/90 p-1">
               <button type="button" data-gizmo="translate" class="st-gt flex h-8 w-8 items-center justify-center rounded text-base" title="Move (W)">✥</button>
               <button type="button" data-gizmo="rotate" class="st-gt flex h-8 w-8 items-center justify-center rounded text-base" title="Rotate (E)">⟳</button>
-              <button type="button" data-gizmo="scale" class="st-gt flex h-8 w-8 items-center justify-center rounded text-base" title="Scale (R) - Rig mode only: changes the size of the part">⤢</button>
+              <button type="button" data-gizmo="scale" class="st-gt flex h-8 w-8 items-center justify-center rounded text-base" style="display:none" title="Scale (R) - Rig mode only: changes the size of the part">⤢</button>
             </div>
             <div id="st-inspector-mount" class="absolute top-3 right-3 z-10 hidden"></div>
 
@@ -937,7 +948,7 @@ export class StudioApp {
         bDef = freshBuildingsData?.buildings?.[bId] || bDef;
         const hasWt = bDef.hasWatchtowerSupport !== false && ((bDef.watchtowerLevel | 0) > 0 || Boolean(bDef.hasBuiltInTurret));
         const bActor = modelProvider.createBuildingModel(bId, {
-          buildingDefOverride: bDef,
+          buildingDefOverride: { ...bDef, studioRig: undefined },   // the Studio applies the rig through the joints itself
           team: this.currentTeamId || 1,
           level: this.buildingPreviewLevel || 1,
           footprintRadiusMeters: bDef.footprintRadiusMeters || 5,

@@ -282,6 +282,13 @@ export const studioControlsAndLoopMethods = {
     this.gizmoController.setGizmoMode(mode);
   },
 
+  /** Scale button and inspector scale fields exist only in Rig mode. */
+  _syncScaleUi() {
+    const rig = this.editMode === 'rig';
+    this.rootContainer?.querySelector('button[data-gizmo="scale"]')?.style.setProperty('display', rig ? 'flex' : 'none');
+    this.inspectorPanel?.setScaleVisible(rig);
+  },
+
   _setEditMode(mode) {
     if (this.editMode === mode) return;
     if (mode === 'rig' && !confirm(
@@ -291,6 +298,7 @@ export const studioControlsAndLoopMethods = {
     )) return;
     this.editMode = mode;
     if (mode !== 'rig' && this.gizmoController.getMode() === 'scale') this.gizmoController.setGizmoMode('rotate');
+    this._syncScaleUi();
     const qs = (s) => this.rootContainer.querySelector(s);
     qs('#st-edit-pose').className = mode === 'pose' ? SEG_ON : SEG_OFF;
     qs('#st-edit-rig').className = mode === 'rig' ? RIG_ON : SEG_OFF;

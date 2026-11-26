@@ -48,6 +48,7 @@ if (typeof window !== 'undefined') {
   // console helper for bug reports:  __klDiag()
   window.__klDiag = () => dataRegistry.diagnostics();
   window.__dataRegistry = dataRegistry;
+  Object.defineProperty(window, '__studio', { get: () => activeStudio, configurable: true }); // diagnostics / browser tests
 }
 
 let activeStudio = null;

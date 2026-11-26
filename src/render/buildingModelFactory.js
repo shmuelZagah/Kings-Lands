@@ -483,15 +483,19 @@ export class BuildingModelFactory {
     const sampledPose = activeBldClip ? sampleClipPose(activeBldClip, normT) : null;
 
     if (actor.bodyGroup) {
-      actor.bodyGroup.scale.set(scaleXZ, scaleY, scaleXZ);
+      // Rig-mode edit from the Studio (building definition `studioRig.torso`): the rest rotation/size of the whole body.
+      const rigT = bDef?.studioRig?.torso;
+      const rigS = rigT?.scale || [1, 1, 1];
+      actor.bodyGroup.scale.set(scaleXZ * (rigS[0] ?? 1), scaleY * (rigS[1] ?? 1), scaleXZ * (rigS[2] ?? 1));
       const tPos = sampledPose?.torso?.pos || [0, 0, 0];
       const tRot = sampledPose?.torso?.rot || [0, 0, 0];
       const pRot = sampledPose?.pelvis?.rot || [0, 0, 0];
       actor.bodyGroup.position.set(tPos[0] || 0, Math.max(0, tPos[1] || 0), tPos[2] || 0);
+      const rigR = rigT?.rot || [0, 0, 0];
       actor.bodyGroup.rotation.set(
-        (tRot[0] || 0) + (pRot[0] || 0),
-        (tRot[1] || 0) + (pRot[1] || 0),
-        (tRot[2] || 0) + (pRot[2] || 0)
+        (tRot[0] || 0) + (pRot[0] || 0) + (rigR[0] || 0),
+        (tRot[1] || 0) + (pRot[1] || 0) + (rigR[1] || 0),
+        (tRot[2] || 0) + (pRot[2] || 0) + (rigR[2] || 0)
       );
       if (!sampledPose && bldState.isCompleted) {
         if (hpRatio < 0.35) {

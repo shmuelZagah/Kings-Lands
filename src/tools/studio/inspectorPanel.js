@@ -18,6 +18,7 @@ const AXIS_STYLE = [
 const FIELDS = [];
 for (let i = 0; i < 3; i++) FIELDS.push({ id: `insp-p${AXES[i]}`, group: 'pos', axis: i });
 for (let i = 0; i < 3; i++) FIELDS.push({ id: `insp-r${AXES[i]}`, group: 'rot', axis: i });
+for (let i = 0; i < 3; i++) FIELDS.push({ id: `insp-s${AXES[i]}`, group: 'scl', axis: i });
 
 const PROC_FIELDS = [
   { id: 'insp-proc-freq', key: 'frequency', fallback: 2.0 },
@@ -120,10 +121,11 @@ export class InspectorPanel {
 
   _values() {
     const t = this.activeTarget;
-    if (!t) return { pos: [0, 0, 0], rot: [0, 0, 0] };
+    if (!t) return { pos: [0, 0, 0], rot: [0, 0, 0], scl: [1, 1, 1] };
     return {
       pos: [t.position.x, t.position.y, t.position.z],
-      rot: [t.rotation.x, t.rotation.y, t.rotation.z]
+      rot: [t.rotation.x, t.rotation.y, t.rotation.z],
+      scl: [t.scale.x, t.scale.y, t.scale.z]
     };
   }
 
@@ -131,14 +133,25 @@ export class InspectorPanel {
     if (!this.activeTarget) return;
     const v = this._values();
     for (const f of FIELDS) {
-      let val = f.group === 'pos' ? v.pos[f.axis] : v.rot[f.axis] * DEG;
-      if (Math.abs(val) < 5e-4) val = 0;
+      let val = f.group === 'pos' ? v.pos[f.axis] : f.group === 'scl' ? v.scl[f.axis] : v.rot[f.axis] * DEG;
+      if (f.group !== 'scl' && Math.abs(val) < 5e-4) val = 0;
       const num = this._el(f.id);
       const rng = this._el(`${f.id}-range`);
-      if (document.activeElement !== num) num.value = val.toFixed(f.group === 'pos' ? 3 : 1);
+      if (document.activeElement !== num) num.value = val.toFixed(f.group === 'rot' ? 1 : 3);
       if (document.activeElement !== rng) rng.value = String(val);
     }
+    const su = this._el('insp-su');
+    if (su && document.activeElement !== su) {
+      const avg = (v.scl[0] + v.scl[1] + v.scl[2]) / 3;
+      su.value = avg.toFixed(3);
+      this._el('insp-su-range').value = String(avg);
+    }
     this._fillProcedural();
+  }
+
+  /** The scale fields only make sense in Rig mode (they resize the part itself, not an animation). */
+  setScaleVisible(visible) {
+    this._el('insp-scale-group')?.classList.toggle('hidden', !visible);
   }
 
   switchTab(tab) {
@@ -163,9 +176,11 @@ export class InspectorPanel {
   _renderUI() {
     const row = (group, i) => {
       const s = AXIS_STYLE[i];
-      const id = `insp-${group === 'pos' ? 'p' : 'r'}${AXES[i]}`;
+      const id = `insp-${group === 'pos' ? 'p' : group === 'scl' ? 's' : 'r'}${AXES[i]}`;
       const range =
-        group === 'pos' ? { min: -2, max: 2, step: 0.01 } : { min: -180, max: 180, step: 1 };
+        group === 'pos' ? { min: -2, max: 2, step: 0.01 }
+          : group === 'scl' ? { min: 0.1, max: 4, step: 0.01 }
+            : { min: -180, max: 180, step: 1 };
       return `
         <div class="flex items-center gap-2 mb-1">
           <span class="w-4 ${s.text} font-bold">${s.label}</span>
@@ -218,6 +233,13 @@ export class InspectorPanel {
             <div class="flex flex-col mt-1">
               <div class="text-slate-400 font-semibold mb-1">Rotation (degrees)</div>
               ${row('rot', 0)}${row('rot', 1)}${row('rot', 2)}
+            </div>
+            <div id="insp-scale-group" class="hidden flex flex-col mt-1">
+              <div class="text-slate-400 font-semibold mb-1">Scale (Rig mode: size of the part)</div>
+              <label class="flex items-center gap-2 mb-1"><span class="w-16 text-sky-300">All (X+Y+Z)</span>
+                <input id="insp-su-range" type="range" min="0.1" max="4" step="0.01" value="1" class="flex-1 accent-sky-400">
+                <input id="insp-su" type="number" min="0.1" max="4" step="0.01" value="1" class="w-16 rounded border border-slate-600 bg-slate-800 px-1 py-0.5 text-slate-100"></label>
+              ${row('scl', 0)}${row('scl', 1)}${row('scl', 2)}
             </div>
           </div>
 
@@ -277,6 +299,19 @@ export class InspectorPanel {
     this._el('tab-icons').addEventListener('click', () => this.switchTab('icons'));
     this._el('tab-color').addEventListener('click', () => this.switchTab('color'));
     this._el('tab-import').addEventListener('click', () => this.switchTab('import'));
+
+    const uni = (value) => {
+      if (!this.activeTarget || !this.transformsEnabled || !(value > 0.01)) return;
+      this.onForcePause?.();
+      this.activeTarget.scale.set(value, value, value);
+      this._el('insp-su').value = value.toFixed(3);
+      this._el('insp-su-range').value = String(value);
+      this.syncUI();
+      const v = this._values();
+      this.onTransformChange?.(v.pos, v.rot);
+    };
+    this._el('insp-su').addEventListener('input', (e) => uni(parseFloat(e.target.value)));
+    this._el('insp-su-range').addEventListener('input', (e) => uni(parseFloat(e.target.value)));
 
     for (const f of FIELDS) {
       const num = this._el(f.id);
@@ -346,10 +381,11 @@ export class InspectorPanel {
 
     const key = AXES[field.axis];
     if (field.group === 'pos') this.activeTarget.position[key] = value;
+    else if (field.group === 'scl') { if (value > 0.01) this.activeTarget.scale[key] = value; else return; }
     else this.activeTarget.rotation[key] = value * RAD;
 
     const twin = this._el(source === 'num' ? `${field.id}-range` : field.id);
-    twin.value = source === 'num' ? String(value) : value.toFixed(field.group === 'pos' ? 3 : 1);
+    twin.value = source === 'num' ? String(value) : value.toFixed(field.group === 'rot' ? 1 : 3);
 
     const v = this._values();
     this.onTransformChange?.(v.pos, v.rot);
