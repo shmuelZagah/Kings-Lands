@@ -248,6 +248,7 @@ function launchStudio(options = {}) {
       destroyActiveLabs();
       if (contextualHeroId) {
         launchHallOfHeroes({
+          returnToLobby: Boolean(options.returnToLobby),
           initialHeroId: contextualHeroId,
           initialAnim: returnAnim,
           initialLoadoutIdx: returnLoadoutIdx,
@@ -315,6 +316,7 @@ function launchHallOfHeroes(options = {}) {
     initialEditSubmode: options.initialEditSubmode || 'parameters',
     onOpenAnimationLabForHero: (heroId, activeAnim = 'idle', loadoutIdx = 0) => {
       launchStudio({
+        returnToLobby: Boolean(options.returnToLobby),
         contextualHeroId: heroId,
         initialAnim: activeAnim,
         initialLoadoutIdx: loadoutIdx

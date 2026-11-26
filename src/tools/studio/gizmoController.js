@@ -35,7 +35,7 @@ export class GizmoController {
     this.orbit.target.set(0, 1.1, 0);
 
     this.transformControls = new TransformControls(this.camera, this.domElement);
-    this.transformControls.setSize(0.45);
+    this.transformControls.setSize(0.85);
     this.transformControls.setSpace('local');
     this.transformControls.setMode('rotate');
     this._configureLightGizmo();
@@ -161,7 +161,7 @@ export class GizmoController {
   getMode() { return this.transformControls.getMode(); }
 
   setGizmoMode(mode) {
-    if (mode === 'rotate' || mode === 'translate') this.transformControls.setMode(mode);
+    if (mode === 'rotate' || mode === 'translate' || mode === 'scale') this.transformControls.setMode(mode);
   }
 
   detach() {

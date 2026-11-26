@@ -273,6 +273,15 @@ export const studioControlsAndLoopMethods = {
     }
   },
 
+  /** Scale changes the character itself (its rest pose), so it is only available in Rig mode. */
+  _setGizmoModeChecked(mode) {
+    if (mode === 'scale' && this.editMode !== 'rig') {
+      this._toast('Scale changes the size of the part itself: switch to Rig mode first.', 3200);
+      return;
+    }
+    this.gizmoController.setGizmoMode(mode);
+  },
+
   _setEditMode(mode) {
     if (this.editMode === mode) return;
     if (mode === 'rig' && !confirm(
@@ -281,6 +290,7 @@ export const studioControlsAndLoopMethods = {
       'To animate, stay in Pose mode. Continue to Rig mode?'
     )) return;
     this.editMode = mode;
+    if (mode !== 'rig' && this.gizmoController.getMode() === 'scale') this.gizmoController.setGizmoMode('rotate');
     const qs = (s) => this.rootContainer.querySelector(s);
     qs('#st-edit-pose').className = mode === 'pose' ? SEG_ON : SEG_OFF;
     qs('#st-edit-rig').className = mode === 'rig' ? RIG_ON : SEG_OFF;
@@ -420,7 +430,7 @@ export const studioControlsAndLoopMethods = {
 
     qs('#st-gizmo-tools').addEventListener('click', (e) => {
       const b = e.target.closest('.st-gt');
-      if (b) this.gizmoController.setGizmoMode(b.dataset.gizmo);
+      if (b) this._setGizmoModeChecked(b.dataset.gizmo);
     });
     this.gizmoController.transformControls.addEventListener('mode-changed', () => this._syncGizmoTools());
     this._syncGizmoTools();
@@ -878,6 +888,7 @@ export const studioControlsAndLoopMethods = {
         case 'Delete': if (this.editMode === 'pose') { e.preventDefault(); tl.deleteSelection(); } break;
         case 'Escape': if (this._modalOpen()) this._closeModal(); else tl.clearSelection(); break;
         case 'KeyW': this.gizmoController.setGizmoMode('translate'); break;
+        case 'KeyR': this._setGizmoModeChecked('scale'); break;
         case 'KeyE': this.gizmoController.setGizmoMode('rotate'); break;
         default: break;
       }

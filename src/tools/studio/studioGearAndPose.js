@@ -1171,14 +1171,19 @@ export const studioGearAndPoseMethods = {
     if (!rest) return;
     rest.pos = [obj.position.x, obj.position.y, obj.position.z];
     rest.rot = [obj.rotation.x, obj.rotation.y, obj.rotation.z];
+    rest.scale = [obj.scale.x, obj.scale.y, obj.scale.z];
 
     const unitDef = this.unitsData.units[this.currentUnitId];
     const pos = round3v(rest.pos);
     const rot = round3v(rest.rot);
+    const scl = round3v(rest.scale);
     const walk = (nodes) => {
       if (!nodes) return;
       for (const [name, def] of Object.entries(nodes)) {
-        if (name === jointName) { def.pos = [...pos]; def.rot = [...rot]; }
+        if (name === jointName) {
+          def.pos = [...pos]; def.rot = [...rot];
+          if (scl.some((v) => Math.abs(v - 1) > 1e-4)) def.scale = [...scl]; else delete def.scale;
+        }
         if (def.children) walk(def.children);
       }
     };
