@@ -1,4 +1,5 @@
 import { simBuildings } from '../simConfig.js';
+import { isPartEffectivelyActive, resolvePartPosition } from '../../data/buildingParts.js';
 import { getActiveCustomMapState } from "../../tools/map_editor/mapStateManager.js";
 import {
   FX_ONE,
@@ -50,6 +51,31 @@ export class ConstructionSystem {
     if (!b || b.isDestroyed) return false;
     if (b.type === 'citadel_slot') return true;
     return b.hp > 0;
+  }
+
+  /**
+   * Building parts (stage 2): the first part of `kind` ('fire_point' | 'exit_point') that exists at the building's level,
+   * from the STORED `parts` of its definition. Buildings without stored parts return null (legacy behaviour).
+   */
+  _activeStoredParts(building, kind) {
+    const parts = this.buildingDefs?.[building.type]?.parts;
+    if (!Array.isArray(parts)) return [];
+    const lv = Math.max(1, building.level | 0 || 1);
+    return parts.filter((p) => p.kind === kind && isPartEffectivelyActive(parts, p, lv)).map((p) => ({ ...p, pos: resolvePartPosition(parts, p) }));
+  }
+
+  /** Part offset (metres, building-local: +Z = the facing direction, +X = to its right) -> world offset in fixed point. */
+  _localOffsetToWorldFx(building, lx, lz) {
+    const dir = (building.facingDir ?? (building.team === 1 ? 256 : 768)) & ANGLE_MASK;
+    const c = fxCos(dir);
+    const s = fxSin(dir);
+    const xFx = Math.round((Number(lx) || 0) * FX_ONE) | 0;
+    const zFx = Math.round((Number(lz) || 0) * FX_ONE) | 0;
+    return {
+      dxFx: (mulDiv(xFx, s, FX_ONE) + mulDiv(zFx, c, FX_ONE)) | 0,
+      dzFx: (-mulDiv(xFx, c, FX_ONE) + mulDiv(zFx, s, FX_ONE)) | 0,
+      dir
+    };
   }
 
   _getBuildingDoorVectorFx(building, distanceMeters) {

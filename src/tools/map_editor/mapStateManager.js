@@ -1118,6 +1118,11 @@ function getOrLoadTexturedGlbTemplate(asset, defaultFitSize = 5.5) {
   return promise;
 }
 
+/** Parsed, textured, size-fitted template of a glb asset ({id, glbBase64|glbBuffer, fitSize}); cached per id. */
+export function loadTexturedGlbTemplate(asset, defaultFitSize = 5.5) {
+  return getOrLoadTexturedGlbTemplate(asset, defaultFitSize);
+}
+
 export function clearTexturedGlbAssetCache(assetId) {
   if (!assetId) return;
   _texturedGlbSceneCache.delete(assetId);

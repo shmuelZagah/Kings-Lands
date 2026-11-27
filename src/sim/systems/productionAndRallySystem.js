@@ -611,11 +611,22 @@ export class ProductionAndRallySystem {
         : building.footprintRadiusMeters + 10.5;
     const musterVec = this.cs._getBuildingDoorVectorFx(building, musterForwardMeters);
 
-    const doorXFx = (building.xFx + doorVec.dxFx) | 0;
-    const doorZFx = (building.zFx + doorVec.dzFx) | 0;
+    let doorXFx = (building.xFx + doorVec.dxFx) | 0;
+    let doorZFx = (building.zFx + doorVec.dzFx) | 0;
 
-    const rawMusterX = (building.xFx + musterVec.dxFx) | 0;
-    const rawMusterZ = (building.zFx + musterVec.dzFx) | 0;
+    let rawMusterX = (building.xFx + musterVec.dxFx) | 0;
+    let rawMusterZ = (building.zFx + musterVec.dzFx) | 0;
+
+    // Building parts: a stored exit point replaces the default door spot; the muster spot stays in front of it.
+    const exitPt = this.cs._activeStoredParts?.(building, 'exit_point')[0];
+    if (exitPt) {
+      const off = this.cs._localOffsetToWorldFx(building, exitPt.pos?.[0], exitPt.pos?.[2]);
+      doorXFx = (building.xFx + off.dxFx) | 0;
+      doorZFx = (building.zFx + off.dzFx) | 0;
+      const ahead = this.cs._getBuildingDoorVectorFx(building, musterForwardMeters - (building.footprintRadiusMeters + 1.8));
+      rawMusterX = (doorXFx + ahead.dxFx) | 0;
+      rawMusterZ = (doorZFx + ahead.dzFx) | 0;
+    }
 
     const walkable = this.cs.navGrid.findNearestWalkableTile(
       this.cs.navGrid.worldFxToTileX(rawMusterX),

@@ -14,6 +14,7 @@
  */
 
 import { grantedActions, lockedHand, loadoutsOf, asLoadout, HAND_SOCKETS } from './weaponRules.js';
+import { validateParts } from '../../data/buildingParts.js';
 import { ACTION_CLIPS, ATTACK_CLIPS, MOVE_CLIPS, baseOfClip, getCombatBase, getLocomotionBase, isAttackClip, isMoveClip, resolveClip, stripVariantSuffix } from './clipResolver.js';
 
 const LAYERS = ['upperBody', 'lowerBody', 'fullBody'];
@@ -336,6 +337,9 @@ export function validateCrossReferences({
   // 1. building <-> unit production lists & ballista turret unit ref
   for (const [bid, bDef] of Object.entries(bMap)) {
     if (!bDef || typeof bDef !== 'object') continue;
+    for (const pi of validateParts(bDef, { knownPrefabs: new Set(Object.keys(combinedPrefabs)) })) {
+      add(pi.level, 'cross-ref', `Building "${bid}": ${pi.message}`);
+    }
     if (Array.isArray(bDef.options)) {
       for (const opt of bDef.options) {
         if (!opt || opt.kind !== 'unit') continue;

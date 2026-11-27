@@ -16,6 +16,7 @@
  */
 
 import { dataRegistry } from '../../data/dataRegistry.js';
+import { effectiveParts } from '../../data/buildingParts.js';
 import { getFactions, getFactionColors, FACTION_TEAM_COLORS } from '../studio/skinUtils.js';
 
 export const BUILDING_STUDIO_CLIPS = Object.freeze([
@@ -104,6 +105,45 @@ export const BUILDING_CLIP_LABELS = Object.freeze({
   collapse_destroy: 'Collapse / Destroyed (collapse_destroy)',
   victory_cheer: 'Victory Cheer! 🎉 (victory_cheer)'
 });
+
+const PART_MARKER_MESH = {
+  fire_point: { name: 'fire_marker', shape: 'sphere', size: [0.22, 10, 10], pos: [0, 0, 0], color: '#f59e0b' },
+  exit_point: { name: 'exit_marker', shape: 'box', size: [0.5, 0.08, 0.5], pos: [0, 0, 0], color: '#38bdf8' },
+  group: { name: 'group_marker', shape: 'box', size: [0.25, 0.25, 0.25], pos: [0, 0, 0], color: '#a78bfa' },
+  model: { name: 'part_placeholder', shape: 'box', size: [0.8, 0.8, 0.8], pos: [0, 0.4, 0], color: '#94a3b8' }
+};
+
+/**
+ * Building parts (src/data/buildingParts.js) as Studio joints: every part is a joint named by its part id (child of its `parent` part, else of `torso`),
+ * so gizmo / inspector / Rig edits / keyframe tracks (tracks.<partId>) work on it like on any joint.
+ * The Studio writes the joint's rest pose back into `unit.parts[i]` (pos/rot/scale) - see DATA_CONTRACT in BUILDING_PARTS.md.
+ * Buildings have no head / hands: the humanoid joints listed in `unit.hiddenJoints` must not be offered in the UI
+ * (arm_L / arm_R stay only as the door leaves, labelled in `unit.jointLabels`).
+ */
+export function attachPartJoints(unit, parts) {
+  const oldTorso = unit.hierarchy?.pelvis?.children?.torso;
+  for (const old of unit.parts || []) { if (oldTorso?.children) delete oldTorso.children[old.id]; delete unit.restPoses?.[old.id]; }
+  unit.parts = JSON.parse(JSON.stringify(parts || []));
+  unit.hiddenJoints = ['head', 'turret_socket', 'cape_back', 'quiver_back'];
+  unit.jointLabels = { arm_L: 'Door leaf L', arm_R: 'Door leaf R', torso: 'Building body', pelvis: 'Foundation' };
+  const torso = unit.hierarchy?.pelvis?.children?.torso;
+  if (!torso) return;
+  torso.children = torso.children || {};
+  const nodes = {};
+  const make = (p) => {
+    if (nodes[p.id]) return nodes[p.id];
+    const node = { pos: [...p.pos], rot: [...p.rot], meshes: [JSON.parse(JSON.stringify(PART_MARKER_MESH[p.kind] || PART_MARKER_MESH.model))] };
+    if (p.scale.some((n) => Math.abs(n - 1) > 1e-4)) node.scale = [...p.scale];
+    nodes[p.id] = node;
+    const par = p.parent ? unit.parts.find((q) => q.id === p.parent) : null;
+    const host = par ? make(par) : torso;
+    host.children = host.children || {};
+    host.children[p.id] = node;
+    unit.restPoses[p.id] = { pos: [...p.pos], rot: [...p.rot], scale: [...p.scale] };
+    return node;
+  };
+  for (const p of unit.parts) make(p);
+}
 
 /**
  * Rig-mode edits of a building (rotation/scale/position of its joints) are stored on the building definition as
@@ -307,6 +347,7 @@ export function buildBuildingsStudioViewData(
       skins: bSkinPalette
     };
     applyStudioRig(units[bId], bDef.studioRig);
+    attachPartJoints(units[bId], effectiveParts(bDef, effBuildingsData?.sharedBuildingWatchtower));
   }
 
   const registryBuildingVisuals = dataRegistry.getBuildingVisuals();

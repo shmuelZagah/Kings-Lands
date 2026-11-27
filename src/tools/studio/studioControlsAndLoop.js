@@ -444,7 +444,17 @@ export const studioControlsAndLoopMethods = {
     this._syncGizmoTools();
     qs('#st-rig-mount').addEventListener('click', (e) => {
       const b = e.target.closest('.rig-part');
-      if (b) this._selectJoint(b.dataset.joint);
+      if (b) { this._selectJoint(b.dataset.joint); this._renderRigPanel(); return; }
+      const add = e.target.closest('[data-part-add]');
+      if (add) { this._addPart(add.dataset.partAdd); return; }
+      if (e.target.closest('[data-part-import]')) { qs('#st-rig-mount').querySelector('#st-part-glb')?.click(); return; }
+      const del = e.target.closest('[data-part-delete]');
+      if (del) this._deletePart(del.dataset.partDelete);
+    });
+    qs('#st-rig-mount').addEventListener('change', (e) => {
+      if (e.target.id === 'st-part-glb') { const file = e.target.files?.[0]; e.target.value = ''; this._importPartGlb(file); return; }
+      const f = e.target.closest('[data-part-field]');
+      if (f) this._setPartField(f.dataset.partField, f.type === 'checkbox' ? f.checked : f.value);
     });
     qs('#st-edit-pose').addEventListener('click', () => this._setEditMode('pose'));
     qs('#st-edit-rig').addEventListener('click', () => this._setEditMode('rig'));

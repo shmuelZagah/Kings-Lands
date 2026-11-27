@@ -545,7 +545,9 @@ export class StudioApp {
     const blds = this.ubStateManager?.buildingsData?.buildings;
     if (!blds) return;
     for (const [id, u] of Object.entries(this._buildingsStudioView?.units || {})) {
-      if (!blds[id] || !u.studioRig) continue;
+      if (!blds[id]) continue;
+      if (u._partsDirty) blds[id].parts = JSON.parse(JSON.stringify(u.parts || []));
+      if (!u.studioRig) continue;
       blds[id].studioRig = JSON.parse(JSON.stringify(u.studioRig));
     }
   }
@@ -953,6 +955,7 @@ export class StudioApp {
           level: this.buildingPreviewLevel || 1,
           footprintRadiusMeters: bDef.footprintRadiusMeters || 5,
           isCompleted: true,
+          skipParts: true,   // parts are Studio joints here (drawn as markers)
           hasWatchtower: hasWt,
           hp: bDef.maxHp || 1200,
           maxHp: bDef.maxHp || 1200
@@ -981,6 +984,8 @@ export class StudioApp {
       } catch (e) {
         console.warn('Building 3D studio preview attach warning:', e);
       }
+      this._applyPartLevelVisibility();
+      this._attachPartModels();
       this._refreshBuildingFootprintDisplay(bDef);
       if (this.view === 'studio' && this._lastFramedBuildingId !== bId) {
         this._frameBuildingCamera(bDef);

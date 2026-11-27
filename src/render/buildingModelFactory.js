@@ -1,4 +1,5 @@
 import { dataRegistry } from '../data/dataRegistry.js';
+import { isPartEffectivelyActive } from '../data/buildingParts.js';
 import { sampleClipPose } from './keyframeSampler.js';
 import { getCumulativeBuildingUpgradesAtLevel } from '../tools/units_buildings/buildingStudioAdapter.js';
 /**
@@ -557,6 +558,49 @@ export class BuildingModelFactory {
     }
   }
 
+  /** Building parts of kind 'model' (src/data/buildingParts.js) drawn on the body. Stage 2: primitive models; glb / prefab parts are not drawn yet. */
+  _addModelParts(bodyGroup, type, level, mats, isGhost) {
+    const parts = this.buildingsSource?.buildings?.[type]?.parts;
+    if (!Array.isArray(parts)) return;
+    const holders = new Map();
+    const holderOf = (p) => {
+      if (holders.has(p.id)) return holders.get(p.id);
+      const h = new THREE.Group();
+      h.name = `part_${p.id}`;
+      h.position.set(...(p.pos || [0, 0, 0]));
+      h.rotation.set(...(p.rot || [0, 0, 0]));
+      h.scale.set(...(p.scale || [1, 1, 1]));
+      const par = p.parent ? parts.find((q) => q.id === p.parent) : null;
+      (par ? holderOf(par) : bodyGroup).add(h);
+      holders.set(p.id, h);
+      return h;
+    };
+    for (const p of parts) {
+      if (p.kind !== 'model' || !isPartEffectivelyActive(parts, p, level)) continue;
+      const holder = holderOf(p);
+      if (p.model?.type === 'glb') {
+        if (!isGhost) {   // textured template is parsed asynchronously (same loader as the map editor's objects)
+          import('../tools/map_editor/mapStateManager.js')
+            .then((m) => m.loadTexturedGlbTemplate({ id: p.model.ref || p.id, glbBase64: p.model.glbBase64, fitSize: p.model.fitSize || 4 }))
+            .then((tpl) => { if (tpl) holder.add(tpl.clone(true)); })
+            .catch(() => {});
+        }
+        continue;
+      }
+      const prim = p.model?.type === 'primitive' ? p.model.primitive : null;
+      if (!prim) continue;
+      const sz = Array.isArray(prim.size) ? prim.size : [1, 1, 1];
+      const geo = prim.shape === 'sphere' ? new THREE.SphereGeometry(sz[0] || 0.5, 14, 10)
+        : prim.shape === 'cylinder' ? new THREE.CylinderGeometry(sz[0] || 0.5, sz[0] || 0.5, sz[1] || 1, 14)
+          : new THREE.BoxGeometry(sz[0] || 1, sz[1] || 1, sz[2] || 1);
+      const mat = isGhost ? mats.ghostMat : new THREE.MeshStandardMaterial({ color: prim.color || '#94a3b8', roughness: 0.8 });
+      if (!isGhost && Array.isArray(mats.standardMats)) mats.standardMats.push(mat);
+      const m = new THREE.Mesh(geo, mat);
+      m.castShadow = !isGhost;
+      holder.add(m);
+    }
+  }
+
   createBuildingActor(bld, options = {}) {
     const isGhost = Boolean(options.isGhost);
     const type = bld.type || 'barracks';
@@ -626,6 +670,7 @@ export class BuildingModelFactory {
     if (doorLeaves?.doorLeafL) bodyGroup.add(doorLeaves.doorLeafL);
     if (doorLeaves?.doorLeafR) bodyGroup.add(doorLeaves.doorLeafR);
     group.add(bodyGroup);
+    if (!options.skipParts) this._addModelParts(bodyGroup, type, bld.level | 0 || 1, mats, isGhost);
 
     const flashRingMat = new THREE.MeshBasicMaterial({
       color: 0xfbbf24,

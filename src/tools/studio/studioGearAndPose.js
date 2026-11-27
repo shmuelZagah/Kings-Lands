@@ -1,3 +1,5 @@
+import { newPart, isPartActiveAtLevel, validateParts } from '../../data/buildingParts.js';
+import { attachPartJoints } from '../units_buildings/buildingStudioAdapter.js';
 import { BUILTIN_UNIT_ICON_OPTIONS } from "../units_buildings/unitsTabRenderer.js";
 import { renderUnitSlotPreviewInnerHtml, renderVisualIconPickerGridHtml } from "../../ui/hud/unitIconsCatalog.js";
 /**
@@ -76,11 +78,16 @@ export const studioGearAndPoseMethods = {
   _renderRigPanel() {
     const mount = this.rootContainer?.querySelector('#st-rig-mount');
     if (!mount) return;
-    const names = Object.keys(this.currentUnitGroup?.userData?.sockets || {});
+    const bUnit = this.unitsData?.units?.[this.currentUnitId];
+    const isB = Boolean(bUnit?.isBuildingEntity);
+    const hidden = new Set(isB ? (bUnit.hiddenJoints || []) : []);
+    const partIds = new Set(isB ? (bUnit.parts || []).map((q) => q.id) : []);
+    const names = Object.keys(this.currentUnitGroup?.userData?.sockets || {}).filter((n) => !hidden.has(n) && !partIds.has(n));
+    const label = (n) => (isB && bUnit.jointLabels?.[n]) || n;
     const chip = (n) => {
       const on = n === this.selectedSocketName;
       const held = this.currentUnitGroup.userData.attachedPrefabs?.[n];
-      return `<button type="button" class="rig-part rounded border px-2.5 py-1 mono font-semibold ${on ? 'border-rose-400 bg-rose-500 text-slate-950' : 'border-slate-600 bg-slate-800 text-slate-200 hover:bg-slate-700'}" data-joint="${n}">${n}${held ? ' ●' : ''}</button>`;
+      return `<button type="button" class="rig-part rounded border px-2.5 py-1 mono font-semibold ${on ? 'border-rose-400 bg-rose-500 text-slate-950' : 'border-slate-600 bg-slate-800 text-slate-200 hover:bg-slate-700'}" data-joint="${n}">${label(n)}${held ? ' ●' : ''}</button>`;
     };
     const body = names.filter((n) => !EQUIPMENT_SOCKETS.includes(n));
     const gear = names.filter((n) => EQUIPMENT_SOCKETS.includes(n));
@@ -89,7 +96,142 @@ export const studioGearAndPoseMethods = {
         <div class="font-bold text-rose-300">RIG – character parts <span class="font-normal text-slate-400">· pick a part (or click it in the view), then move / rotate it with the gizmo or the Inspector. There is no animation here.</span></div>
         <div class="flex flex-wrap items-center gap-1.5"><span class="w-24 text-slate-500">Body</span>${body.map(chip).join('')}</div>
         ${gear.length ? `<div class="flex flex-wrap items-center gap-1.5"><span class="w-24 text-slate-500">Held items</span>${gear.map(chip).join('')}<span class="text-slate-500">● = item equipped (its grip is edited)</span></div>` : ''}
+        ${isB ? this._partsPanelHtml(bUnit) : ''}
       </div>`;
+  },
+
+  // ------------------------------------------------------------------ Building parts (Rig mode, Buildings category)
+
+  _partIcon: { model: '🧱', fire_point: '🏹', exit_point: '🚪' },
+
+  _partsPanelHtml(u) {
+    const parts = u.parts || [];
+    const sel = parts.find((q) => q.id === this.selectedSocketName) || null;
+    const chips = parts.map((q) => `<button type="button" class="rig-part rounded border px-2.5 py-1 mono font-semibold ${q.id === this.selectedSocketName ? 'border-rose-400 bg-rose-500 text-slate-950' : 'border-slate-600 bg-slate-800 text-slate-200 hover:bg-slate-700'}" data-joint="${q.id}">${this._partIcon[q.kind] || ''} ${q.name || q.id}</button>`).join('');
+    const btn = (k, t) => `<button type="button" class="rounded border border-emerald-500/50 bg-emerald-500/10 px-2 py-1 font-semibold text-emerald-300 hover:bg-emerald-500/20" data-part-add="${k}">${t}</button>`;
+    const num = (f, v, step = 1) => `<label class="flex items-center gap-1 text-slate-400">${f}<input data-part-field="${f}" type="number" step="${step}" value="${v ?? ''}" class="w-20 rounded border border-slate-600 bg-slate-800 px-1 py-0.5 text-slate-100"></label>`;
+    let form = '';
+    if (sel) {
+      const fire = sel.kind === 'fire_point';
+      form = `<div class="mt-1 flex flex-col gap-1.5 rounded border border-slate-700 bg-slate-900/60 p-2">
+        <div class="flex flex-wrap items-center gap-2"><span class="font-bold text-amber-300">${this._partIcon[sel.kind]} ${sel.kind}</span>
+          <label class="flex items-center gap-1 text-slate-400">name<input data-part-field="name" type="text" value="${(sel.name || '').replace(/"/g, '&quot;')}" class="w-36 rounded border border-slate-600 bg-slate-800 px-1 py-0.5 text-slate-100"></label>
+          ${num('minLevel', sel.minLevel)}${num('maxLevel', sel.maxLevel)}
+          <label class="flex items-center gap-1 text-slate-300"><input data-part-field="enabled" type="checkbox" ${sel.enabled === false ? '' : 'checked'}> enabled</label>
+          ${sel.model?.type === 'glb' ? num('fitSize', sel.model.fitSize) + '<span class="text-slate-500">m (longest side at scale 1)</span>' : ''}
+          <button type="button" class="ml-auto rounded border border-rose-500/50 bg-rose-500/10 px-2 py-1 font-semibold text-rose-300 hover:bg-rose-500/20" data-part-delete="${sel.id}">Delete part</button></div>
+        ${fire ? `<div class="flex flex-wrap items-center gap-2">${num('range', sel.range)}${num('damage', sel.damage)}${num('reloadMinTicks', sel.reloadMinTicks)}${num('reloadMaxTicks', sel.reloadMaxTicks)}${num('volleyCount', sel.volleyCount)}${num('elevationRangeBonus', sel.elevationRangeBonus)}</div>
+        <label class="flex items-center gap-1 text-slate-400">per-level overrides (JSON, e.g. {"2":{"damage":20}})<input data-part-field="levelStats" type="text" value='${JSON.stringify(sel.levelStats || {}).replace(/'/g, '&#39;')}' class="flex-1 rounded border border-slate-600 bg-slate-800 px-1 py-0.5 text-slate-100 mono"></label>` : ''}
+        <div class="text-slate-500">Move / rotate / scale it with the gizmo or the Inspector. maxLevel empty = no upper limit.</div></div>`;
+    }
+    return `<div class="mt-1 border-t border-slate-700 pt-2"><div class="mb-1 font-bold text-amber-300">PARTS <span class="font-normal text-slate-400">· extra objects, arrow fire points and unit exit points of this building (saved with the building)</span></div>
+      <div class="flex flex-wrap items-center gap-1.5">${chips || '<span class="text-slate-500">No parts yet.</span>'}${btn('model', '+ Box part')}<button type="button" class="rounded border border-sky-500/50 bg-sky-500/10 px-2 py-1 font-semibold text-sky-300 hover:bg-sky-500/20" data-part-import="1">+ Import model (.glb)</button><input id="st-part-glb" type="file" accept=".glb" class="hidden">${btn('fire_point', '+ Fire point')}${btn('exit_point', '+ Exit point')}</div>${form}</div>`;
+  },
+
+  _applyPartLevelVisibility() {
+    const u = this.unitsData?.units?.[this.currentUnitId];
+    if (!u?.isBuildingEntity) return;
+    const socks = this.currentUnitGroup?.userData?.sockets || {};
+    const lv = this.buildingPreviewLevel || 1;
+    for (const p of u.parts || []) {
+      const j = socks[p.id];
+      if (!j) continue;
+      const inRange = lv >= (p.minLevel || 1) && (p.maxLevel == null || lv <= p.maxLevel);
+      j.visible = inRange;                       // outside its levels: hidden
+      const dim = p.enabled === false;           // switched off: still shown (so it can be selected), but dimmed
+      j.traverse((o) => {
+        if (!o.isMesh || !o.material) return;
+        if (!o.userData._partMat) { o.material = o.material.clone(); o.userData._partMat = true; }
+        o.material.transparent = dim; o.material.opacity = dim ? 0.22 : 1; o.material.needsUpdate = true;
+      });
+    }
+  },
+
+  /** glb model parts: show the real (textured) model on the part's joint instead of the grey marker box. */
+  _attachPartModels() {
+    const u = this.unitsData?.units?.[this.currentUnitId];
+    if (!u?.isBuildingEntity) return;
+    const group = this.currentUnitGroup;
+    const socks = group?.userData?.sockets || {};
+    for (const p of u.parts || []) {
+      if (p.kind !== 'model' || p.model?.type !== 'glb' || !socks[p.id]) continue;
+      const joint = socks[p.id];
+      import('../map_editor/mapStateManager.js')
+        .then((m) => m.loadTexturedGlbTemplate({ id: p.model.ref || p.id, glbBase64: p.model.glbBase64, fitSize: p.model.fitSize || 4 }))
+        .then((tpl) => {
+          if (!tpl || this.currentUnitGroup !== group) return;
+          for (const ch of [...joint.children]) if (ch.isMesh) ch.visible = false;
+          joint.add(tpl.clone(true));
+          this._applyPartLevelVisibility();
+        })
+        .catch(() => {});
+    }
+  },
+
+  async _importPartGlb(file) {
+    const u = this.unitsData.units[this.currentUnitId];
+    if (!u?.isBuildingEntity || !file) return;
+    const buf = await file.arrayBuffer();
+    if (buf.byteLength > 3 * 1024 * 1024) this._toast(`"${file.name}" is ${(buf.byteLength / 1048576).toFixed(1)} MB (> 3 MB): large models slow rendering and may not fit the browser save quota.`, 6000);
+    const { arrayBufferToBase64 } = await import('../map_editor/mapStateManager.js');
+    const r = Number(this.ubStateManager?.buildingsData?.buildings?.[u.buildingId || this.currentUnitId]?.footprintRadiusMeters) || 5;
+    const name = String(file.name || 'model').replace(/\.[^.]+$/, '') || 'Model';
+    const part = newPart('model', {
+      name, pos: [r * 0.5, 0, 0],
+      model: { type: 'glb', ref: `glb_${Date.now().toString(36)}`, name, glbBase64: arrayBufferToBase64(buf), glbByteLength: buf.byteLength, fitSize: 4 }
+    }, u.parts || []);
+    u.parts = [...(u.parts || []), part];
+    this._partsChanged({ select: part.id });
+    this._toast(`Model "${name}" added as a part (textures included). Size it with the gizmo or "size (m)".`, 4500);
+  },
+
+  /** Rebuild joints + view after parts were added / removed / edited, and save. */
+  _partsChanged({ select = null, respawn = true } = {}) {
+    const u = this.unitsData.units[this.currentUnitId];
+    u._partsDirty = true;
+    attachPartJoints(u, u.parts);
+    this.stateManager.flush?.();   // save NOW: the respawn below re-reads the registry
+    if (respawn) this._spawnStudioUnit();
+    if (select) this._selectJoint(select);
+    this._renderRigPanel();
+  },
+
+  _addPart(kind) {
+    const u = this.unitsData.units[this.currentUnitId];
+    if (!u?.isBuildingEntity) return;
+    const r = Number(this.ubStateManager?.buildingsData?.buildings?.[u.buildingId || this.currentUnitId]?.footprintRadiusMeters) || 5;
+    const defaults = { model: { pos: [r * 0.5, 0, 0] }, fire_point: { pos: [0, 6.5, 0] }, exit_point: { pos: [0, 0, r] } }[kind];
+    const part = newPart(kind, { ...defaults, name: { model: 'Part', fire_point: 'Fire point', exit_point: 'Exit point' }[kind] }, u.parts || []);
+    u.parts = [...(u.parts || []), part];
+    this._partsChanged({ select: part.id });
+    this._toast('Part added. Drag it with the gizmo. (Stage 1: the match does not use parts yet.)', 3500);
+  },
+
+  _deletePart(id) {
+    const u = this.unitsData.units[this.currentUnitId];
+    if (!u?.parts?.some((q) => q.id === id)) return;
+    u.parts = u.parts.filter((q) => q.id !== id);
+    this.selectedSocketName = 'torso';
+    this._partsChanged({ select: 'torso' });
+  },
+
+  _setPartField(field, raw) {
+    const u = this.unitsData.units[this.currentUnitId];
+    const p = (u?.parts || []).find((q) => q.id === this.selectedSocketName);
+    if (!p) return;
+    const before = JSON.stringify(p);
+    if (field === 'name') p.name = String(raw).trim() || p.id;
+    else if (field === 'enabled') p.enabled = Boolean(raw);
+    else if (field === 'fitSize') { if (!(Number(raw) > 0.05) || !p.model) return; p.model.fitSize = Number(raw); }
+    else if (field === 'maxLevel') p.maxLevel = raw === '' ? null : Number(raw);
+    else if (field === 'levelStats') {
+      try { const v = JSON.parse(raw || '{}'); if (Object.keys(v).length) p.levelStats = v; else delete p.levelStats; }
+      catch { this._toast('Per-level overrides: invalid JSON.', 3500); return; }
+    } else p[field] = Number(raw);
+    const bad = validateParts({ parts: u.parts }).filter((i) => i.level === 'error');
+    if (bad.length) { Object.assign(p, JSON.parse(before)); this._toast(bad[0].message, 4000); this._renderRigPanel(); return; }
+    this._partsChanged({ respawn: field === 'fitSize' });
+    this._applyPartLevelVisibility();
   },
 
   // ------------------------------------------------------------------ Gear tab (right panel): every body part and what can be put on it
@@ -1200,7 +1342,11 @@ export const studioGearAndPoseMethods = {
     };
     walk(unitDef.hierarchy);
     walk(unitDef.mountHierarchy);
-    if (unitDef.isBuildingEntity) {   // the building skeleton is generated: keep the edit so it can be saved with the building
+    const part = unitDef.isBuildingEntity ? (unitDef.parts || []).find((q) => q.id === jointName) : null;
+    if (part) {   // a building part: the edit belongs to parts[i] (saved with the building)
+      part.pos = [...pos]; part.rot = [...rot]; part.scale = [...scl];
+      unitDef._partsDirty = true;
+    } else if (unitDef.isBuildingEntity) {   // body / foundation: keep the edit so it can be saved with the building
       unitDef.studioRig = unitDef.studioRig || {};
       unitDef.studioRig[jointName] = { pos: [...pos], rot: [...rot], scale: [...scl] };
     }

@@ -15,6 +15,7 @@
  */
 
 import { simBuildings, simUnitStats } from '../simConfig.js';
+import { fireStatsAtLevel } from '../../data/buildingParts.js';
 import { FX_ONE, mulDiv, fxHypot, xorshift32, fxRandomRange } from '../../core/fx.js';
 
 const TOWER_HEIGHT_RANGE_BONUS_FX = 6 * FX_ONE; // +6m range bonus from tower elevation
@@ -481,6 +482,33 @@ export class BuildingCombatSystem {
     }
   }
 
+  /** Damage of one turret volley on `targetEnemy` (and distinct members of its squad). Same rules as the legacy tower shot. */
+  _applyTurretVolley(gameState, b, targetEnemy, baseDamage, volleyCount, maxLockRangeFx, AnimState) {
+    const entitiesMap = gameState.entities;
+    const targetComp = gameState.companies?.get(targetEnemy.squadIndex);
+    const maxHits = targetEnemy.isHero || targetEnemy.unitTypeIdx === 5 || (targetComp && targetComp.memberIds.length <= 1) ? 1 : volleyCount;
+    for (let v = 0; v < maxHits; v++) {
+      let victim = targetEnemy;
+      if (v > 0 && targetComp && targetComp.memberIds.length > 0) {
+        const candId = targetComp.memberIds[(gameState.tick + v * 3) % targetComp.memberIds.length];
+        const candEnt = entitiesMap.get(candId);
+        if (candEnt && candEnt.hp > 0 && !candEnt.isGarrisoned) {
+          const dCand = fxHypot((candEnt.x - b.xFx) | 0, (candEnt.z - b.zFx) | 0);
+          if (dCand <= maxLockRangeFx) victim = candEnt;
+        }
+      }
+      if (victim && victim.hp > 0) {
+        const isHeroVictim = Boolean(victim.isHero || victim.unitTypeIdx === 5);
+        const armorPct = isHeroVictim ? Math.max(0, Math.min(80, (victim.armor ?? 15) | 0)) : 0;
+        const dmg = isHeroVictim ? Math.max(4, Math.round((baseDamage * 0.55 * (100 - armorPct)) / 100)) : baseDamage;
+        victim.hp = Math.max(0, (victim.hp - dmg) | 0);
+        victim.ticksSinceLastHit = 0;
+        if (targetComp) targetComp.ticksSinceLastCombat = 0;
+        if (victim.hp <= 0) victim.animState = AnimState.DIE;
+      }
+    }
+  }
+
   stepBuildingTurretAndAuras(gameState, b, AnimState, UnitTypeIndex = { archer: 3 }) {
     const def = this.cs.buildingDefs[b.type];
     const isSharedBuildingTurret = b.type !== "citadel" && b.type !== "watchtower" && b.type !== "ballista_tower";
@@ -495,8 +523,33 @@ export class BuildingCombatSystem {
     const elevBonusFx = ((def?.garrisonElevationRangeBonusMeters ?? sharedWt.elevationRangeBonusMeters ?? 6) * FX_ONE) | 0;
     const maxLockRangeFx = (baseRangeMeters * FX_ONE + elevBonusFx) | 0;
 
+    // 1a. Building parts: stored fire points (any point of the building, no tower needed) - see src/data/buildingParts.js
+    const firePoints = this.cs._activeStoredParts?.(b, 'fire_point') || [];
+    if (Array.isArray(def?.parts)) {
+      if (!b.fireCooldowns) b.fireCooldowns = {};
+      for (const fp of firePoints) {
+        const st = fireStatsAtLevel(fp, b.level | 0 || 1);
+        const cd = b.fireCooldowns[fp.id] | 0;
+        if (cd > 0) { b.fireCooldowns[fp.id] = (cd - 1) | 0; continue; }
+        const rangeFx = ((st.range | 0) * FX_ONE) | 0;
+        const lockFx = (rangeFx + Math.round((st.elevationRangeBonus || 0) * FX_ONE)) | 0;
+        const target = this._findClosestEnemyForTurret(gameState, b, rangeFx, lockFx);
+        if (!target) continue;
+        const volley = Math.max(1, st.volleyCount | 0);
+        this._applyTurretVolley(gameState, b, target, st.damage | 0, volley, lockFx, AnimState);
+        b.fireCooldowns[fp.id] = fxRandomRange(gameState, Math.max(1, st.reloadMinTicks | 0), Math.max(1, st.reloadMaxTicks | 0));
+        const off = this.cs._localOffsetToWorldFx(b, fp.pos?.[0], fp.pos?.[2]);
+        gameState.pendingEvents.push({
+          tick: gameState.tick, kind: 'TOWER_SHOT',
+          fromXFx: (b.xFx + off.dxFx) | 0, fromYFx: (b.yFx + Math.round((Number(fp.pos?.[1]) || 0) * FX_ONE)) | 0, fromZFx: (b.zFx + off.dzFx) | 0,
+          toXFx: target.x, toYFx: (target.y + FX_ONE) | 0, toZFx: target.z,
+          isBallista: false, extraArrows: Math.max(0, volley - 1)
+        });
+      }
+    }
+
     // 1. Base Tower / Citadel Stronghold / Shared Upgraded Building Turret Shot
-    if (b.hasWatchtower) {
+    if (!Array.isArray(def?.parts) && b.hasWatchtower) {
       if (b.turretCooldownTicks > 0) {
         b.turretCooldownTicks = (b.turretCooldownTicks - 1) | 0;
       } else {
