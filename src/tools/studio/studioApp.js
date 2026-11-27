@@ -42,6 +42,8 @@ import * as KT from './keyTracks.js';
 import { createClipVariation, deleteClipVariation, ensureKeyframeClip, ensureProceduralClip, readClipName } from './clipEditing.js';
 import { FACTION_TEAM_COLORS, getFactions, getFactionLabel, getFactionColors, isSharedUnitsFaction, applySkinColors, disposeVisual, ownMaterial } from './skinUtils.js';
 import { filterStudioEntitiesForFaction } from '../labSync.js';
+import { RIG_COLLAPSE_STORAGE_KEY, topLevelSelectedPartIds } from './buildingPartsOutliner.js';
+import { isPartEffectivelyActive } from '../../data/buildingParts.js';
 
 const ALLOWED_EQUIPMENT = {
   weapon_socket_R: ['sword', 'ravan_prince_sword', 'king_sovereign_sword', 'sisnat_double_axe', 'spear', 'pike', 'worker_hammer', 'javelin', 'bow', 'crossbow', 'ballista_crossbow', 'wizard_staff'],
@@ -265,7 +267,24 @@ export class StudioApp {
       resetClip: () => ({ ok: false, cancelled: true }),
       snapshot: () => JSON.stringify(this._buildingsStudioView),
       restoreSnapshot: (txt) => {
-        try { this._buildingsStudioView = JSON.parse(txt); this._buildingsStateAdapter._view = this._buildingsStudioView; } catch (_) {}
+        try {
+          this._buildingsStudioView = JSON.parse(txt);
+          this._buildingsStateAdapter._view = this._buildingsStudioView;
+          const blds = this.ubStateManager?.buildingsData?.buildings;
+          for (const [id, u] of Object.entries(this._buildingsStudioView?.units || {})) {
+            if (u?.isBuildingEntity && Array.isArray(u.parts)) {
+              u._partsDirty = true;
+              const bDef = blds?.[id];
+              if (bDef && !bDef.hasBuiltInTurret) {
+                const hasWt = u.parts.some((p) => p.id === 'watchtower');
+                bDef.hasWatchtowerSupport = hasWt;
+                if (!hasWt) bDef.watchtowerLevel = 0;
+              }
+            }
+          }
+          this._pushBuildingRig();
+          this.ubStateManager?.saveAll?.();
+        } catch (_) {}
       },
       destroy: () => {}
     };
@@ -348,6 +367,28 @@ export class StudioApp {
     this.currentTeamId = 1;
     this.isBannerCarrier = true;
     this.selectedSocketName = 'torso';
+    this.selectedPartIds = new Set();
+    this._lastClickedPartId = null;
+    this._hiddenPartIds = new Set();
+    this._collapsedOutlinerNodes = new Set();
+    this._renamingPartId = null;
+    this._rigRightTab = 'add';
+    this._rigAddSubTab = 'primitives';
+    this._rigImportSubTab = 'new';
+    this._rigTargetParentId = undefined;
+    this._rigLibCategoryFilter = 'All';
+    this._rigPrimitiveColor = '#94a3b8';
+    this._studioBuildingActor = null;
+    this._rigPanelCollapsed = (() => {
+      try {
+        return typeof window !== 'undefined' && window.localStorage?.getItem(RIG_COLLAPSE_STORAGE_KEY) === '1';
+      } catch {
+        return false;
+      }
+    })();
+    this._multiPivot = new THREE.Group();
+    this._multiPivot.name = '__studio_multi_pivot__';
+    this._multiDragSnapshot = null;
     this.currentUnitGroup = null;
     this.currentAnimator = null;
     this._buildingFootprintGroup = null;
@@ -573,6 +614,14 @@ export class StudioApp {
     const list = this._unitsOfPeople(this.currentFaction);
     this.currentUnitId = list[0] || Object.keys(this.unitsData.units || {})[0];
     this.currentLoadout = MAIN_LOADOUT;
+    this.selectedSocketName = 'torso';
+    this.selectedPartIds.clear();
+    this._lastClickedPartId = null;
+    this._renamingPartId = null;
+    this._multiDragSnapshot = null;
+    this._rigTargetParentId = undefined;
+    this._rigRightTab = 'add';
+    this._studioBuildingActor = null;
 
     const tabUnits = this.rootContainer.querySelector("#st-tab-units");
     const tabHeroes = this.rootContainer.querySelector("#st-tab-heroes");
@@ -709,12 +758,11 @@ export class StudioApp {
 
             <div class="rounded-xl border border-slate-800 bg-slate-950/60 p-2.5 flex flex-col gap-2">
               <span class="font-bold uppercase tracking-wider text-rose-300">Edit Mode</span>
-              <div class="flex gap-1">
-                <button id="st-edit-pose" class="${SEG_ON}" title="Pose: you edit the ANIMATION. Moving a joint changes the clip (static value or keyframe). The character's body is never touched.">Pose</button>
-                <button id="st-edit-rig" class="${SEG_OFF}" title="Rig: you edit the CHARACTER. Moving a joint changes its rest pose in units.json, and every animation of this unit is relative to it.">Rig</button>
+              <div class="flex items-center gap-1">
+                <button id="st-edit-pose" class="${SEG_ON}" title="Pose: edit the animation clip. Moving a joint changes the clip without touching the rest pose.">Pose</button>
+                <button id="st-edit-rig" class="${SEG_OFF}" title="Rig: edit the character rest pose or building parts (saved with the unit or building).">Rig</button>
+                <span class="inline-flex h-7 w-6 shrink-0 items-center justify-center rounded border border-slate-700 bg-slate-900 text-[11px] font-bold text-slate-400 cursor-help" title="RIG: edits the rest pose / building parts (saved with the unit or building), affecting every clip." aria-label="Rig mode info">ⓘ</span>
               </div>
-              <p id="st-mode-help" class="leading-snug text-slate-400"></p>
-              <p class="leading-snug text-slate-500">Click a body part in the view to select it. In the timeline, a Rotation row gives you the rotate handles, a Position row the move handles (W / E also switch).</p>
             </div>
           </aside>
 
@@ -725,7 +773,7 @@ export class StudioApp {
               <button type="button" data-gizmo="rotate" class="st-gt flex h-8 w-8 items-center justify-center rounded text-base" title="Rotate (E)">⟳</button>
               <button type="button" data-gizmo="scale" class="st-gt flex h-8 w-8 items-center justify-center rounded text-base" style="display:none" title="Scale (R) - Rig mode only: changes the size of the part">⤢</button>
             </div>
-            <div id="st-inspector-mount" class="absolute top-3 right-3 z-10 hidden"></div>
+            <div id="st-inspector-mount" class="absolute top-3 right-3 bottom-3 z-10 hidden pointer-events-none flex flex-col items-end"></div>
 
             <div id="st-arena-toolbar" class="hidden absolute top-3 left-3 rounded-xl border border-amber-500/40 bg-slate-900/92 p-3 flex flex-col gap-2 text-xs z-10 w-full max-w-4xl max-h-[70vh] overflow-y-auto">
               <div class="flex flex-wrap items-center gap-2">
@@ -753,8 +801,8 @@ export class StudioApp {
             <div id="st-toast" class="hidden absolute bottom-3 left-1/2 -translate-x-1/2 z-20 max-w-xl rounded-lg border border-slate-600 bg-slate-900/95 px-4 py-2 text-xs text-slate-100 shadow-xl pointer-events-none"></div>
           </main>
         </div>
-        <footer id="st-timeline-mount"></footer>
-        <footer id="st-rig-mount" class="hidden border-t border-rose-500/40 bg-slate-900/95 px-4 py-3 text-xs"></footer>
+        <footer id="st-timeline-mount" class="shrink-0"></footer>
+        <footer id="st-rig-mount" class="hidden shrink-0 border-t border-rose-500/40 bg-slate-900/95 text-xs"></footer>
         <div id="st-modal" class="hidden absolute inset-0 z-50 flex items-center justify-center bg-black/60 p-4"><div id="st-modal-card" class="max-h-full w-full max-w-3xl overflow-y-auto rounded-xl border border-slate-600 bg-slate-900 p-4 text-xs shadow-2xl"></div></div>
       </div>
     `;
@@ -792,10 +840,15 @@ export class StudioApp {
     this._lastStudioSpellNormT = 0;
     this.scene.add(this.studioPedestalGroup);
 
+    this.scene.add(this._multiPivot);
+
     this.gizmoController = new GizmoController(this.camera, this.renderer.domElement, this.scene, {
       onBeforeDrag: () => this._prepareEdit(),
       onTransformChange: () => this._onPoseEdited(),
-      onDragEnd: () => this._updateKeyContext()
+      onDragEnd: () => {
+        this._recenterMultiPivotAfterDrag?.();
+        this._updateKeyContext();
+      }
     });
 
     this.sandboxArena = new SandboxArena(this.scene, this.modelFactory, this.unitsData.animations, this.synthAudio, this.unitsData);
@@ -948,11 +1001,15 @@ export class StudioApp {
         if (this.ubStateManager) this.ubStateManager.buildingsData = freshBuildingsData;
         this._buildingModelFactory.buildingsSource = freshBuildingsData;
         bDef = freshBuildingsData?.buildings?.[bId] || bDef;
-        const hasWt = bDef.hasWatchtowerSupport !== false && ((bDef.watchtowerLevel | 0) > 0 || Boolean(bDef.hasBuiltInTurret));
+        const lvNow = this.buildingPreviewLevel || 1;
+        const hasStoredParts = Array.isArray(bDef.parts);
+        const hasWt = hasStoredParts
+          ? bDef.parts.some((p) => p.id === 'watchtower' && isPartEffectivelyActive(bDef.parts, p, lvNow) && !this._hiddenPartIds?.has(p.id))
+          : (bDef.hasWatchtowerSupport !== false && ((bDef.watchtowerLevel | 0) > 0 || Boolean(bDef.hasBuiltInTurret)));
         const bActor = modelProvider.createBuildingModel(bId, {
           buildingDefOverride: { ...bDef, studioRig: undefined },   // the Studio applies the rig through the joints itself
           team: this.currentTeamId || 1,
-          level: this.buildingPreviewLevel || 1,
+          level: lvNow,
           footprintRadiusMeters: bDef.footprintRadiusMeters || 5,
           isCompleted: true,
           skipParts: true,   // parts are Studio joints here (drawn as markers)
@@ -960,6 +1017,7 @@ export class StudioApp {
           hp: bDef.maxHp || 1200,
           maxHp: bDef.maxHp || 1200
         });
+        this._studioBuildingActor = bActor;
         const s = STUDIO_BUILDING_SCALE;
         bActor.group.scale.set(s, s, s);
         bActor.group.position.y = -0.20;
@@ -983,6 +1041,7 @@ export class StudioApp {
         }
       } catch (e) {
         console.warn('Building 3D studio preview attach warning:', e);
+        this._studioBuildingActor = null;
       }
       this._applyPartLevelVisibility();
       this._attachPartModels();
@@ -992,6 +1051,7 @@ export class StudioApp {
         this._lastFramedBuildingId = bId;
       }
     } else {
+      this._studioBuildingActor = null;
       this._clearBuildingFootprintDisplay();
       this._lastFramedBuildingId = null;
     }
@@ -1001,6 +1061,17 @@ export class StudioApp {
     this.currentAnimator = new Animator3D(this.currentUnitGroup, this.unitsData.animations);
     this._cleaned = false;
     this._keyedSignature = '';
+
+    if (unitDef?.isBuildingEntity) {
+      const partIds = new Set((unitDef.parts || []).map((p) => p.id));
+      for (const id of [...(this.selectedPartIds || [])]) {
+        if (!partIds.has(id)) this.selectedPartIds.delete(id);
+      }
+      this._multiDragSnapshot = null;
+    } else {
+      this.selectedPartIds?.clear?.();
+      this._multiDragSnapshot = null;
+    }
 
     if (this.timelineEditor) { this.timelineEditor.refreshClipList(); this._syncClipSelection(); }
     else this._selectJoint(this.selectedSocketName);
@@ -1071,8 +1142,61 @@ export class StudioApp {
   _selectJoint(socketName, opts = {}) {
     this.gripJoint = opts.fit ? socketName : null;
     const sockets = this.currentUnitGroup?.userData?.sockets || {};
+    const unitDef = this.unitsData?.units?.[this.currentUnitId];
+    const isB = Boolean(unitDef?.isBuildingEntity);
+    const parts = isB ? (unitDef.parts || []) : [];
+    const partIds = new Set(parts.map((p) => p.id));
+    const hidden = new Set(isB ? (unitDef.hiddenJoints || []) : []);
+
+    if (isB && this.editMode === 'pose') {
+      this.selectedPartIds?.clear?.();
+      this._multiDragSnapshot = null;
+      if (partIds.has(socketName) || hidden.has(socketName)) {
+        socketName = 'torso';
+      }
+    }
+
+    if (isB && this.editMode === 'rig' && !opts.fit && this.selectedPartIds?.size > 1) {
+      const valid = new Set([...this.selectedPartIds].filter((id) => partIds.has(id) && sockets[id]));
+      this.selectedPartIds = valid;
+      if (valid.size > 1) {
+        const topIds = topLevelSelectedPartIds(parts, valid);
+        if (topIds.length >= 1) {
+          this._restoreColorPreview();
+          this.selectedSocketName = topIds[0];
+          this._syncMultiPivotToSelection?.(topIds);
+          this.gizmoController.gizmoTargetType = 'multi_parts';
+          this.gizmoController.setEnabled(true);
+          this.gizmoController.attachToObject(this._multiPivot, this.gizmoController.getMode());
+          this.inspectorPanel.setTarget(this._multiPivot, `${valid.size} parts selected`, {
+            kind: 'multi',
+            rest: null,
+            procClip: null,
+            transformsEnabled: true,
+            color: null
+          });
+          this._renderGearPanel();
+          this._renderIconsPanel?.();
+          this._syncHandControls();
+          this._renderRigPanel();
+          this._updateKeyContext();
+          return;
+        }
+      }
+    }
+
     const target = sockets[socketName] || sockets.torso;
     if (!target) return;
+
+    if (!opts.preserveMulti) {
+      if (isB && this.editMode === 'rig' && partIds.has(target.name)) {
+        this.selectedPartIds = new Set([target.name]);
+        this._lastClickedPartId = target.name;
+      } else {
+        this.selectedPartIds?.clear?.();
+      }
+      this._multiDragSnapshot = null;
+    }
 
     if (this.selectedSocketName !== target.name) this._restoreColorPreview();
     this.selectedSocketName = target.name;
@@ -1089,8 +1213,13 @@ export class StudioApp {
     this.gizmoController.setEnabled(transformsEnabled);
     this.gizmoController.attachToObject(focusObj, this.gizmoController.getMode());
 
+    const partMatch = isB ? parts.find((p) => p.id === target.name) : null;
+    const displayName = isB
+      ? (unitDef.jointLabels?.[target.name] || partMatch?.name || target.name)
+      : target.name;
+
     const isMove = this.timelineEditor?.animMode === 'procedural';
-    this.inspectorPanel.setTarget(focusObj, target.name, {
+    this.inspectorPanel.setTarget(focusObj, displayName, {
       kind,
       rest: attachedPrefab ? null : (this.currentUnitGroup.userData.restPoses?.[target.name] || null),
       procClip: isMove ? this._readProceduralClip() : null,
@@ -1102,7 +1231,9 @@ export class StudioApp {
     this._renderIconsPanel?.();
     this._syncHandControls();
     this._renderRigPanel();
-    this.timelineEditor?.setSelectedJoint(target.name);
+    if (!isB || !partIds.has(target.name)) {
+      this.timelineEditor?.setSelectedJoint(target.name);
+    }
     this._updateKeyContext();
   }
 

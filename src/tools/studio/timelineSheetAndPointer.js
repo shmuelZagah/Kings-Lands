@@ -150,7 +150,7 @@ export const timelineSheetAndPointerMethods = {
             <button id="tl-btn-add-event" ${eventsOk ? '' : 'disabled'} class="rounded bg-amber-600/90 hover:bg-amber-500 px-2 py-1 font-semibold text-slate-950 ${BTN_DISABLED}">Add Event</button>
             <div class="h-4 w-px bg-slate-700 mx-1"></div>
             <button id="tl-btn-close-loop" ${keyable ? '' : 'disabled'} class="rounded bg-slate-800 hover:bg-slate-700 border border-slate-600 px-2 py-1 text-slate-200 ${BTN_DISABLED}" title="Make the last frame equal the first frame, so the clip loops without a jump">Close loop</button>
-            <button id="tl-btn-mirror" ${keyable ? '' : 'disabled'} class="rounded bg-slate-800 hover:bg-slate-700 border border-slate-600 px-2 py-1 text-slate-200 ${BTN_DISABLED}" title="Copy the selected joint's animation to its other side (arm_L ↔ arm_R), mirrored. Shift+click = every joint on that side">Mirror L↔R</button>
+            <button id="tl-btn-mirror" ${keyable ? '' : 'disabled'} class="rounded bg-slate-800 hover:bg-slate-700 border border-slate-600 px-2 py-1 text-slate-200 ${BTN_DISABLED}" title="Copy the selected joint's animation to its other side (${this.isBuildingSession ? 'Door leaf L ↔ Door leaf R' : 'arm_L ↔ arm_R'}), mirrored. Shift+click = every joint on that side">Mirror L↔R</button>
             <div class="flex items-center gap-0.5" title="Timeline zoom (Ctrl + mouse wheel)">
               <button id="tl-zoom-out" class="${T_BTN}">−</button>
               <span id="tl-zoom-label" class="mono w-8 text-center text-slate-300">${this.zoom.toFixed(this.zoom % 1 ? 1 : 0)}x</span>
@@ -429,7 +429,7 @@ export const timelineSheetAndPointerMethods = {
     const bg = EASING_CLASS[key.easing] || 'bg-sky-400';
     const on = this.selectedKeys.has(kid(joint, prop, key.t));
     const ring = on ? 'border-sky-200 ring-1 ring-sky-200' : 'border-slate-950';
-    return `<div class="kf absolute top-1/2 -mt-[5px] -translate-x-1/2 w-2.5 h-2.5 rotate-45 ${bg} border ${ring} cursor-grab hover:scale-125 z-10" data-joint="${joint}" data-prop="${prop}" data-i="${track.indexOf(key)}" data-t="${key.t}" title="${joint} · ${PROP_LABEL[prop]}  t=${key.t.toFixed(2)}" style="left:${leftCss(key.t)}"></div>`;
+    return `<div class="kf absolute top-1/2 -mt-[5px] -translate-x-1/2 w-2.5 h-2.5 rotate-45 ${bg} border ${ring} cursor-grab hover:scale-125 z-10" data-joint="${joint}" data-prop="${prop}" data-i="${track.indexOf(key)}" data-t="${key.t}" title="${this._jointLabel(joint)} · ${PROP_LABEL[prop]}  t=${key.t.toFixed(2)}" style="left:${leftCss(key.t)}"></div>`;
   },
 
   /** Rebuild the rows (keeps the scroll position because the scroller itself is not replaced). */
@@ -477,7 +477,7 @@ export const timelineSheetAndPointerMethods = {
         const head =
           `<span style="width:${depth * 10}px" class="shrink-0"></span>` +
           `<button type="button" class="tl-chev w-3 text-center text-[10px] leading-none text-slate-400 hover:text-white" data-joint="${joint}" title="${open ? 'Close' : 'Open'}${hasKids ? ' (rotation, position and the parts under it)' : ''}">${open ? '▾' : '▸'}</button>` +
-          `<button type="button" class="tl-joint mono truncate flex-1 text-left text-[11px] font-bold ${jointSel ? 'text-sky-300' : 'text-slate-300 hover:text-white'}" data-joint="${joint}">${joint}</button>` +
+          `<button type="button" class="tl-joint mono truncate flex-1 text-left text-[11px] font-bold ${jointSel ? 'text-sky-300' : 'text-slate-300 hover:text-white'}" data-joint="${joint}">${this._jointLabel(joint)}</button>` +
           (animated ? '<span class="text-[9px] text-sky-400" title="Has animated properties">◆</span>' : '');
         parts.push(this._row(head, summary, {
           cls: `${jointSel ? 'bg-sky-500/10' : 'bg-slate-900/60'} border-t border-slate-700`, height: 'h-4', kind: 'joint'

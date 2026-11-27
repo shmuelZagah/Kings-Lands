@@ -1,7 +1,33 @@
-import { newPart, isPartActiveAtLevel, validateParts } from '../../data/buildingParts.js';
+import { newPart, isPartActiveAtLevel, isPartEffectivelyActive, validateParts } from '../../data/buildingParts.js';
 import { attachPartJoints } from '../units_buildings/buildingStudioAdapter.js';
 import { BUILTIN_UNIT_ICON_OPTIONS } from "../units_buildings/unitsTabRenderer.js";
 import { renderUnitSlotPreviewInnerHtml, renderVisualIconPickerGridHtml } from "../../ui/hud/unitIconsCatalog.js";
+import {
+  RIG_COLLAPSE_STORAGE_KEY,
+  isPartDeletable,
+  canAddExitPoint,
+  wouldCreateParentLoop,
+  topLevelSelectedPartIds,
+  isPartHiddenByEye,
+  isPartLevelInRange,
+  hasDisabledAncestor,
+  collectUnselectedDescendantIds,
+  computeDeleteOutcome,
+  getOrderedTreePartIds,
+  resolveMultiSelectRange,
+  computeMaxBuildingLevel,
+  renderBuildingRigPanelHtml
+} from './buildingPartsOutliner.js';
+import {
+  createPrimitiveGeometry,
+  deleteGlbLibraryEntry,
+  getPrimitiveDef,
+  loadGlbLibrary,
+  normalizeGlbCategory,
+  prepareGlbAssetForImport,
+  syncLibraryFromBuildings,
+  upsertGlbLibraryEntry
+} from './buildingGlbLibrary.js';
 /**
  * Kings Lands — Animation Lab Rig, Loadouts, Gear Slots, Hand Curls, Pose & Color Overrides
  * (src/tools/studio/studioGearAndPose.js)
@@ -83,106 +109,855 @@ export const studioGearAndPoseMethods = {
     const hidden = new Set(isB ? (bUnit.hiddenJoints || []) : []);
     const partIds = new Set(isB ? (bUnit.parts || []).map((q) => q.id) : []);
     const names = Object.keys(this.currentUnitGroup?.userData?.sockets || {}).filter((n) => !hidden.has(n) && !partIds.has(n));
-    const label = (n) => (isB && bUnit.jointLabels?.[n]) || n;
+
+    if (isB) {
+      const bId = bUnit?.buildingId || this.currentUnitId;
+      const bDef = this.ubStateManager?.buildingsData?.buildings?.[bId] || {};
+      const parts = bUnit.parts || [];
+      const glbLibrary = this._getGlbLibrary();
+      const impSt = this._getRigImportState();
+      mount.innerHTML = renderBuildingRigPanelHtml({
+        unitId: this.currentUnitId,
+        unitDef: bUnit,
+        bDef,
+        socketNames: names,
+        parts,
+        previewLevel: this.buildingPreviewLevel || 1,
+        selectedSocketName: this.selectedSocketName,
+        selectedPartIds: this.selectedPartIds || new Set(),
+        hiddenPartIds: this._hiddenPartIds || new Set(),
+        collapsedNodes: this._collapsedOutlinerNodes || new Set(),
+        rigCollapsed: Boolean(this._rigPanelCollapsed),
+        renamingPartId: this._renamingPartId || null,
+        rigRightTab: this._rigRightTab || 'add',
+        rigAddSubTab: this._rigAddSubTab || 'primitives',
+        rigImportSubTab: this._rigImportSubTab || 'new',
+        rigTargetParentId: this._resolveRigTargetParentId(parts),
+        rigPrimColor: this._rigPrimitiveColor || '#94a3b8',
+        rigImportState: {
+          ...impSt,
+          fileName: impSt.file?.name || '',
+          fileSize: impSt.file?.size || 0
+        },
+        glbLibrary,
+        rigLibCategoryFilter: this._rigLibCategoryFilter || 'All',
+        selectedTransform: this._getRigTransformSnapshot()
+      });
+      if (this._renamingPartId) {
+        queueMicrotask(() => {
+          const inp = mount.querySelector('[data-part-rename-input]');
+          if (inp) {
+            inp.focus();
+            inp.select();
+          }
+        });
+      } else if (partIds.has(this.selectedSocketName)) {
+        queueMicrotask(() => {
+          const row = mount.querySelector(`[data-part-drag="${CSS?.escape ? CSS.escape(this.selectedSocketName) : this.selectedSocketName}"]`);
+          row?.scrollIntoView?.({ block: 'nearest' });
+        });
+      }
+      return;
+    }
+
     const chip = (n) => {
       const on = n === this.selectedSocketName;
-      const held = this.currentUnitGroup.userData.attachedPrefabs?.[n];
-      return `<button type="button" class="rig-part rounded border px-2.5 py-1 mono font-semibold ${on ? 'border-rose-400 bg-rose-500 text-slate-950' : 'border-slate-600 bg-slate-800 text-slate-200 hover:bg-slate-700'}" data-joint="${n}">${label(n)}${held ? ' ●' : ''}</button>`;
+      const held = this.currentUnitGroup?.userData?.attachedPrefabs?.[n];
+      return `<button type="button" class="rig-part rounded border px-2.5 py-1 mono font-semibold ${on ? 'border-rose-400 bg-rose-500 text-slate-950' : 'border-slate-600 bg-slate-800 text-slate-200 hover:bg-slate-700'}" data-joint="${n}">${n}${held ? ' ●' : ''}</button>`;
     };
     const body = names.filter((n) => !EQUIPMENT_SOCKETS.includes(n));
     const gear = names.filter((n) => EQUIPMENT_SOCKETS.includes(n));
+    const rigCollapsed = Boolean(this._rigPanelCollapsed);
     mount.innerHTML = `
-      <div class="flex flex-col gap-2">
-        <div class="font-bold text-rose-300">RIG – character parts <span class="font-normal text-slate-400">· pick a part (or click it in the view), then move / rotate it with the gizmo or the Inspector. There is no animation here.</span></div>
-        <div class="flex flex-wrap items-center gap-1.5"><span class="w-24 text-slate-500">Body</span>${body.map(chip).join('')}</div>
-        ${gear.length ? `<div class="flex flex-wrap items-center gap-1.5"><span class="w-24 text-slate-500">Held items</span>${gear.map(chip).join('')}<span class="text-slate-500">● = item equipped (its grip is edited)</span></div>` : ''}
-        ${isB ? this._partsPanelHtml(bUnit) : ''}
+      <div class="flex flex-col">
+        <div id="st-rig-header" class="flex items-center justify-between gap-2 border-b border-slate-800 px-3 ${rigCollapsed ? 'py-1 h-8' : 'py-1.5'} bg-slate-900">
+          <button type="button" id="st-rig-collapse" aria-expanded="${!rigCollapsed}" class="inline-flex items-center gap-1.5 rounded border border-slate-600 bg-slate-800 hover:bg-slate-700 px-2.5 ${rigCollapsed ? 'py-0.5 text-[11px]' : 'py-1'} font-bold text-rose-300 cursor-pointer" title="${rigCollapsed ? 'Expand Rig panel' : 'Collapse Rig panel'}">
+            <span>${rigCollapsed ? '▸' : '▾'}</span>
+            <span>RIG – character parts</span>
+          </button>
+          ${rigCollapsed ? '<span class="text-[10px] text-slate-400">Collapsed</span>' : ''}
+        </div>
+        <div id="st-rig-body" class="${rigCollapsed ? 'hidden' : 'max-h-[30vh] overflow-y-auto px-4 py-2.5 flex flex-col gap-2'}">
+          <div class="flex flex-wrap items-center gap-1.5"><span class="w-24 text-slate-500">Body</span>${body.map(chip).join('')}</div>
+          ${gear.length ? `<div class="flex flex-wrap items-center gap-1.5"><span class="w-24 text-slate-500">Held items</span>${gear.map(chip).join('')}<span class="text-slate-500">● = item equipped (its grip is edited)</span></div>` : ''}
+        </div>
       </div>`;
   },
 
   // ------------------------------------------------------------------ Building parts (Rig mode, Buildings category)
 
-  _partIcon: { model: '🧱', fire_point: '🏹', exit_point: '🚪' },
+  _partIcon: { model: '🧱', fire_point: '🏹', exit_point: '🚪', group: '📁' },
 
-  _partsPanelHtml(u) {
-    const parts = u.parts || [];
-    const sel = parts.find((q) => q.id === this.selectedSocketName) || null;
-    const chips = parts.map((q) => `<button type="button" class="rig-part rounded border px-2.5 py-1 mono font-semibold ${q.id === this.selectedSocketName ? 'border-rose-400 bg-rose-500 text-slate-950' : 'border-slate-600 bg-slate-800 text-slate-200 hover:bg-slate-700'}" data-joint="${q.id}">${this._partIcon[q.kind] || ''} ${q.name || q.id}</button>`).join('');
-    const btn = (k, t) => `<button type="button" class="rounded border border-emerald-500/50 bg-emerald-500/10 px-2 py-1 font-semibold text-emerald-300 hover:bg-emerald-500/20" data-part-add="${k}">${t}</button>`;
-    const num = (f, v, step = 1) => `<label class="flex items-center gap-1 text-slate-400">${f}<input data-part-field="${f}" type="number" step="${step}" value="${v ?? ''}" class="w-20 rounded border border-slate-600 bg-slate-800 px-1 py-0.5 text-slate-100"></label>`;
-    let form = '';
-    if (sel) {
-      const fire = sel.kind === 'fire_point';
-      form = `<div class="mt-1 flex flex-col gap-1.5 rounded border border-slate-700 bg-slate-900/60 p-2">
-        <div class="flex flex-wrap items-center gap-2"><span class="font-bold text-amber-300">${this._partIcon[sel.kind]} ${sel.kind}</span>
-          <label class="flex items-center gap-1 text-slate-400">name<input data-part-field="name" type="text" value="${(sel.name || '').replace(/"/g, '&quot;')}" class="w-36 rounded border border-slate-600 bg-slate-800 px-1 py-0.5 text-slate-100"></label>
-          ${num('minLevel', sel.minLevel)}${num('maxLevel', sel.maxLevel)}
-          <label class="flex items-center gap-1 text-slate-300"><input data-part-field="enabled" type="checkbox" ${sel.enabled === false ? '' : 'checked'}> enabled</label>
-          ${sel.model?.type === 'glb' ? num('fitSize', sel.model.fitSize) + '<span class="text-slate-500">m (longest side at scale 1)</span>' : ''}
-          <button type="button" class="ml-auto rounded border border-rose-500/50 bg-rose-500/10 px-2 py-1 font-semibold text-rose-300 hover:bg-rose-500/20" data-part-delete="${sel.id}">Delete part</button></div>
-        ${fire ? `<div class="flex flex-wrap items-center gap-2">${num('range', sel.range)}${num('damage', sel.damage)}${num('reloadMinTicks', sel.reloadMinTicks)}${num('reloadMaxTicks', sel.reloadMaxTicks)}${num('volleyCount', sel.volleyCount)}${num('elevationRangeBonus', sel.elevationRangeBonus)}</div>
-        <label class="flex items-center gap-1 text-slate-400">per-level overrides (JSON, e.g. {"2":{"damage":20}})<input data-part-field="levelStats" type="text" value='${JSON.stringify(sel.levelStats || {}).replace(/'/g, '&#39;')}' class="flex-1 rounded border border-slate-600 bg-slate-800 px-1 py-0.5 text-slate-100 mono"></label>` : ''}
-        <div class="text-slate-500">Move / rotate / scale it with the gizmo or the Inspector. maxLevel empty = no upper limit.</div></div>`;
+  _getRigImportState() {
+    if (!this._rigImportState) {
+      this._rigImportState = {
+        file: null,
+        name: '',
+        detail: 'medium',
+        custom: '',
+        fitSize: 4,
+        category: 'General',
+        newCategory: ''
+      };
     }
-    return `<div class="mt-1 border-t border-slate-700 pt-2"><div class="mb-1 font-bold text-amber-300">PARTS <span class="font-normal text-slate-400">· extra objects, arrow fire points and unit exit points of this building (saved with the building)</span></div>
-      <div class="flex flex-wrap items-center gap-1.5">${chips || '<span class="text-slate-500">No parts yet.</span>'}${btn('model', '+ Box part')}<button type="button" class="rounded border border-sky-500/50 bg-sky-500/10 px-2 py-1 font-semibold text-sky-300 hover:bg-sky-500/20" data-part-import="1">+ Import model (.glb)</button><input id="st-part-glb" type="file" accept=".glb" class="hidden">${btn('fire_point', '+ Fire point')}${btn('exit_point', '+ Exit point')}</div>${form}</div>`;
+    return this._rigImportState;
+  },
+
+  _getGlbLibrary() {
+    if (!this._glbLibrarySynced) {
+      this._glbLibrarySynced = true;
+      syncLibraryFromBuildings(this.ubStateManager?.buildingsData);
+    }
+    return loadGlbLibrary();
+  },
+
+  _resolveRigTargetParentId(parts) {
+    const list = parts || [];
+    const byId = new Map(list.map((p) => [p.id, p]));
+    if (this._rigTargetParentId !== undefined && this._rigTargetParentId !== null) {
+      const explicit = byId.get(this._rigTargetParentId);
+      if (explicit && (explicit.kind === 'group' || explicit.kind === 'model')) {
+        return explicit.id;
+      }
+    }
+    if (this._rigTargetParentId === null) return null;
+    const sel = byId.get(this.selectedSocketName);
+    if (sel && (sel.kind === 'group' || sel.kind === 'model')) return sel.id;
+    return null;
+  },
+
+  _getRigTransformSnapshot() {
+    const obj = this.gizmoController?.selectedObject
+      || this.currentUnitGroup?.userData?.sockets?.[this.selectedSocketName]
+      || null;
+    if (!obj) return null;
+    const DEG = 180 / Math.PI;
+    return {
+      pos: [obj.position.x, obj.position.y, obj.position.z],
+      rotDeg: [obj.rotation.x * DEG, obj.rotation.y * DEG, obj.rotation.z * DEG],
+      scale: [obj.scale.x, obj.scale.y, obj.scale.z]
+    };
+  },
+
+  _syncBottomDataTransforms() {
+    const mount = this.rootContainer?.querySelector('#st-rig-mount');
+    if (!mount || this.editMode !== 'rig' || this._rigRightTab !== 'data') return;
+    const tr = this._getRigTransformSnapshot();
+    if (!tr) return;
+    mount.querySelectorAll('[data-rig-tr]').forEach((inp) => {
+      if (typeof document !== 'undefined' && document.activeElement === inp) return;
+      const grp = inp.dataset.rigTr;
+      const axis = Number(inp.dataset.axis);
+      if (![0, 1, 2].includes(axis)) return;
+      let val = grp === 'pos' ? tr.pos[axis] : grp === 'scl' ? tr.scale[axis] : tr.rotDeg[axis];
+      if (grp !== 'scl' && Math.abs(val) < 5e-4) val = 0;
+      inp.value = val.toFixed(grp === 'rot' ? 1 : 3);
+    });
+  },
+
+  _applyRigTransformInput(group, axis, rawValue) {
+    const val = parseFloat(rawValue);
+    if (!Number.isFinite(val) || !this.gizmoController?.selectedObject) return;
+    const obj = this.gizmoController.selectedObject;
+    const key = 'xyz'[axis];
+    if (!key) return;
+    this._prepareEdit?.();
+    this._beginEdit('pose');
+    if (group === 'pos') {
+      obj.position[key] = val;
+    } else if (group === 'scl') {
+      if (val <= 0.01) return;
+      obj.scale[key] = val;
+    } else if (group === 'rot') {
+      obj.rotation[key] = (val * Math.PI) / 180;
+    }
+    this._onPoseEdited();
+  },
+
+  _setRigRightTab(tab) {
+    this._rigRightTab = tab === 'data' ? 'data' : 'add';
+    this._renderRigPanel();
+  },
+
+  _setRigAddSubTab(sub) {
+    this._rigRightTab = 'add';
+    this._rigAddSubTab = sub === 'import' ? 'import' : 'primitives';
+    this._renderRigPanel();
+  },
+
+  _setRigImportSubTab(sub) {
+    this._rigRightTab = 'add';
+    this._rigAddSubTab = 'import';
+    this._rigImportSubTab = sub === 'existing' ? 'existing' : 'new';
+    this._renderRigPanel();
+  },
+
+  _toggleRigPanelCollapse() {
+    this._rigPanelCollapsed = !this._rigPanelCollapsed;
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        window.localStorage.setItem(RIG_COLLAPSE_STORAGE_KEY, this._rigPanelCollapsed ? '1' : '0');
+      }
+    } catch (_) {}
+    this._renderRigPanel();
+    if (typeof requestAnimationFrame === 'function') {
+      requestAnimationFrame(() => this._resizeHandler?.());
+    }
+  },
+
+  _toggleOutlinerNode(id) {
+    if (!id) return;
+    if (!this._collapsedOutlinerNodes) this._collapsedOutlinerNodes = new Set();
+    if (this._collapsedOutlinerNodes.has(id)) this._collapsedOutlinerNodes.delete(id);
+    else this._collapsedOutlinerNodes.add(id);
+    this._renderRigPanel();
+  },
+
+  _togglePartEye(id) {
+    if (!id) return;
+    if (!this._hiddenPartIds) this._hiddenPartIds = new Set();
+    if (this._hiddenPartIds.has(id)) this._hiddenPartIds.delete(id);
+    else this._hiddenPartIds.add(id);
+    this._applyPartLevelVisibility();
+    this._renderRigPanel();
+  },
+
+  _setPartEnabledById(id, enabled) {
+    const u = this.unitsData?.units?.[this.currentUnitId];
+    const p = (u?.parts || []).find((q) => q.id === id);
+    if (!p) return;
+    this._beginEdit('part-enabled');
+    p.enabled = Boolean(enabled);
+    this._partsChanged({ respawn: false });
+    this._applyPartLevelVisibility();
+  },
+
+  _startRenamePart(id) {
+    const u = this.unitsData?.units?.[this.currentUnitId];
+    if (!u?.isBuildingEntity || !(u.parts || []).some((q) => q.id === id)) return;
+    this._renamingPartId = id;
+    this._renderRigPanel();
+  },
+
+  _commitRenamePart(id, rawName) {
+    const u = this.unitsData?.units?.[this.currentUnitId];
+    const p = (u?.parts || []).find((q) => q.id === id);
+    this._renamingPartId = null;
+    if (!p) {
+      this._renderRigPanel();
+      return;
+    }
+    const nextName = String(rawName ?? '').trim();
+    if (nextName && nextName !== p.name) {
+      this._beginEdit('part-rename');
+      p.name = nextName;
+      this._partsChanged({ respawn: false });
+      if (this.selectedSocketName === p.id && (!this.selectedPartIds || this.selectedPartIds.size <= 1)) {
+        const focusObj = this.currentUnitGroup?.userData?.sockets?.[p.id];
+        if (focusObj) {
+          this.inspectorPanel?.setTarget(focusObj, p.name, {
+            kind: 'joint',
+            rest: this.currentUnitGroup.userData.restPoses?.[p.id] || null,
+            procClip: null,
+            transformsEnabled: this._poseEditable(),
+            color: this._jointColorHex(p.id)
+          });
+        }
+      }
+      return;
+    }
+    this._renderRigPanel();
+  },
+
+  _selectOutlinerPart(id, { ctrlKey = false, metaKey = false, shiftKey = false } = {}) {
+    const u = this.unitsData?.units?.[this.currentUnitId];
+    const parts = u?.parts || [];
+    const clicked = parts.find((p) => p.id === id);
+    if (!clicked) return;
+    if (!this.selectedPartIds) this.selectedPartIds = new Set();
+
+    if (clicked.kind === 'group' || clicked.kind === 'model') {
+      this._rigTargetParentId = clicked.id;
+    }
+    this._rigRightTab = 'data';
+
+    if (shiftKey) {
+      const ordered = getOrderedTreePartIds(parts, this._collapsedOutlinerNodes);
+      const anchor = this._lastClickedPartId && parts.some((p) => p.id === this._lastClickedPartId)
+        ? this._lastClickedPartId
+        : (parts.some((p) => p.id === this.selectedSocketName) ? this.selectedSocketName : id);
+      const range = resolveMultiSelectRange(ordered, anchor, id);
+      this.selectedPartIds = new Set(range);
+      this._lastClickedPartId = anchor;
+      this._selectJoint(id, { preserveMulti: true });
+      return;
+    }
+
+    if (ctrlKey || metaKey) {
+      this._toggleMultiPartSelect(id);
+      return;
+    }
+
+    this._lastClickedPartId = id;
+    this.selectedPartIds = new Set([id]);
+    this._selectJoint(id, { fromViewportOrTree: true });
+  },
+
+  _toggleMultiPartSelect(id) {
+    const u = this.unitsData?.units?.[this.currentUnitId];
+    const parts = u?.parts || [];
+    const partIds = new Set(parts.map((p) => p.id));
+    if (!partIds.has(id)) return;
+    if (!this.selectedPartIds) this.selectedPartIds = new Set();
+
+    this._rigRightTab = 'data';
+
+    if (this.selectedPartIds.size === 0 && partIds.has(this.selectedSocketName)) {
+      this.selectedPartIds.add(this.selectedSocketName);
+    }
+
+    if (this.selectedPartIds.has(id) && this.selectedPartIds.size > 1) {
+      this.selectedPartIds.delete(id);
+    } else {
+      this.selectedPartIds.add(id);
+      this._lastClickedPartId = id;
+    }
+
+    if (this.selectedPartIds.size === 1) {
+      const only = [...this.selectedPartIds][0];
+      this._selectJoint(only, { fromViewportOrTree: true });
+    } else if (this.selectedPartIds.size > 1) {
+      const fallback = this.selectedPartIds.has(id) ? id : [...this.selectedPartIds][0];
+      this._selectJoint(fallback, { preserveMulti: true });
+    } else {
+      this._selectJoint('torso', { fromViewportOrTree: true });
+    }
+  },
+
+  _reparentPart(movingId, targetParentId) {
+    const u = this.unitsData?.units?.[this.currentUnitId];
+    if (!u?.isBuildingEntity) return;
+    const parts = u.parts || [];
+    const p = parts.find((q) => q.id === movingId);
+    if (!p) return;
+    const destId = targetParentId || null;
+    if ((p.parent || null) === destId) return;
+
+    if (wouldCreateParentLoop(parts, movingId, destId)) {
+      this._toast('Cannot move a part under itself or one of its own children.', 3200);
+      return;
+    }
+
+    const before = JSON.stringify(parts);
+    this._beginEdit('part-reparent');
+
+    const socks = this.currentUnitGroup?.userData?.sockets || {};
+    const movingObj = socks[movingId];
+    const destObj = destId ? socks[destId] : socks.torso;
+    if (movingObj && destObj && this.currentUnitGroup) {
+      this.currentUnitGroup.updateMatrixWorld(true);
+      const localMat = new THREE.Matrix4().copy(destObj.matrixWorld).invert().multiply(movingObj.matrixWorld);
+      const pos = new THREE.Vector3();
+      const quat = new THREE.Quaternion();
+      const scl = new THREE.Vector3();
+      localMat.decompose(pos, quat, scl);
+      const eul = new THREE.Euler().setFromQuaternion(quat, 'XYZ');
+      p.pos = round3v([pos.x, pos.y, pos.z]);
+      p.rot = round3v([eul.x, eul.y, eul.z]);
+      p.scale = round3v([Math.max(0.01, scl.x), Math.max(0.01, scl.y), Math.max(0.01, scl.z)]);
+    }
+    p.parent = destId;
+
+    const bad = validateParts({ parts }).filter((i) => i.level === 'error');
+    if (bad.length) {
+      u.parts = JSON.parse(before);
+      this._toast(bad[0].message, 3800);
+      this._renderRigPanel();
+      return;
+    }
+    if (destId && this._collapsedOutlinerNodes) {
+      this._collapsedOutlinerNodes.delete(destId);
+    }
+    this._partsChanged({ select: movingId });
+  },
+
+  _deletePart(id) {
+    this._requestDeletePartIds([id]);
+  },
+
+  _deleteSelectedParts() {
+    const ids = [...(this.selectedPartIds || [])];
+    if (!ids.length && this.selectedSocketName) ids.push(this.selectedSocketName);
+    this._requestDeletePartIds(ids);
+  },
+
+  _requestDeletePartIds(rawIds) {
+    const u = this.unitsData?.units?.[this.currentUnitId];
+    if (!u?.isBuildingEntity) return;
+    const parts = u.parts || [];
+    const byId = new Map(parts.map((p) => [p.id, p]));
+    const requested = [...new Set((rawIds || []).filter((id) => byId.has(id)))];
+    if (!requested.length) return;
+
+    const ids = requested.filter((id) => isPartDeletable(byId.get(id)));
+    if (!ids.length) {
+      this._toast('Fire points are managed in Units & Buildings Lab and cannot be deleted in Studio.', 3200);
+      return;
+    }
+    if (ids.length < requested.length) {
+      this._toast('Skipped fire point (managed in Units & Buildings Lab).', 2800);
+    }
+
+    const unselectedKids = collectUnselectedDescendantIds(parts, ids);
+    if (!unselectedKids.length) {
+      const hasFireDescendant = parts.some(
+        (p) => p.kind === 'fire_point' && ids.some((tid) => p.parent === tid || collectUnselectedDescendantIds(parts, [tid]).includes(p.id))
+      );
+      this._executeDeleteParts(ids, hasFireDescendant ? 'reparent_up' : 'delete_children');
+      return;
+    }
+
+    const namesPreview = ids.map((id) => byId.get(id)?.name || id).slice(0, 3).join(', ');
+    const moreLabel = ids.length > 3 ? ` (+${ids.length - 3} more)` : '';
+    this._openModal(`
+      <div class="flex flex-col gap-3">
+        <div class="text-sm font-bold text-amber-300">Delete group / parent part?</div>
+        <p class="text-xs text-slate-200 leading-relaxed">
+          <b>${namesPreview}${moreLabel}</b> currently contains <b>${unselectedKids.length}</b> child part${unselectedKids.length === 1 ? '' : 's'}.
+          What would you like to do with the children?
+        </p>
+        <div class="flex flex-wrap items-center justify-end gap-2 pt-1">
+          <button type="button" id="st-del-cancel" class="rounded border border-slate-600 bg-slate-800 px-3 py-1.5 text-xs font-semibold text-slate-200 hover:bg-slate-700 cursor-pointer">Cancel</button>
+          <button type="button" id="st-del-reparent" class="rounded bg-sky-500 hover:bg-sky-400 px-3 py-1.5 text-xs font-bold text-slate-950 cursor-pointer">Move children up one level</button>
+          <button type="button" id="st-del-cascade" class="rounded bg-rose-600 hover:bg-rose-500 px-3 py-1.5 text-xs font-bold text-white cursor-pointer">Delete children too</button>
+        </div>
+      </div>
+    `);
+    const card = this.rootContainer.querySelector('#st-modal-card');
+    card.querySelector('#st-del-cancel').onclick = () => this._closeModal();
+    card.querySelector('#st-del-reparent').onclick = () => {
+      this._closeModal();
+      this._executeDeleteParts(ids, 'reparent_up');
+    };
+    card.querySelector('#st-del-cascade').onclick = () => {
+      this._closeModal();
+      this._executeDeleteParts(ids, 'delete_children');
+    };
+  },
+
+  _executeDeleteParts(ids, mode = 'reparent_up') {
+    const u = this.unitsData?.units?.[this.currentUnitId];
+    if (!u?.isBuildingEntity) return;
+    this._beginEdit('part-delete');
+
+    const outcome = computeDeleteOutcome(u.parts || [], ids, mode);
+    if (outcome.reparented.length && this.currentUnitGroup) {
+      this.currentUnitGroup.updateMatrixWorld(true);
+      const socks = this.currentUnitGroup.userData?.sockets || {};
+      const byIdNext = new Map(outcome.nextParts.map((p) => [p.id, p]));
+      for (const rep of outcome.reparented) {
+        const pNext = byIdNext.get(rep.id);
+        const childObj = socks[rep.id];
+        const newParentObj = rep.newParent ? socks[rep.newParent] : socks.torso;
+        if (pNext && childObj && newParentObj) {
+          const localMat = new THREE.Matrix4().copy(newParentObj.matrixWorld).invert().multiply(childObj.matrixWorld);
+          const pos = new THREE.Vector3();
+          const quat = new THREE.Quaternion();
+          const scl = new THREE.Vector3();
+          localMat.decompose(pos, quat, scl);
+          const eul = new THREE.Euler().setFromQuaternion(quat, 'XYZ');
+          pNext.pos = round3v([pos.x, pos.y, pos.z]);
+          pNext.rot = round3v([eul.x, eul.y, eul.z]);
+          pNext.scale = round3v([Math.max(0.01, scl.x), Math.max(0.01, scl.y), Math.max(0.01, scl.z)]);
+        }
+      }
+    }
+
+    u.parts = outcome.nextParts;
+    if (outcome.deletedIds.includes('watchtower')) {
+      const bId = u.buildingId || this.currentUnitId;
+      const bDef = this.ubStateManager?.buildingsData?.buildings?.[bId];
+      if (bDef && !bDef.hasBuiltInTurret) {
+        bDef.hasWatchtowerSupport = false;
+        bDef.watchtowerLevel = 0;
+      }
+    }
+
+    for (const delId of outcome.deletedIds) {
+      this._hiddenPartIds?.delete(delId);
+      this.selectedPartIds?.delete(delId);
+      this._collapsedOutlinerNodes?.delete(delId);
+      if (this._renamingPartId === delId) this._renamingPartId = null;
+      if (this._rigTargetParentId === delId) this._rigTargetParentId = null;
+    }
+    this.selectedPartIds?.clear?.();
+    this._lastClickedPartId = null;
+    this._multiDragSnapshot = null;
+    this.selectedSocketName = 'torso';
+    this._partsChanged({ select: 'torso' });
+  },
+
+  _setMultiPartsEnabled(enabled) {
+    const u = this.unitsData?.units?.[this.currentUnitId];
+    if (!u?.isBuildingEntity || !this.selectedPartIds?.size) return;
+    this._beginEdit('part-multi-enable');
+    for (const p of u.parts || []) {
+      if (this.selectedPartIds.has(p.id)) p.enabled = Boolean(enabled);
+    }
+    this._partsChanged({ respawn: false });
+    this._applyPartLevelVisibility();
+  },
+
+  _setMultiPartsLevels(minRaw, maxRaw) {
+    const u = this.unitsData?.units?.[this.currentUnitId];
+    if (!u?.isBuildingEntity || !this.selectedPartIds?.size) return;
+    const before = JSON.stringify(u.parts || []);
+    this._beginEdit('part-multi-levels');
+    const hasMin = String(minRaw ?? '').trim() !== '';
+    const hasMax = String(maxRaw ?? '').trim() !== '';
+    const minVal = hasMin ? Math.max(1, Number(minRaw) | 0) : null;
+    const maxVal = hasMax ? Math.max(1, Number(maxRaw) | 0) : null;
+    for (const p of u.parts || []) {
+      if (!this.selectedPartIds.has(p.id)) continue;
+      if (hasMin) p.minLevel = minVal;
+      p.maxLevel = hasMax ? maxVal : null;
+    }
+    const bad = validateParts({ parts: u.parts }).filter((i) => i.level === 'error');
+    if (bad.length) {
+      u.parts = JSON.parse(before);
+      this._toast(bad[0].message, 3800);
+      this._renderRigPanel();
+      return;
+    }
+    this._partsChanged({ respawn: false });
+    this._applyPartLevelVisibility();
+  },
+
+  _syncMultiPivotToSelection(topIds) {
+    const socks = this.currentUnitGroup?.userData?.sockets || {};
+    if (!this.currentUnitGroup || !this._multiPivot || !topIds?.length) return;
+    this.currentUnitGroup.updateMatrixWorld(true);
+    const center = new THREE.Vector3();
+    const wp = new THREE.Vector3();
+    let count = 0;
+    for (const id of topIds) {
+      const j = socks[id];
+      if (!j) continue;
+      j.getWorldPosition(wp);
+      center.add(wp);
+      count++;
+    }
+    if (count > 0) center.multiplyScalar(1 / count);
+    this._multiPivot.position.copy(center);
+    this._multiPivot.rotation.set(0, 0, 0);
+    this._multiPivot.scale.set(1, 1, 1);
+    this._multiPivot.updateMatrixWorld(true);
+    this._multiDragTopIds = [...topIds];
+    this._captureMultiDragSnapshot(topIds);
+  },
+
+  _captureMultiDragSnapshot(topIds = this._multiDragTopIds) {
+    const socks = this.currentUnitGroup?.userData?.sockets || {};
+    if (!this.currentUnitGroup || !this._multiPivot || !topIds?.length) {
+      this._multiDragSnapshot = null;
+      return;
+    }
+    this.currentUnitGroup.updateMatrixWorld(true);
+    this._multiPivot.updateMatrixWorld(true);
+    const pivotStartInv = new THREE.Matrix4().copy(this._multiPivot.matrixWorld).invert();
+    const items = [];
+    for (const id of topIds) {
+      const joint = socks[id];
+      if (!joint || !joint.parent) continue;
+      items.push({
+        id,
+        joint,
+        parentObj: joint.parent,
+        startWorld: new THREE.Matrix4().copy(joint.matrixWorld)
+      });
+    }
+    this._multiDragSnapshot = items.length ? { pivotStartInv, items } : null;
+  },
+
+  _applyMultiPivotTransform() {
+    const snap = this._multiDragSnapshot;
+    if (!snap || !this._multiPivot) return;
+    this._multiPivot.updateMatrixWorld(true);
+    const deltaWorld = new THREE.Matrix4().multiplyMatrices(this._multiPivot.matrixWorld, snap.pivotStartInv);
+    const desiredWorld = new THREE.Matrix4();
+    const parentInv = new THREE.Matrix4();
+    const localMat = new THREE.Matrix4();
+    const pos = new THREE.Vector3();
+    const quat = new THREE.Quaternion();
+    const scl = new THREE.Vector3();
+    const eul = new THREE.Euler();
+
+    for (const item of snap.items) {
+      desiredWorld.multiplyMatrices(deltaWorld, item.startWorld);
+      item.parentObj.updateMatrixWorld(true);
+      parentInv.copy(item.parentObj.matrixWorld).invert();
+      localMat.multiplyMatrices(parentInv, desiredWorld);
+      localMat.decompose(pos, quat, scl);
+      eul.setFromQuaternion(quat, 'XYZ');
+      item.joint.position.copy(pos);
+      item.joint.rotation.copy(eul);
+      item.joint.scale.set(Math.max(0.01, scl.x), Math.max(0.01, scl.y), Math.max(0.01, scl.z));
+      this._writeRestPose(item.id, item.joint);
+    }
+  },
+
+  _recenterMultiPivotAfterDrag() {
+    if (this.gizmoController?.gizmoTargetType !== 'multi_parts' || !this._multiDragTopIds?.length) return;
+    this._syncMultiPivotToSelection(this._multiDragTopIds);
+    this.gizmoController?.update();
+    this.inspectorPanel?.syncUI();
+    this._syncBottomDataTransforms();
+  },
+
+  _walkOwnJointMeshes(root, sockSet, fn) {
+    if (!root) return;
+    for (const ch of root.children || []) {
+      if (sockSet.has(ch)) continue;
+      if (ch.isMesh) fn(ch);
+      this._walkOwnJointMeshes(ch, sockSet, fn);
+    }
+  },
+
+  _clearPartJointVisuals(joint) {
+    if (!joint) return;
+    for (const ch of [...(joint.children || [])]) {
+      if (ch.userData?._studioPartVisual) {
+        joint.remove(ch);
+        disposeVisual(ch);
+      }
+    }
   },
 
   _applyPartLevelVisibility() {
     const u = this.unitsData?.units?.[this.currentUnitId];
     if (!u?.isBuildingEntity) return;
     const socks = this.currentUnitGroup?.userData?.sockets || {};
+    const sockSet = new Set(Object.values(socks));
+    const parts = u.parts || [];
     const lv = this.buildingPreviewLevel || 1;
-    for (const p of u.parts || []) {
+    for (const p of parts) {
       const j = socks[p.id];
       if (!j) continue;
-      const inRange = lv >= (p.minLevel || 1) && (p.maxLevel == null || lv <= p.maxLevel);
-      j.visible = inRange;                       // outside its levels: hidden
-      const dim = p.enabled === false;           // switched off: still shown (so it can be selected), but dimmed
-      j.traverse((o) => {
-        if (!o.isMesh || !o.material) return;
+      const inRange = isPartLevelInRange(parts, p, lv);
+      const eyeHidden = isPartHiddenByEye(parts, p, this._hiddenPartIds);
+      j.visible = inRange && !eyeHidden;
+      const dim = p.enabled === false || hasDisabledAncestor(parts, p);
+      this._walkOwnJointMeshes(j, sockSet, (o) => {
+        if (!o.material) return;
         if (!o.userData._partMat) { o.material = o.material.clone(); o.userData._partMat = true; }
-        o.material.transparent = dim; o.material.opacity = dim ? 0.22 : 1; o.material.needsUpdate = true;
+        o.material.transparent = dim;
+        o.material.opacity = dim ? 0.22 : 1;
+        o.material.needsUpdate = true;
       });
+    }
+    const bId = u.buildingId || this.currentUnitId;
+    if (this._studioBuildingActor?.turretGroup && bId !== 'watchtower' && bId !== 'ballista_tower') {
+      const wtPart = parts.find((p) => p.id === 'watchtower');
+      if (wtPart) {
+        const wtVisible = isPartEffectivelyActive(parts, wtPart, lv) && !isPartHiddenByEye(parts, wtPart, this._hiddenPartIds);
+        this._studioBuildingActor.turretGroup.visible = wtVisible;
+      } else {
+        const bDef = this.ubStateManager?.buildingsData?.buildings?.[bId];
+        if (Array.isArray(bDef?.parts)) {
+          this._studioBuildingActor.turretGroup.visible = false;
+        }
+      }
     }
   },
 
-  /** glb model parts: show the real (textured) model on the part's joint instead of the grey marker box. */
+  /** Attach rendered meshes for building `model` parts (GLB + custom primitive shapes) without duplicating on rebuild. */
   _attachPartModels() {
     const u = this.unitsData?.units?.[this.currentUnitId];
     if (!u?.isBuildingEntity) return;
     const group = this.currentUnitGroup;
     const socks = group?.userData?.sockets || {};
+    this._attachPartGen = (this._attachPartGen || 0) + 1;
+    const gen = this._attachPartGen;
+
     for (const p of u.parts || []) {
-      if (p.kind !== 'model' || p.model?.type !== 'glb' || !socks[p.id]) continue;
       const joint = socks[p.id];
-      import('../map_editor/mapStateManager.js')
-        .then((m) => m.loadTexturedGlbTemplate({ id: p.model.ref || p.id, glbBase64: p.model.glbBase64, fitSize: p.model.fitSize || 4 }))
-        .then((tpl) => {
-          if (!tpl || this.currentUnitGroup !== group) return;
-          for (const ch of [...joint.children]) if (ch.isMesh) ch.visible = false;
-          joint.add(tpl.clone(true));
-          this._applyPartLevelVisibility();
-        })
-        .catch(() => {});
+      if (p.kind !== 'model' || !joint) continue;
+
+      // Always remove any previously attached Studio visuals on this joint before attaching
+      this._clearPartJointVisuals(joint);
+
+      if (p.model?.type === 'glb') {
+        for (const ch of [...joint.children]) {
+          if (ch.isMesh && !ch.userData?._studioPartVisual) ch.visible = false;
+        }
+        const fitSize = Math.max(0.1, Number(p.model.fitSize) || 4);
+        const cacheId = `${p.model.ref || p.id}__fit_${fitSize}`;
+        import('../map_editor/mapStateManager.js')
+          .then((m) => m.loadTexturedGlbTemplate({ id: cacheId, glbBase64: p.model.glbBase64, fitSize }))
+          .then((tpl) => {
+            if (!tpl || this.currentUnitGroup !== group || gen !== this._attachPartGen || !joint.parent) return;
+            this._clearPartJointVisuals(joint);
+            for (const ch of [...joint.children]) {
+              if (ch.isMesh && !ch.userData?._studioPartVisual) ch.visible = false;
+            }
+            const inst = tpl.clone(true);
+            inst.userData._studioPartVisual = true;
+            joint.add(inst);
+            this._applyPartLevelVisibility();
+          })
+          .catch(() => {});
+        continue;
+      }
+
+      if (p.model?.type === 'primitive' && p.model?.primitive) {
+        for (const ch of [...joint.children]) {
+          if (ch.isMesh && !ch.userData?._studioPartVisual) ch.visible = false;
+        }
+        const { geometry, yOffset } = createPrimitiveGeometry(p.model.primitive);
+        const mat = new THREE.MeshStandardMaterial({
+          color: p.model.primitive.color || '#94a3b8',
+          roughness: 0.78,
+          metalness: 0.08
+        });
+        const mesh = new THREE.Mesh(geometry, mat);
+        mesh.name = `part_prim_${p.model.primitive.shape || 'box'}`;
+        mesh.position.y = yOffset;
+        mesh.userData._studioPartVisual = true;
+        mesh.userData._partMat = true;
+        joint.add(mesh);
+      }
     }
+    this._applyPartLevelVisibility();
   },
 
   async _importPartGlb(file) {
     const u = this.unitsData.units[this.currentUnitId];
     if (!u?.isBuildingEntity || !file) return;
-    const buf = await file.arrayBuffer();
-    if (buf.byteLength > 3 * 1024 * 1024) this._toast(`"${file.name}" is ${(buf.byteLength / 1048576).toFixed(1)} MB (> 3 MB): large models slow rendering and may not fit the browser save quota.`, 6000);
-    const { arrayBufferToBase64 } = await import('../map_editor/mapStateManager.js');
+    const imp = this._getRigImportState();
+    const targetCat = normalizeGlbCategory(imp.newCategory?.trim() || imp.category || 'General');
+    const fitSize = Math.max(0.1, Number(imp.fitSize) || 4);
+    const parentId = this._resolveRigTargetParentId(u.parts || []);
+    const customName = (imp.name || '').trim() || String(file.name || 'model').replace(/\.[^.]+$/, '') || 'Model';
+
+    this._toast('Importing .glb part…', 8000);
+    try {
+      const prepared = await prepareGlbAssetForImport(file, {
+        name: customName,
+        category: targetCat,
+        detail: imp.detail || 'medium',
+        customBudget: imp.custom || '',
+        fitSize
+      });
+      if (prepared.glbByteLength > 3 * 1024 * 1024) {
+        this._toast(`"${prepared.name}" is ${(prepared.glbByteLength / 1048576).toFixed(1)} MB: large models may exceed browser save quota.`, 5500);
+      }
+
+      const libRes = upsertGlbLibraryEntry(prepared);
+      if (!libRes.ok && libRes.error) {
+        this._toast(`Part added, but reusable library save failed (${libRes.error}).`, 4500);
+      }
+
+      const r = Number(this.ubStateManager?.buildingsData?.buildings?.[u.buildingId || this.currentUnitId]?.footprintRadiusMeters) || 5;
+      this._beginEdit('part-import');
+      const part = newPart('model', {
+        name: prepared.name,
+        parent: parentId,
+        pos: parentId ? [0, 0, 0] : [r * 0.5, 0, 0],
+        model: {
+          type: 'glb',
+          ref: prepared.id,
+          name: prepared.name,
+          category: prepared.category,
+          glbBase64: prepared.glbBase64,
+          glbByteLength: prepared.glbByteLength,
+          fitSize: prepared.fitSize,
+          originalTriangles: prepared.originalTriangles,
+          triangles: prepared.triangles
+        }
+      }, u.parts || []);
+      u.parts = [...(u.parts || []), part];
+      if (parentId) this._collapsedOutlinerNodes?.delete(parentId);
+
+      // Clear pending form file/name while retaining user's chosen category & detail kit
+      imp.file = null;
+      imp.name = '';
+      imp.category = prepared.category;
+      imp.newCategory = '';
+
+      this._partsChanged({ select: part.id });
+      const triMsg = prepared.decimated
+        ? `${prepared.originalTriangles.toLocaleString()} → ${prepared.triangles.toLocaleString()} tris`
+        : `${prepared.triangles.toLocaleString()} tris (original textures kept)`;
+      this._toast(`"${prepared.name}" added (${triMsg}) and saved to "${prepared.category}" library.`, 4500);
+    } catch (err) {
+      console.error(err);
+      this._toast(`GLB import failed: ${err?.message || err}`, 6000);
+    }
+  },
+
+  _addLibraryGlbPart(libraryId) {
+    const u = this.unitsData?.units?.[this.currentUnitId];
+    if (!u?.isBuildingEntity || !libraryId) return;
+    const item = this._getGlbLibrary().find((e) => e.id === libraryId);
+    if (!item) return;
+    const parentId = this._resolveRigTargetParentId(u.parts || []);
     const r = Number(this.ubStateManager?.buildingsData?.buildings?.[u.buildingId || this.currentUnitId]?.footprintRadiusMeters) || 5;
-    const name = String(file.name || 'model').replace(/\.[^.]+$/, '') || 'Model';
+    this._beginEdit('part-add-library');
     const part = newPart('model', {
-      name, pos: [r * 0.5, 0, 0],
-      model: { type: 'glb', ref: `glb_${Date.now().toString(36)}`, name, glbBase64: arrayBufferToBase64(buf), glbByteLength: buf.byteLength, fitSize: 4 }
+      name: item.name,
+      parent: parentId,
+      pos: parentId ? [0, 0, 0] : [r * 0.5, 0, 0],
+      model: {
+        type: 'glb',
+        ref: item.id,
+        name: item.name,
+        category: item.category,
+        glbBase64: item.glbBase64,
+        glbByteLength: item.glbByteLength,
+        fitSize: item.fitSize || 4,
+        originalTriangles: item.originalTriangles || 0,
+        triangles: item.triangles || 0
+      }
     }, u.parts || []);
     u.parts = [...(u.parts || []), part];
+    if (parentId) this._collapsedOutlinerNodes?.delete(parentId);
     this._partsChanged({ select: part.id });
-    this._toast(`Model "${name}" added as a part (textures included). Size it with the gizmo or "size (m)".`, 4500);
+    this._toast(`Added "${item.name}" from library.`, 2500);
+  },
+
+  _deleteLibraryGlbItem(libraryId) {
+    if (!libraryId) return;
+    deleteGlbLibraryEntry(libraryId);
+    this._renderRigPanel();
+    this._toast('Removed from reusable GLB library.', 2200);
+  },
+
+  _addPrimitivePart(shape = 'box') {
+    const u = this.unitsData?.units?.[this.currentUnitId];
+    if (!u?.isBuildingEntity) return;
+    const def = getPrimitiveDef(shape);
+    const parentId = this._resolveRigTargetParentId(u.parts || []);
+    const r = Number(this.ubStateManager?.buildingsData?.buildings?.[u.buildingId || this.currentUnitId]?.footprintRadiusMeters) || 5;
+    const color = this._rigPrimitiveColor || '#94a3b8';
+    this._beginEdit('part-add-primitive');
+    const part = newPart('model', {
+      name: def.label,
+      parent: parentId,
+      pos: parentId ? [0, 0, 0] : [r * 0.5, 0, 0],
+      model: {
+        type: 'primitive',
+        ref: def.shape,
+        primitive: {
+          shape: def.shape,
+          size: [...def.defaultSize],
+          color
+        }
+      }
+    }, u.parts || []);
+    u.parts = [...(u.parts || []), part];
+    if (parentId) this._collapsedOutlinerNodes?.delete(parentId);
+    this._partsChanged({ select: part.id });
+    this._toast(`${def.label} added.`, 2200);
   },
 
   /** Rebuild joints + view after parts were added / removed / edited, and save. */
@@ -197,37 +972,58 @@ export const studioGearAndPoseMethods = {
   },
 
   _addPart(kind) {
+    if (kind === 'fire_point') {
+      this._toast('Fire points are managed in Units & Buildings Lab.', 2800);
+      return;
+    }
     const u = this.unitsData.units[this.currentUnitId];
     if (!u?.isBuildingEntity) return;
+    if (kind === 'exit_point' && !canAddExitPoint(u.parts || [])) {
+      this._toast('A building has at most one exit point.', 3000);
+      return;
+    }
+    const parentId = kind === 'group' ? null : this._resolveRigTargetParentId(u.parts || []);
+    this._beginEdit('part-add');
     const r = Number(this.ubStateManager?.buildingsData?.buildings?.[u.buildingId || this.currentUnitId]?.footprintRadiusMeters) || 5;
-    const defaults = { model: { pos: [r * 0.5, 0, 0] }, fire_point: { pos: [0, 6.5, 0] }, exit_point: { pos: [0, 0, r] } }[kind];
-    const part = newPart(kind, { ...defaults, name: { model: 'Part', fire_point: 'Fire point', exit_point: 'Exit point' }[kind] }, u.parts || []);
+    const defaults = {
+      model: { pos: parentId ? [0, 0, 0] : [r * 0.5, 0, 0] },
+      exit_point: { pos: parentId ? [0, 0, 0] : [0, 0, r] },
+      group: { pos: [0, 0, 0] }
+    }[kind];
+    const labelMap = { model: 'Part', exit_point: 'Exit point', group: 'Group' };
+    const part = newPart(kind, { ...defaults, parent: parentId, name: labelMap[kind] || kind }, u.parts || []);
     u.parts = [...(u.parts || []), part];
+    if (part.kind === 'group') {
+      this._rigTargetParentId = part.id;
+    } else if (parentId) {
+      this._collapsedOutlinerNodes?.delete(parentId);
+    }
     this._partsChanged({ select: part.id });
-    this._toast('Part added. Drag it with the gizmo. (Stage 1: the match does not use parts yet.)', 3500);
+    this._toast(`${labelMap[kind] || 'Part'} added.`, 2500);
   },
 
-  _deletePart(id) {
-    const u = this.unitsData.units[this.currentUnitId];
-    if (!u?.parts?.some((q) => q.id === id)) return;
-    u.parts = u.parts.filter((q) => q.id !== id);
-    this.selectedSocketName = 'torso';
-    this._partsChanged({ select: 'torso' });
+  _setPartColor(hex) {
+    const u = this.unitsData?.units?.[this.currentUnitId];
+    const p = (u?.parts || []).find((q) => q.id === this.selectedSocketName);
+    if (!p?.model?.primitive || !hex) return;
+    this._beginEdit('part-color');
+    p.model.primitive.color = hex;
+    this._partsChanged({ respawn: false });
+    this._attachPartModels();
   },
 
   _setPartField(field, raw) {
-    const u = this.unitsData.units[this.currentUnitId];
+    if (!['name', 'enabled', 'minLevel', 'maxLevel', 'fitSize'].includes(field)) return;
+    const u = this.unitsData?.units?.[this.currentUnitId];
     const p = (u?.parts || []).find((q) => q.id === this.selectedSocketName);
     if (!p) return;
     const before = JSON.stringify(p);
+    this._beginEdit('part-field');
     if (field === 'name') p.name = String(raw).trim() || p.id;
     else if (field === 'enabled') p.enabled = Boolean(raw);
     else if (field === 'fitSize') { if (!(Number(raw) > 0.05) || !p.model) return; p.model.fitSize = Number(raw); }
     else if (field === 'maxLevel') p.maxLevel = raw === '' ? null : Number(raw);
-    else if (field === 'levelStats') {
-      try { const v = JSON.parse(raw || '{}'); if (Object.keys(v).length) p.levelStats = v; else delete p.levelStats; }
-      catch { this._toast('Per-level overrides: invalid JSON.', 3500); return; }
-    } else p[field] = Number(raw);
+    else p[field] = Number(raw);
     const bad = validateParts({ parts: u.parts }).filter((i) => i.level === 'error');
     if (bad.length) { Object.assign(p, JSON.parse(before)); this._toast(bad[0].message, 4000); this._renderRigPanel(); return; }
     this._partsChanged({ respawn: field === 'fitSize' });
@@ -759,25 +1555,26 @@ export const studioGearAndPoseMethods = {
     const host = this.rootContainer?.querySelector("#insp-gear");
     if (!host || !this.currentUnitGroup) return;
     if (this.entityCategory === "buildings") {
+      const bUnit = this.unitsData.units?.[this.currentUnitId];
       const bDef = this.ubStateManager?.buildingsData?.buildings?.[this.currentUnitId] || {};
-      const maxLv = bDef.canAutoLevel ? Math.max(2, Math.min(10, (bDef.maxLevel | 0) || 3)) : 1;
+      const maxLv = computeMaxBuildingLevel(bDef, bUnit?.parts || [], this.buildingPreviewLevel || 1);
       const curLv = Math.max(1, Math.min(maxLv, this.buildingPreviewLevel || 1));
+      const jLabels = bUnit?.jointLabels || { pelvis: 'Foundation', torso: 'Building body', arm_L: 'Door leaf L', arm_R: 'Door leaf R' };
+      const shownJoints = ['pelvis', 'torso', ...(bUnit?.canRecruitUnits ? ['arm_L', 'arm_R'] : [])]
+        .map((k) => jLabels[k] || k)
+        .join(', ');
       host.innerHTML = `<div class="rounded-lg border border-emerald-500/40 bg-emerald-500/10 p-2.5 text-xs text-emerald-200 text-left flex flex-col gap-2">
         <div class="font-bold">Building Parts & Level (${this.currentUnitId})</div>
-        ${
-          maxLv > 1
-            ? `<div class="flex flex-col gap-1">
-                <span class="text-[10.5px] text-sky-300 font-bold">Preview & Animate at Level (Cumulative):</span>
-                <select id="st-bld-lv-select" class="w-full rounded bg-slate-900 border border-slate-700 px-2 py-1 text-xs font-bold text-sky-300">
-                  ${Array.from({ length: maxLv }, (_, idx) => {
-                    const lv = idx + 1;
-                    return `<option value="${lv}" ${lv === curLv ? 'selected' : ''}>Level ${lv}${lv === 1 ? ' (Base)' : ''}</option>`;
-                  }).join('')}
-                </select>
-              </div>`
-            : ''
-        }
-        <div class="text-[11px] text-slate-300">Select a building part (roof, hall, turret_socket${this.unitsData.units?.[this.currentUnitId]?.canRecruitUnits ? ', door leaves' : ''}) to animate construction, level-up transitions, and destruction.</div>
+        <div class="flex flex-col gap-1">
+          <span class="text-[10.5px] text-sky-300 font-bold">Preview & Animate at Level (Cumulative):</span>
+          <select id="st-bld-lv-select" class="w-full rounded bg-slate-900 border border-slate-700 px-2 py-1 text-xs font-bold text-sky-300">
+            ${Array.from({ length: maxLv }, (_, idx) => {
+              const lv = idx + 1;
+              return `<option value="${lv}" ${lv === curLv ? 'selected' : ''}>Level ${lv}${lv === 1 ? ' (Base)' : ''}</option>`;
+            }).join('')}
+          </select>
+        </div>
+        <div class="text-[11px] text-slate-300">Select a building joint (${shownJoints}) to animate construction, level-up transitions, and destruction.</div>
       </div>
       ${this._skinsGridHtml()}`;
       const tabBtn = this.rootContainer.querySelector('#tab-gear'); if (tabBtn) tabBtn.textContent = 'Skins';
@@ -786,6 +1583,7 @@ export const studioGearAndPoseMethods = {
         this.buildingPreviewLevel = Number(e.target.value) || 1;
         this._spawnStudioUnit();
         this._renderGearPanel();
+        this._renderRigPanel();
       });
       return;
     }
@@ -1134,6 +1932,7 @@ export const studioGearAndPoseMethods = {
       updateBowstringRig(this.currentUnitGroup);
     }
     this.inspectorPanel?.syncUI();
+    this._syncBottomDataTransforms?.();
     this.gizmoController?.update();
   },
 
@@ -1141,6 +1940,9 @@ export const studioGearAndPoseMethods = {
   _prepareEdit() {
     this._beginEdit('pose');
     this.timelineEditor?.forcePause();
+    if (this.gizmoController?.gizmoTargetType === 'multi_parts' && this._multiDragTopIds?.length) {
+      if (!this._multiDragSnapshot) this._captureMultiDragSnapshot(this._multiDragTopIds);
+    }
     // An idle without keys is shown procedurally (bob / sway). Keying on top of that would bake the sway into the key,
     // so the first edit switches to a clean rest pose – once, so the numbers the user already typed are not wiped.
     if (this._previewKind() === 'procedural' && !this._cleaned) {
@@ -1263,6 +2065,7 @@ export const studioGearAndPoseMethods = {
       updateBowstringRig(this.currentUnitGroup);
     }
     this.inspectorPanel.syncUI();
+    this._syncBottomDataTransforms?.();
     this.gizmoController.update();
 
     if (this.gizmoController.gizmoTargetType === 'weapon_grip') {
@@ -1273,6 +2076,12 @@ export const studioGearAndPoseMethods = {
         delete eq.auto;   // fitted by hand: the automatic carry no longer removes or moves it
         this.stateManager.scheduleSave();
       }
+      return;
+    }
+
+    if (this.gizmoController.gizmoTargetType === 'multi_parts') {
+      this._applyMultiPivotTransform?.();
+      this.stateManager.scheduleSave();
       return;
     }
 

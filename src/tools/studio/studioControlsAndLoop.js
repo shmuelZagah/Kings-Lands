@@ -161,7 +161,18 @@ export const studioControlsAndLoopMethods = {
       },
       getProceduralClip: (base) => this._readProceduralClip(base),
       getDefaultEventSocket: (type) => this._getDefaultEventSocket(type),
-      getJointNames: () => Object.keys(this.currentUnitGroup?.userData?.sockets || {}),
+      getJointNames: () => {
+        const names = Object.keys(this.currentUnitGroup?.userData?.sockets || {});
+        const u = this.unitsData?.units?.[this.currentUnitId];
+        if (!u?.isBuildingEntity) return names;
+        const hidden = new Set(u.hiddenJoints || []);
+        const partIds = new Set((u.parts || []).map((p) => p.id));
+        return names.filter((n) => !hidden.has(n) && !partIds.has(n));
+      },
+      getJointLabel: (joint) => {
+        const u = this.unitsData?.units?.[this.currentUnitId];
+        return (u?.isBuildingEntity && u.jointLabels?.[joint]) || joint;
+      },
       isPosLocked: (joint) => this._jointRules(joint).lockPos,
       getJointParents: () => {
         const socks = this.currentUnitGroup?.userData?.sockets || {};
@@ -291,25 +302,37 @@ export const studioControlsAndLoopMethods = {
 
   _setEditMode(mode) {
     if (this.editMode === mode) return;
-    if (mode === 'rig' && !confirm(
-      'Rig mode edits the CHARACTER, not the animation.\n\n' +
-      'Moving a joint changes its rest pose, and every animation of this unit is measured from it.\n' +
-      'To animate, stay in Pose mode. Continue to Rig mode?'
-    )) return;
     this.editMode = mode;
     if (mode !== 'rig' && this.gizmoController.getMode() === 'scale') this.gizmoController.setGizmoMode('rotate');
+    if (mode !== 'rig') {
+      this.selectedPartIds?.clear?.();
+      this._multiDragSnapshot = null;
+      const u = this.unitsData?.units?.[this.currentUnitId];
+      if (u?.isBuildingEntity) {
+        const partIds = new Set((u.parts || []).map((p) => p.id));
+        const hidden = new Set(u.hiddenJoints || []);
+        if (partIds.has(this.selectedSocketName) || hidden.has(this.selectedSocketName)) {
+          this.selectedSocketName = 'torso';
+        }
+      }
+    }
     this._syncScaleUi();
     const qs = (s) => this.rootContainer.querySelector(s);
     qs('#st-edit-pose').className = mode === 'pose' ? SEG_ON : SEG_OFF;
     qs('#st-edit-rig').className = mode === 'rig' ? RIG_ON : SEG_OFF;
     this._renderModeHelp();
     this._applyBottomPanel();
+    if (typeof requestAnimationFrame === 'function') requestAnimationFrame(() => this._resizeHandler?.());
 
     this.timelineEditor.forcePause();
     this._cleaned = false;
     this._applyPoseAt(this.timelineEditor.scrubNormTime);
     this._selectJoint(this.selectedSocketName);
-    this._toast(mode === 'rig' ? 'Rig mode: you are editing the REST pose.' : 'Pose mode: moving a joint writes keyframes.');
+    this._toast(
+      mode === 'rig'
+        ? (this._isBuildingNow?.() ? 'Rig mode: editing building parts and rest rig.' : 'Rig mode: you are editing the REST pose.')
+        : 'Pose mode: moving a joint writes keyframes.'
+    );
   },
 
   /** Bottom panel: keyframe sheet in Pose mode, part list in Rig mode, nothing in the arena. */
@@ -394,6 +417,14 @@ export const studioControlsAndLoopMethods = {
     qs('#st-unit-select').addEventListener('change', (e) => {
       this.currentUnitId = e.target.value;
       this.currentLoadout = MAIN_LOADOUT;
+      this.selectedPartIds?.clear?.();
+      this._hiddenPartIds?.clear?.();
+      this._renamingPartId = null;
+      this._lastClickedPartId = null;
+      this._multiDragSnapshot = null;
+      this._rigTargetParentId = undefined;
+      this._rigRightTab = 'add';
+      this.selectedSocketName = 'torso';
       const race = this._raceOf(this.currentUnitId);
       if (race && this._factions().includes(race)) { this.currentFaction = race; qs('#st-faction-select').value = race; }
       this._spawnStudioUnit();
@@ -442,19 +473,228 @@ export const studioControlsAndLoopMethods = {
     });
     this.gizmoController.transformControls.addEventListener('mode-changed', () => this._syncGizmoTools());
     this._syncGizmoTools();
-    qs('#st-rig-mount').addEventListener('click', (e) => {
+    const rigMount = qs('#st-rig-mount');
+    const clearDropHighlights = () => {
+      rigMount.querySelectorAll('.st-drop-hover').forEach((el) => el.classList.remove('st-drop-hover', 'ring-1', 'ring-sky-400', 'bg-sky-500/15'));
+    };
+    rigMount.addEventListener('click', (e) => {
+      if (e.target.closest('[data-part-rename-input]')) return;
+      if (e.target.closest('#st-rig-collapse')) { this._toggleRigPanelCollapse(); return; }
+      const tabBtn = e.target.closest('[data-rig-tab]');
+      if (tabBtn) { this._setRigRightTab(tabBtn.dataset.rigTab); return; }
+      if (e.target.closest('[data-rig-back-add]')) { this._setRigRightTab('add'); return; }
+      const addSubBtn = e.target.closest('[data-rig-add-sub]');
+      if (addSubBtn) { this._setRigAddSubTab(addSubBtn.dataset.rigAddSub); return; }
+      const impSubBtn = e.target.closest('[data-rig-imp-sub]');
+      if (impSubBtn) { this._setRigImportSubTab(impSubBtn.dataset.rigImpSub); return; }
+      const primBtn = e.target.closest('[data-add-primitive]');
+      if (primBtn) { this._addPrimitivePart(primBtn.dataset.addPrimitive); return; }
+      if (e.target.closest('#st-rig-imp-pick')) { rigMount.querySelector('#st-part-glb')?.click(); return; }
+      const detBtn = e.target.closest('[data-rig-imp-detail]');
+      if (detBtn) {
+        const st = this._getRigImportState();
+        st.detail = detBtn.dataset.rigImpDetail;
+        st.custom = '';
+        this._renderRigPanel();
+        return;
+      }
+      if (e.target.closest('#st-rig-imp-go')) {
+        this._importPartGlb(this._getRigImportState().file);
+        return;
+      }
+      const libCatBtn = e.target.closest('[data-lib-cat]');
+      if (libCatBtn) {
+        this._rigLibCategoryFilter = libCatBtn.dataset.libCat || 'All';
+        this._renderRigPanel();
+        return;
+      }
+      const libDelBtn = e.target.closest('[data-lib-del]');
+      if (libDelBtn) {
+        this._deleteLibraryGlbItem(libDelBtn.dataset.libDel);
+        return;
+      }
+      const libAddBtn = e.target.closest('[data-lib-add]');
+      if (libAddBtn) {
+        this._addLibraryGlbPart(libAddBtn.dataset.libAdd);
+        return;
+      }
+      const toggleBtn = e.target.closest('[data-outliner-toggle]');
+      if (toggleBtn) { this._toggleOutlinerNode(toggleBtn.dataset.outlinerToggle); return; }
+      const eyeBtn = e.target.closest('[data-part-eye]');
+      if (eyeBtn) { this._togglePartEye(eyeBtn.dataset.partEye); return; }
+      const delBtn = e.target.closest('[data-part-delete]');
+      if (delBtn) { this._deletePart(delBtn.dataset.partDelete); return; }
+      const partBtn = e.target.closest('[data-part-select]');
+      if (partBtn) {
+        const pid = partBtn.dataset.partSelect;
+        const now = performance.now();
+        if (!e.ctrlKey && !e.metaKey && !e.shiftKey && this._lastPartTap?.id === pid && now - this._lastPartTap.time < 420) {
+          this._lastPartTap = null;
+          this._startRenamePart(pid);
+          return;
+        }
+        this._lastPartTap = (!e.ctrlKey && !e.metaKey && !e.shiftKey) ? { id: pid, time: now } : null;
+        this._selectOutlinerPart(pid, {
+          ctrlKey: e.ctrlKey,
+          metaKey: e.metaKey,
+          shiftKey: e.shiftKey
+        });
+        return;
+      }
       const b = e.target.closest('.rig-part');
-      if (b) { this._selectJoint(b.dataset.joint); this._renderRigPanel(); return; }
+      if (b) {
+        this.selectedPartIds?.clear?.();
+        this._lastClickedPartId = null;
+        this._multiDragSnapshot = null;
+        if (this._isBuildingNow?.()) this._rigRightTab = 'data';
+        this._selectJoint(b.dataset.joint);
+        this._renderRigPanel();
+        return;
+      }
       const add = e.target.closest('[data-part-add]');
-      if (add) { this._addPart(add.dataset.partAdd); return; }
-      if (e.target.closest('[data-part-import]')) { qs('#st-rig-mount').querySelector('#st-part-glb')?.click(); return; }
-      const del = e.target.closest('[data-part-delete]');
-      if (del) this._deletePart(del.dataset.partDelete);
+      if (add && !add.disabled) { this._addPart(add.dataset.partAdd); return; }
+      if (e.target.closest('[data-part-import]')) { rigMount.querySelector('#st-part-glb')?.click(); return; }
+      if (e.target.closest('[data-multi-enable]')) { this._setMultiPartsEnabled(true); return; }
+      if (e.target.closest('[data-multi-disable]')) { this._setMultiPartsEnabled(false); return; }
+      if (e.target.closest('[data-multi-delete]')) { this._deleteSelectedParts(); return; }
+      if (e.target.closest('[data-multi-apply-levels]')) {
+        const minEl = rigMount.querySelector('#st-multi-min-lv');
+        const maxEl = rigMount.querySelector('#st-multi-max-lv');
+        this._setMultiPartsLevels(minEl?.value ?? '', maxEl?.value ?? '');
+      }
     });
-    qs('#st-rig-mount').addEventListener('change', (e) => {
-      if (e.target.id === 'st-part-glb') { const file = e.target.files?.[0]; e.target.value = ''; this._importPartGlb(file); return; }
+    rigMount.addEventListener('dblclick', (e) => {
+      const partBtn = e.target.closest('[data-part-select]');
+      if (partBtn) this._startRenamePart(partBtn.dataset.partSelect);
+    });
+    rigMount.addEventListener('keydown', (e) => {
+      const inp = e.target.closest('[data-part-rename-input]');
+      if (!inp) return;
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        inp.dataset.renameHandled = '1';
+        this._commitRenamePart(inp.dataset.partRenameInput, inp.value);
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        inp.dataset.renameHandled = '1';
+        this._renamingPartId = null;
+        this._renderRigPanel();
+      }
+    });
+    rigMount.addEventListener('focusout', (e) => {
+      const inp = e.target.closest('[data-part-rename-input]');
+      if (!inp || inp.dataset.renameHandled === '1') return;
+      if (this._renamingPartId === inp.dataset.partRenameInput) {
+        this._commitRenamePart(inp.dataset.partRenameInput, inp.value);
+      }
+    });
+    rigMount.addEventListener('input', (e) => {
+      const tr = e.target.closest('[data-rig-tr]');
+      if (tr) {
+        this._applyRigTransformInput(tr.dataset.rigTr, Number(tr.dataset.axis), tr.value);
+        return;
+      }
+      if (e.target.id === 'st-rig-prim-color') {
+        this._rigPrimitiveColor = e.target.value;
+        return;
+      }
+      if (e.target.closest('[data-part-color]')) {
+        this._setPartColor(e.target.value);
+        return;
+      }
+      if (e.target.id === 'st-rig-imp-name') { this._getRigImportState().name = e.target.value; return; }
+      if (e.target.id === 'st-rig-imp-size') { this._getRigImportState().fitSize = e.target.value; return; }
+      if (e.target.id === 'st-rig-imp-new-cat') { this._getRigImportState().newCategory = e.target.value; return; }
+      if (e.target.id === 'st-rig-imp-custom') { this._getRigImportState().custom = e.target.value; }
+    });
+    rigMount.addEventListener('change', (e) => {
+      if (e.target.id === 'st-part-glb') {
+        const file = e.target.files?.[0];
+        e.target.value = '';
+        if (file) {
+          const st = this._getRigImportState();
+          st.file = file;
+          if (!st.name) st.name = file.name.replace(/\.[^.]+$/, '');
+          this._renderRigPanel();
+        }
+        return;
+      }
+      if (e.target.matches('[data-rig-target-parent]')) {
+        this._rigTargetParentId = e.target.value || null;
+        return;
+      }
+      if (e.target.id === 'st-rig-imp-category') {
+        const st = this._getRigImportState();
+        if (e.target.value === '__new__') {
+          st.newCategory = '';
+          rigMount.querySelector('#st-rig-imp-new-cat')?.focus();
+        } else {
+          st.category = e.target.value || 'General';
+          st.newCategory = '';
+        }
+        return;
+      }
+      if (e.target.id === 'st-rig-imp-custom') {
+        this._getRigImportState().custom = e.target.value;
+        this._renderRigPanel();
+        return;
+      }
+      if (e.target.id === 'st-rig-prim-color') {
+        this._rigPrimitiveColor = e.target.value;
+        return;
+      }
+      if (e.target.closest('[data-part-color]')) {
+        this._setPartColor(e.target.value);
+        return;
+      }
+      if (e.target.id === 'st-rig-bld-lv-select') {
+        this.buildingPreviewLevel = Number(e.target.value) || 1;
+        this._spawnStudioUnit();
+        this._renderRigPanel();
+        this._renderGearPanel();
+        return;
+      }
+      const en = e.target.closest('[data-part-enabled]');
+      if (en) { this._setPartEnabledById(en.dataset.partEnabled, en.checked); return; }
       const f = e.target.closest('[data-part-field]');
       if (f) this._setPartField(f.dataset.partField, f.type === 'checkbox' ? f.checked : f.value);
+    });
+    rigMount.addEventListener('dragstart', (e) => {
+      const dragRow = e.target.closest('[data-part-drag]');
+      if (!dragRow) return;
+      this._draggingPartId = dragRow.dataset.partDrag;
+      if (e.dataTransfer) {
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', this._draggingPartId);
+      }
+    });
+    rigMount.addEventListener('dragover', (e) => {
+      const dropEl = e.target.closest('[data-part-drop]');
+      if (!dropEl || !this._draggingPartId) return;
+      e.preventDefault();
+      if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+      clearDropHighlights();
+      dropEl.classList.add('st-drop-hover', 'ring-1', 'ring-sky-400', 'bg-sky-500/15');
+    });
+    rigMount.addEventListener('dragleave', (e) => {
+      const dropEl = e.target.closest('[data-part-drop]');
+      if (dropEl && !dropEl.contains(e.relatedTarget)) {
+        dropEl.classList.remove('st-drop-hover', 'ring-1', 'ring-sky-400', 'bg-sky-500/15');
+      }
+    });
+    rigMount.addEventListener('drop', (e) => {
+      const dropEl = e.target.closest('[data-part-drop]');
+      clearDropHighlights();
+      const movingId = this._draggingPartId || e.dataTransfer?.getData('text/plain') || null;
+      this._draggingPartId = null;
+      if (!dropEl || !movingId) return;
+      e.preventDefault();
+      const rawTarget = dropEl.dataset.partDrop;
+      this._reparentPart(movingId, rawTarget === 'torso' ? null : rawTarget);
+    });
+    rigMount.addEventListener('dragend', () => {
+      this._draggingPartId = null;
+      clearDropHighlights();
     });
     qs('#st-edit-pose').addEventListener('click', () => this._setEditMode('pose'));
     qs('#st-edit-rig').addEventListener('click', () => this._setEditMode('rig'));
@@ -825,8 +1065,22 @@ export const studioControlsAndLoopMethods = {
       for (const [sockName, pfGroup] of Object.entries(attachedMap)) {
         if (pfGroup) prefabToSocket.set(pfGroup, sockName);
       }
+      const unitDef = this.unitsData?.units?.[this.currentUnitId];
+      const isB = Boolean(unitDef?.isBuildingEntity);
+      const hidden = new Set(isB ? (unitDef.hiddenJoints || []) : []);
+      const partIds = new Set(isB ? (unitDef.parts || []).map((p) => p.id) : []);
+      const isObjectVisible = (obj) => {
+        for (let cur = obj; cur; cur = cur.parent) {
+          if (cur.visible === false) return false;
+          if (cur === this.currentUnitGroup) break;
+        }
+        return true;
+      };
+      let sawBlockedPart = false;
+
       for (const hit of raycaster.intersectObject(this.currentUnitGroup, true)) {
         if (!hit.object.isMesh || hit.object.name === 'selection_ring') continue;
+        if (!isObjectVisible(hit.object)) continue;
         let p = hit.object;
         let clickedWeaponSocket = null;
         while (p && p !== this.currentUnitGroup) {
@@ -849,7 +1103,31 @@ export const studioControlsAndLoopMethods = {
         }
         let o = hit.object;
         while (o && !joints.has(o)) o = o.parent;
-        if (o) { this._selectJoint(o.name); return; }
+        if (o) {
+          if (isB && hidden.has(o.name)) continue;
+          if (isB && partIds.has(o.name)) {
+            if (this.editMode === 'pose') {
+              sawBlockedPart = true;
+              continue;
+            }
+            const clickedPart = (unitDef.parts || []).find((q) => q.id === o.name);
+            if (clickedPart && (clickedPart.kind === 'group' || clickedPart.kind === 'model')) {
+              this._rigTargetParentId = o.name;
+            }
+            this._rigRightTab = 'data';
+            if (e.ctrlKey || e.metaKey) {
+              this._toggleMultiPartSelect(o.name);
+              return;
+            }
+          } else if (isB && this.editMode === 'rig') {
+            this._rigRightTab = 'data';
+          }
+          this._selectJoint(o.name);
+          return;
+        }
+      }
+      if (sawBlockedPart) {
+        this._toast('Building parts can only be moved in Rig mode.', 2200);
       }
     };
     canvas.addEventListener('pointerdown', this._onPickDown);
@@ -903,7 +1181,15 @@ export const studioControlsAndLoopMethods = {
           break;
         case 'ArrowLeft': if (this.editMode === 'pose') { e.preventDefault(); tl.step(-1, e.shiftKey); } break;
         case 'ArrowRight': if (this.editMode === 'pose') { e.preventDefault(); tl.step(1, e.shiftKey); } break;
-        case 'Delete': if (this.editMode === 'pose') { e.preventDefault(); tl.deleteSelection(); } break;
+        case 'Delete':
+        case 'Backspace':
+          if (this.editMode === 'pose') {
+            if (code === 'Delete') { e.preventDefault(); tl.deleteSelection(); }
+          } else if (this.editMode === 'rig' && this._isBuildingNow?.()) {
+            e.preventDefault();
+            this._deleteSelectedParts?.();
+          }
+          break;
         case 'Escape': if (this._modalOpen()) this._closeModal(); else tl.clearSelection(); break;
         case 'KeyW': this.gizmoController.setGizmoMode('translate'); break;
         case 'KeyR': this._setGizmoModeChecked('scale'); break;
@@ -1060,6 +1346,7 @@ export const studioControlsAndLoopMethods = {
     this.sandboxArena?.dispose();
     this.gizmoController?.dispose();
     this._clearBuildingFootprintDisplay?.();
+    if (this._multiPivot?.parent) this._multiPivot.parent.remove(this._multiPivot);
     if (this.currentUnitGroup) disposeVisual(this.currentUnitGroup);
     this.renderer?.dispose();
     this.renderer?.domElement?.remove();

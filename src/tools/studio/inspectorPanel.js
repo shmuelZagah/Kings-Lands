@@ -70,9 +70,9 @@ export class InspectorPanel {
     this.transformsEnabled = Boolean(transformsEnabled);
 
     const title = this._el('insp-title');
-    title.textContent = kind === 'weapon_grip' ? `Grip: ${name}` : `Joint: ${name}`;
+    title.textContent = kind === 'multi' ? name : kind === 'weapon_grip' ? `Grip: ${name}` : `Joint: ${name}`;
     title.className =
-      (kind === 'weapon_grip' ? 'text-amber-400' : 'text-sky-400') +
+      (kind === 'weapon_grip' ? 'text-amber-400' : kind === 'multi' ? 'text-amber-300' : 'text-sky-400') +
       ' font-bold truncate max-w-[150px]';
 
     this._el('insp-note').classList.toggle('hidden', this.transformsEnabled);
@@ -192,7 +192,7 @@ export class InspectorPanel {
       `<div class="flex justify-between mb-1"><span>${label}:</span><input id="${id}" type="number" step="${step}" class="w-16 bg-slate-950 border border-slate-700 rounded text-center"></div>`;
 
     this.container.innerHTML = `
-      <div class="rounded-xl border border-slate-700 bg-slate-900/95 p-3 flex flex-col gap-3 text-xs w-72 max-h-[72vh] overflow-y-auto shadow-xl">
+      <div class="pointer-events-auto rounded-xl border border-slate-700 bg-slate-900/95 p-3 flex flex-col gap-3 text-xs w-72 max-h-full overflow-y-auto shadow-xl">
         <div class="flex justify-between items-center pb-1">
           <span class="uppercase tracking-wider">Inspector</span>
           <span id="insp-title" class="text-sky-400 font-bold truncate max-w-[150px]">None</span>

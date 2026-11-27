@@ -303,13 +303,17 @@ export class TimelineEditor {
     return true;
   }
 
+  _jointLabel(joint) {
+    return this.callbacks.getJointLabel?.(joint) || joint;
+  }
+
   /** The stopwatch. Also selects the joint + row so the gizmo is ready to edit it. */
   toggleProp(joint, prop) {
     if (!this.canKeyframe()) return false;
     const t = this.scrubNormTime;
     if (this.isPropAnimated(joint, prop)) {
       const ok = confirm(
-        `Turn off animation of ${joint} / ${PROP_LABEL[prop]}?\n\nAll its keyframes are removed. The value at the playhead stays, as a constant for the whole clip.`
+        `Turn off animation of ${this._jointLabel(joint)} / ${PROP_LABEL[prop]}?\n\nAll its keyframes are removed. The value at the playhead stays, as a constant for the whole clip.`
       );
       if (!ok) return false;
       this._before('stopwatch');
