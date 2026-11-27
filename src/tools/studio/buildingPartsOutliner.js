@@ -294,6 +294,18 @@ function renderTransformGridHtml(tr) {
     </div>`;
 }
 
+const TEXT_TAB_COLORS = {
+  amber: { on: 'text-amber-300 border-amber-400', off: 'text-slate-400 border-transparent hover:text-slate-200' },
+  emerald: { on: 'text-emerald-300 border-emerald-400', off: 'text-slate-400 border-transparent hover:text-slate-200' },
+  sky: { on: 'text-sky-300 border-sky-400', off: 'text-slate-400 border-transparent hover:text-slate-200' }
+};
+
+/** Compact clickable text tab: colour + underline show the active one. */
+function textTab(attr, label, active, color = 'amber') {
+  const c = TEXT_TAB_COLORS[color] || TEXT_TAB_COLORS.amber;
+  return `<button type="button" role="tab" aria-selected="${active}" ${attr} class="border-b-2 pb-0.5 text-[11px] font-bold cursor-pointer ${active ? c.on : c.off}">${label}</button>`;
+}
+
 export function renderBuildingRigPanelHtml({
   unitId,
   unitDef,
@@ -315,20 +327,25 @@ export function renderBuildingRigPanelHtml({
   rigImportState = {},
   glbLibrary = [],
   rigLibCategoryFilter = 'All',
-  selectedTransform = null
+  selectedTransform = null,
+  primThumbs = {},
+  glbThumbs = {}
 }) {
   const maxLv = computeMaxBuildingLevel(bDef, parts, previewLevel);
   const curLv = Math.max(1, Math.min(maxLv, previewLevel || 1));
+  // Levels the building really has in game (its own maxLevel, or any level a part is scoped to); higher ones are preview-only.
+  const realMaxLv = Math.max(1, (bDef?.maxLevel | 0) || (bDef?.canAutoLevel ? 3 : 1),
+    ...(parts || []).map((p) => Math.max(Number(p?.minLevel) || 1, Number(p?.maxLevel) || 1)));
+
+  // Same button as the Pose timeline header (timelineSheetAndPointer.js #tl-btn-minimize): same look, same right-hand place.
+  const collapseBtnHtml = `<button type="button" id="st-rig-collapse" aria-expanded="${!rigCollapsed}" class="rounded border border-slate-600 bg-slate-800 px-2 py-1 text-slate-300 hover:bg-slate-700" title="Hide / show the keyframe sheet">${rigCollapsed ? '▴ Show sheet' : '▾ Hide sheet'}</button>`;
 
   if (rigCollapsed) {
     return `
-      <div id="st-rig-header" class="flex items-center justify-between gap-2 border-b border-slate-800 px-3 py-1 h-8 bg-slate-900">
-        <button type="button" id="st-rig-collapse" aria-expanded="false" class="inline-flex items-center gap-1.5 rounded border border-slate-600 bg-slate-800 hover:bg-slate-700 px-2.5 py-0.5 text-[11px] font-bold text-rose-300 cursor-pointer" title="Expand Rig & Parts panel">
-          <span>▸</span>
-          <span>RIG &amp; PARTS</span>
-          <span class="text-[10px] font-normal text-slate-400">(${parts.length})</span>
-        </button>
-        <span class="text-[10px] font-semibold text-sky-300/80">Lv ${curLv} · Collapsed</span>
+      <div id="st-rig-header" class="flex items-center justify-between gap-2 border-b border-slate-800 px-4 py-1.5 bg-slate-900">
+        <span class="font-bold text-rose-300">RIG &amp; PARTS <span class="text-[10px] font-normal text-slate-400">(${parts.length})</span></span>
+        <span class="ml-auto text-[10px] font-semibold text-sky-300/80">Lv ${curLv}</span>
+        ${collapseBtnHtml}
       </div>
       <div id="st-rig-body" class="hidden"></div>`;
   }
@@ -437,7 +454,7 @@ export function renderBuildingRigPanelHtml({
 
   // Right Side Panel: Add vs Data tabs
   const activeTab = rigRightTab === 'data' ? 'data' : 'add';
-  const activeAddSub = rigAddSubTab === 'import' ? 'import' : 'primitives';
+  const activeAddSub = rigAddSubTab === 'import' ? 'import' : rigAddSubTab === 'obj' ? 'obj' : 'primitives';
   const activeImpSub = rigImportSubTab === 'existing' ? 'existing' : 'new';
 
   const targetParentOptionsHtml = buildTargetParentOptionsHtml(parts, rigTargetParentId);
@@ -522,6 +539,16 @@ export function renderBuildingRigPanelHtml({
     return `<button type="button" data-part-add="${k}" ${disabled ? 'disabled title="A building has at most one exit point"' : ''} class="rounded border px-2 py-0.5 text-[11px] font-semibold ${disabled ? 'border-slate-700 bg-slate-800/60 text-slate-500 cursor-not-allowed opacity-60' : 'border-emerald-500/50 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20 cursor-pointer'}">${label}</button>`;
   };
 
+  const thumbCard = ({ attr, title, img, fallback = '🧱', extra = '' }) => `
+    <div class="relative">
+      <button type="button" ${attr} title="${escHtml(title)}" aria-label="${escHtml(title)}" class="flex h-14 w-14 flex-col items-center justify-center gap-0.5 rounded border border-slate-700 bg-slate-900/90 p-0.5 hover:border-emerald-400/70 hover:bg-slate-800 cursor-pointer transition-colors">
+        ${img
+          ? `<img src="${img}" alt="" class="w-12 h-12 object-contain rounded" draggable="false" />`
+          : `<span class="flex h-12 w-12 items-center justify-center text-xl text-slate-500" data-thumb-ph="1">${fallback}</span>`}
+      </button>
+      ${extra}
+    </div>`;
+
   const primPanelHtml = `
     <div class="flex flex-col gap-2">
       <div class="flex flex-wrap items-center justify-between gap-2 text-[11px]">
@@ -531,13 +558,8 @@ export function renderBuildingRigPanelHtml({
           <input id="st-rig-prim-color" type="color" value="${escHtml(rigPrimColor)}" class="h-6 w-8 rounded border border-slate-600 bg-slate-900 cursor-pointer" />
         </label>
       </div>
-      <div class="grid grid-cols-3 gap-1.5">
-        ${PRIMITIVE_SHAPES.map((s) => `
-          <button type="button" data-add-primitive="${escHtml(s.shape)}" class="flex items-center gap-1.5 rounded border border-slate-700 bg-slate-900/90 hover:border-emerald-400/70 hover:bg-slate-800 px-2 py-1.5 text-left text-[11px] font-semibold text-slate-200 cursor-pointer transition-colors">
-            <span class="text-sm leading-none">${s.icon}</span>
-            <span class="truncate">${escHtml(s.label)}</span>
-          </button>
-        `).join('')}
+      <div class="flex flex-wrap gap-1.5">
+        ${PRIMITIVE_SHAPES.map((s) => thumbCard({ attr: `data-add-primitive="${escHtml(s.shape)}"`, title: s.label, img: primThumbs[s.shape], fallback: s.icon })).join('')}
       </div>
     </div>`;
 
@@ -588,27 +610,15 @@ export function renderBuildingRigPanelHtml({
         `).join('')}
       </div>
       ${filteredLib.length
-        ? `<div class="grid grid-cols-2 gap-1.5 max-h-32 overflow-y-auto pr-0.5">
-            ${filteredLib.map((item) => `
-              <div class="flex items-center gap-1 rounded border border-slate-700 bg-slate-950/75 hover:border-sky-400/70 p-1">
-                <button type="button" data-lib-add="${escHtml(item.id)}" class="flex-1 min-w-0 text-left cursor-pointer" title="Add ${escHtml(item.name)} to building">
-                  <div class="truncate text-[11px] font-semibold text-slate-100">🧱 ${escHtml(item.name)}</div>
-                  <div class="truncate text-[9px] text-slate-400">${escHtml(item.category)}${item.triangles ? ` · ${item.triangles.toLocaleString()} tris` : ''} · ${Number(item.fitSize || 4).toFixed(1)}m</div>
-                </button>
-                <button type="button" data-lib-del="${escHtml(item.id)}" class="h-5 w-5 shrink-0 flex items-center justify-center rounded text-[10px] font-bold text-rose-400 hover:bg-rose-500/20 cursor-pointer" title="Remove from reusable library">✕</button>
-              </div>
-            `).join('')}
+        ? `<div class="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto pr-0.5">
+            ${filteredLib.map((item) => thumbCard({
+              attr: `data-lib-add="${escHtml(item.id)}" data-thumb-glb="${escHtml(item.id)}"`,
+              title: `${item.name} · ${item.category}${item.triangles ? ` · ${item.triangles.toLocaleString()} tris` : ''}`,
+              img: glbThumbs[item.id],
+              extra: `<button type="button" data-lib-del="${escHtml(item.id)}" class="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-slate-900 border border-slate-600 text-[9px] font-bold text-rose-400 hover:bg-rose-500/30 cursor-pointer" title="Remove ${escHtml(item.name)} from the library" aria-label="Remove ${escHtml(item.name)}">✕</button>`
+            })).join('')}
           </div>`
-        : `<div class="rounded border border-slate-800 bg-slate-950/50 p-2 text-[11px] text-slate-400">No saved .glb models in <b>${escHtml(filterCat)}</b> yet. Use <b>New Import</b> to add one!</div>`}
-    </div>`;
-
-  const importPanelHtml = `
-    <div class="flex flex-col gap-2">
-      <div class="flex gap-1 border-b border-slate-800 pb-1">
-        <button type="button" data-rig-imp-sub="new" class="rounded px-2.5 py-0.5 text-[11px] font-bold cursor-pointer ${activeImpSub === 'new' ? 'bg-sky-500 text-slate-950' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}">New Import</button>
-        <button type="button" data-rig-imp-sub="existing" class="rounded px-2.5 py-0.5 text-[11px] font-bold cursor-pointer ${activeImpSub === 'existing' ? 'bg-sky-500 text-slate-950' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}">Existing (${glbLibrary.length})</button>
-      </div>
-      ${activeImpSub === 'existing' ? existingLibraryHtml : newImportHtml}
+        : `<div class="rounded border border-slate-800 bg-slate-950/50 p-2 text-[11px] text-slate-400">No saved .glb models in <b>${escHtml(filterCat)}</b> yet. Use the <b>Import</b> tab to add one.</div>`}
     </div>`;
 
   const addPanelHtml = `
@@ -623,32 +633,30 @@ export function renderBuildingRigPanelHtml({
         ${structBtn('group', '+ Group')}
         ${structBtn('exit_point', '+ Exit point')}
       </div>
-      <div class="flex gap-1">
-        <button type="button" data-rig-add-sub="primitives" class="flex-1 rounded py-1 text-[11px] font-bold cursor-pointer ${activeAddSub === 'primitives' ? 'bg-emerald-500 text-slate-950' : 'bg-slate-800 border border-slate-700 text-slate-300 hover:bg-slate-700'}">Primitives</button>
-        <button type="button" data-rig-add-sub="import" class="flex-1 rounded py-1 text-[11px] font-bold cursor-pointer ${activeAddSub === 'import' ? 'bg-sky-500 text-slate-950' : 'bg-slate-800 border border-slate-700 text-slate-300 hover:bg-slate-700'}">Import (.glb)</button>
+      <div class="flex items-center gap-4" role="tablist">
+        ${textTab('data-rig-add-sub="primitives"', 'Primitives', activeAddSub === 'primitives', 'emerald')}
+        ${textTab('data-rig-add-sub="obj"', `Obj <span class="font-normal text-slate-500">(${glbLibrary.length})</span>`, activeAddSub === 'obj', 'sky')}
+        ${textTab('data-rig-add-sub="import"', 'Import', activeAddSub === 'import', 'sky')}
       </div>
-      ${activeAddSub === 'import' ? importPanelHtml : primPanelHtml}
+      ${activeAddSub === 'import' ? newImportHtml : activeAddSub === 'obj' ? existingLibraryHtml : primPanelHtml}
     </div>`;
 
   return `
     <div id="st-rig-header" class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 px-4 py-1.5 bg-slate-900">
       <div class="flex items-center gap-2">
-        <button type="button" id="st-rig-collapse" aria-expanded="true" class="inline-flex items-center gap-1.5 rounded border border-slate-600 bg-slate-800 hover:bg-slate-700 px-2.5 py-1 font-bold text-rose-300 cursor-pointer" title="Collapse Rig &amp; Parts panel">
-          <span>▾</span>
-          <span>RIG &amp; PARTS</span>
-          <span class="text-[10px] font-normal text-slate-400">(${parts.length})</span>
-        </button>
+        <span class="font-bold text-rose-300">RIG &amp; PARTS <span class="text-[10px] font-normal text-slate-400">(${parts.length})</span></span>
         <label class="flex items-center gap-1.5 text-sky-300 font-semibold">
           <span>Level:</span>
           <select id="st-rig-bld-lv-select" aria-label="Building preview level" class="rounded border border-slate-600 bg-slate-800 px-2 py-1 text-[11px] font-bold text-sky-300">
             ${Array.from({ length: maxLv }, (_, idx) => {
               const lv = idx + 1;
-              return `<option value="${lv}" ${lv === curLv ? 'selected' : ''}>Level ${lv}${lv === 1 ? ' (Base)' : ''}</option>`;
+              return `<option value="${lv}" ${lv === curLv ? 'selected' : ''}>Level ${lv}${lv === 1 ? ' (Base)' : lv > realMaxLv ? ' (preview only)' : ''}</option>`;
             }).join('')}
           </select>
         </label>
       </div>
-      <span class="text-[10px] text-slate-400 hidden sm:inline">Drag rows onto 📁 Group or Building body · Delete key removes selected</span>
+      <span class="ml-auto text-[10px] text-slate-400 hidden sm:inline">Drag rows onto 📁 Group or Building body · Delete · Ctrl+C / V / D</span>
+      ${collapseBtnHtml}
     </div>
     <div id="st-rig-body" class="max-h-[38vh] overflow-y-auto px-4 py-2">
       <div class="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(280px,1.05fr)_minmax(320px,1.15fr)] items-start">
@@ -656,12 +664,9 @@ export function renderBuildingRigPanelHtml({
           ${treeRows.join('')}
         </div>
         <div class="flex flex-col gap-1.5">
-          <div class="flex items-center gap-1.5 border-b border-slate-800 pb-1">
-            <button type="button" data-rig-tab="add" class="rounded px-3 py-1 text-[11px] font-bold cursor-pointer ${activeTab === 'add' ? 'bg-amber-500 text-slate-950' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}">Add</button>
-            <button type="button" data-rig-tab="data" class="rounded px-3 py-1 text-[11px] font-bold cursor-pointer ${activeTab === 'data' ? 'bg-amber-500 text-slate-950' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}">Data</button>
-            ${activeTab === 'data'
-              ? `<button type="button" data-rig-back-add="1" class="ml-auto rounded border border-sky-500/50 bg-sky-500/15 hover:bg-sky-500/25 px-2.5 py-1 text-[11px] font-bold text-sky-200 cursor-pointer">← Back to Add</button>`
-              : ''}
+          <div class="flex items-center gap-4 border-b border-slate-800 pb-1" role="tablist">
+            ${textTab('data-rig-tab="add"', 'Add', activeTab === 'add', 'amber')}
+            ${textTab('data-rig-tab="data"', 'Data', activeTab === 'data', 'amber')}
           </div>
           ${activeTab === 'data' ? dataPanelHtml : addPanelHtml}
         </div>

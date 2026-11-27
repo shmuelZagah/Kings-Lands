@@ -1156,7 +1156,14 @@ export const studioControlsAndLoopMethods = {
 
       if (e.ctrlKey && (code === 'KeyY' || (code === 'KeyZ' && e.shiftKey))) { e.preventDefault(); this._redo(); return; }
       if (ctrl && code === 'KeyZ') { e.preventDefault(); this._undo(); return; }
+      const rigParts = this.editMode === 'rig' && this._isBuildingNow?.();
+      if (ctrl && code === 'KeyD') {
+        e.preventDefault();   // the browser would bookmark the page
+        if (rigParts) this._duplicateSelectedParts();
+        return;
+      }
       if (ctrl && code === 'KeyC') {
+        if (rigParts) { e.preventDefault(); this._copySelectedParts(); return; }
         if (this.editMode === 'pose') {
           const n = tl.copyAtPlayhead();
           if (n) { e.preventDefault(); this._toast(`Copied ${n} keyframe${n === 1 ? '' : 's'}`); }
@@ -1164,6 +1171,7 @@ export const studioControlsAndLoopMethods = {
         return;
       }
       if (ctrl && code === 'KeyV') {
+        if (rigParts) { e.preventDefault(); this._pasteParts(); return; }
         if (this.editMode === 'pose' && this._keyGuard()) {
           e.preventDefault();
           this._prepareEdit();

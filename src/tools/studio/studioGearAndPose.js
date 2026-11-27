@@ -1,3 +1,4 @@
+import { primitiveThumbnail, glbLibraryThumbnail } from './partThumbnails.js';
 import { newPart, isPartActiveAtLevel, isPartEffectivelyActive, validateParts } from '../../data/buildingParts.js';
 import { attachPartJoints } from '../units_buildings/buildingStudioAdapter.js';
 import { BUILTIN_UNIT_ICON_OPTIONS } from "../units_buildings/unitsTabRenderer.js";
@@ -7,6 +8,7 @@ import {
   isPartDeletable,
   canAddExitPoint,
   wouldCreateParentLoop,
+  isPartAncestor,
   topLevelSelectedPartIds,
   isPartHiddenByEye,
   isPartLevelInRange,
@@ -22,6 +24,7 @@ import {
   createPrimitiveGeometry,
   deleteGlbLibraryEntry,
   getPrimitiveDef,
+  PRIMITIVE_SHAPES,
   loadGlbLibrary,
   normalizeGlbCategory,
   prepareGlbAssetForImport,
@@ -141,8 +144,13 @@ export const studioGearAndPoseMethods = {
         },
         glbLibrary,
         rigLibCategoryFilter: this._rigLibCategoryFilter || 'All',
-        selectedTransform: this._getRigTransformSnapshot()
+        selectedTransform: this._getRigTransformSnapshot(),
+        primThumbs: (this._rigAddSubTab || 'primitives') === 'primitives'
+          ? Object.fromEntries(PRIMITIVE_SHAPES.map((sh) => [sh.shape, primitiveThumbnail(sh.shape, this._rigPrimitiveColor || '#94a3b8')]))
+          : {},
+        glbThumbs: this._glbThumbUrls || {}
       });
+      this._hydrateGlbThumbs(mount);
       if (this._renamingPartId) {
         queueMicrotask(() => {
           const inp = mount.querySelector('[data-part-rename-input]');
@@ -170,12 +178,9 @@ export const studioGearAndPoseMethods = {
     const rigCollapsed = Boolean(this._rigPanelCollapsed);
     mount.innerHTML = `
       <div class="flex flex-col">
-        <div id="st-rig-header" class="flex items-center justify-between gap-2 border-b border-slate-800 px-3 ${rigCollapsed ? 'py-1 h-8' : 'py-1.5'} bg-slate-900">
-          <button type="button" id="st-rig-collapse" aria-expanded="${!rigCollapsed}" class="inline-flex items-center gap-1.5 rounded border border-slate-600 bg-slate-800 hover:bg-slate-700 px-2.5 ${rigCollapsed ? 'py-0.5 text-[11px]' : 'py-1'} font-bold text-rose-300 cursor-pointer" title="${rigCollapsed ? 'Expand Rig panel' : 'Collapse Rig panel'}">
-            <span>${rigCollapsed ? '▸' : '▾'}</span>
-            <span>RIG – character parts</span>
-          </button>
-          ${rigCollapsed ? '<span class="text-[10px] text-slate-400">Collapsed</span>' : ''}
+        <div id="st-rig-header" class="flex items-center justify-between gap-2 border-b border-slate-800 px-4 py-1.5 bg-slate-900">
+          <span class="font-bold text-rose-300">RIG – character parts</span>
+          <button type="button" id="st-rig-collapse" aria-expanded="${!rigCollapsed}" class="rounded border border-slate-600 bg-slate-800 px-2 py-1 text-slate-300 hover:bg-slate-700" title="Hide / show the keyframe sheet">${rigCollapsed ? '▴ Show sheet' : '▾ Hide sheet'}</button>
         </div>
         <div id="st-rig-body" class="${rigCollapsed ? 'hidden' : 'max-h-[30vh] overflow-y-auto px-4 py-2.5 flex flex-col gap-2'}">
           <div class="flex flex-wrap items-center gap-1.5"><span class="w-24 text-slate-500">Body</span>${body.map(chip).join('')}</div>
@@ -279,9 +284,30 @@ export const studioGearAndPoseMethods = {
     this._renderRigPanel();
   },
 
+  /** Fill the Obj cards' thumbnails one by one (decoding a .glb is async); results are cached for the next render. */
+  _hydrateGlbThumbs(mount) {
+    if (!this._glbThumbUrls) this._glbThumbUrls = {};
+    const lib = this._getGlbLibrary();
+    mount.querySelectorAll('[data-thumb-glb]').forEach((btn) => {
+      const id = btn.dataset.thumbGlb;
+      const item = lib.find((e) => e.id === id);
+      if (!item || btn.querySelector('img')) return;
+      glbLibraryThumbnail(item).then((url) => {
+        if (!url) return;
+        this._glbThumbUrls[id] = url;
+        const ph = btn.querySelector('[data-thumb-ph]');
+        if (!ph || !btn.isConnected) return;
+        const img = document.createElement('img');
+        img.src = url; img.alt = ''; img.draggable = false;
+        img.className = 'w-12 h-12 object-contain rounded';
+        ph.replaceWith(img);
+      });
+    });
+  },
+
   _setRigAddSubTab(sub) {
     this._rigRightTab = 'add';
-    this._rigAddSubTab = sub === 'import' ? 'import' : 'primitives';
+    this._rigAddSubTab = sub === 'import' ? 'import' : sub === 'obj' ? 'obj' : 'primitives';
     this._renderRigPanel();
   },
 
@@ -969,6 +995,96 @@ export const studioGearAndPoseMethods = {
     if (respawn) this._spawnStudioUnit();
     if (select) this._selectJoint(select);
     this._renderRigPanel();
+  },
+
+  // ------------------------------------------------------------------ Copy / Paste / Duplicate (Rig mode, buildings)
+
+  /** Selected part ids plus all their descendants, skipping fire points (managed in Units & Buildings Lab). */
+  _collectCopyableParts() {
+    const u = this.unitsData?.units?.[this.currentUnitId];
+    if (!u?.isBuildingEntity) return null;
+    const parts = u.parts || [];
+    const byId = new Map(parts.map((p) => [p.id, p]));
+    let ids = [...(this.selectedPartIds || [])].filter((id) => byId.has(id));
+    if (!ids.length && byId.has(this.selectedSocketName)) ids = [this.selectedSocketName];
+    const roots = topLevelSelectedPartIds(parts, ids).filter((id) => byId.get(id).kind !== 'fire_point');
+    if (!roots.length) return null;
+    const keep = new Set(roots);
+    for (const p of parts) {
+      if (p.kind === 'fire_point' || keep.has(p.id)) continue;
+      if (roots.some((rid) => isPartAncestor(parts, rid, p.id))) keep.add(p.id);
+    }
+    return { roots, list: parts.filter((p) => keep.has(p.id)).map((p) => JSON.parse(JSON.stringify(p))) };
+  },
+
+  _copySelectedParts() {
+    const c = this._collectCopyableParts();
+    if (!c) { this._toast('Select a part or group to copy (fire points cannot be copied).', 2400); return false; }
+    this._partClipboard = c;
+    this._toast(`Copied ${c.roots.length} part${c.roots.length === 1 ? '' : 's'}${c.list.length > c.roots.length ? ` (+${c.list.length - c.roots.length} inside)` : ''}`, 1600);
+    return true;
+  },
+
+  /** Insert the clipboard as new parts (fresh ids), nudged by `offset`. Returns the new ids. */
+  _pastePartsFrom(clip, offset = [0.4, 0, 0.4]) {
+    const u = this.unitsData?.units?.[this.currentUnitId];
+    if (!u?.isBuildingEntity || !clip?.list?.length) return [];
+    const parts = u.parts || [];
+    const taken = new Set(parts.map((p) => p.id));
+    const idMap = new Map();
+    const fresh = (old) => {
+      const base = String(old).replace(/_\d+$/, '');
+      let id = base;
+      for (let i = 2; taken.has(id); i++) id = `${base}_${i}`;
+      taken.add(id);
+      return id;
+    };
+    let exitExists = !canAddExitPoint(parts);
+    const accepted = [];
+    for (const p of clip.list) {
+      if (p.kind === 'fire_point') continue;
+      if (p.kind === 'exit_point') {
+        if (exitExists) { this._toast('A building has at most one exit point - the exit point was not pasted.', 2800); continue; }
+        exitExists = true;
+      }
+      idMap.set(p.id, fresh(p.id));
+      accepted.push(p);
+    }
+    if (!accepted.length) return [];
+    const byId = new Map(parts.map((p) => [p.id, p]));
+    const fallbackParent = this._resolveRigTargetParentId(parts);
+    const next = accepted.map((p) => {
+      const copy = JSON.parse(JSON.stringify(p));
+      const isRoot = clip.roots.includes(p.id) || !idMap.has(p.parent);
+      copy.id = idMap.get(p.id);
+      if (idMap.has(p.parent)) copy.parent = idMap.get(p.parent);
+      else copy.parent = byId.has(p.parent) ? p.parent : fallbackParent;
+      if (isRoot && Array.isArray(copy.pos)) copy.pos = copy.pos.map((v, i) => Math.round(((Number(v) || 0) + offset[i]) * 1000) / 1000);
+      return copy;
+    });
+    this._beginEdit('part-paste');
+    u.parts = [...parts, ...next];
+    const newIds = next.map((p) => p.id);
+    this._partsChanged({ select: next[0].id });
+    const rootNew = clip.roots.map((r) => idMap.get(r)).filter(Boolean);
+    if (rootNew.length > 1) {
+      this.selectedPartIds = new Set(rootNew);
+      this._renderRigPanel();
+    }
+    return newIds;
+  },
+
+  _pasteParts() {
+    if (!this._partClipboard) { this._toast('Nothing copied yet (Ctrl+C first).', 1800); return; }
+    const n = this._pastePartsFrom(this._partClipboard, [0.4, 0, 0.4]);
+    if (n.length) this._toast(`Pasted ${n.length} part${n.length === 1 ? '' : 's'}`, 1400);
+  },
+
+  _duplicateSelectedParts() {
+    const c = this._collectCopyableParts();
+    if (!c) { this._toast('Select a part or group to duplicate (fire points cannot be copied).', 2400); return; }
+    const n = this._pastePartsFrom(c, [0.4, 0, 0.4]);
+    if (n.length) this._toast(`Duplicated ${n.length} part${n.length === 1 ? '' : 's'}`, 1400);
   },
 
   _addPart(kind) {
